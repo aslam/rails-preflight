@@ -26,6 +26,8 @@ module RailsUpgradeAudit
       check_ruby_version
       scan_gems
       DockerAnalyzer.new.run
+      DeprecationAnalyzer.new.run
+      ConfigAnalyzer.new.run
     end
 
     private
