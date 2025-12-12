@@ -1,0 +1,24 @@
+# database/compatibility.yml
+rails_versions:
+  "5.0":
+    required_ruby: ">= 2.2.2"
+    max_ruby: "2.4.99"
+  "5.1":
+    required_ruby: ">= 2.2.2"
+    max_ruby: "2.5.99"
+  "5.2":
+    required_ruby: ">= 2.2.2"
+    max_ruby: "2.6.99"
+    # Note: Rails 5.2.8.1 supports up to 2.7, but 3.0 is a hard break.
+  "6.0":
+    required_ruby: ">= 2.5.0"
+    max_ruby: "2.7.99"
+  "6.1":
+    required_ruby: ">= 2.5.0"
+    max_ruby: "3.0.99"
+  "7.0":
+    required_ruby: ">= 2.7.0"
+    max_ruby: "3.2.99"
+  "7.1":
+    required_ruby: ">= 2.7.0"
+    max_ruby: "3.4.99"
