@@ -1,0 +1,11 @@
+deprecations:
+  - id: update_attributes
+    pattern: "update_attributes!?"
+    message: "DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead."
+    removed_in: "6.1"
+    severity: error
+  - id: assert_response_success
+    pattern: "assert_response :success"
+    message: "INFO: Verify controller tests use kwargs (e.g. get :index, params: { ... })"
+    removed_in: "5.0"
+    severity: info

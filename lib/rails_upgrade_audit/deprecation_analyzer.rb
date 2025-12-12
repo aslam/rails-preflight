@@ -1,8 +1,11 @@
 # lib/rails_upgrade_audit/deprecation_analyzer.rb
 module RailsUpgradeAudit
   class DeprecationAnalyzer
+    DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
+
     def initialize(root_path = Dir.pwd)
       @root_path = root_path
+      @rules = YAML.load_file(DATA_PATH)
     end
 
     def run
@@ -10,15 +13,10 @@ module RailsUpgradeAudit
       
       warnings = []
 
-      # 1. update_attributes (Removed in Rails 6.1)
-      warnings.concat(scan_files(/update_attributes!?/, "DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead."))
-
-      # 2. success? on controller tests (Deprecated in Rails 5, removed later for kwargs)
-      # This is a bit looser, usually checking strict kwargs in tests is the issue, but success? is a good proxy for old tests
-      warnings.concat(scan_files(/assert_response :success/, "INFO: Verify controller tests use kwargs (e.g. get :index, params: { ... })"))
-
-      # 3. ActiveRecord::Base.errors (Change in behavior around 6.1)
-      # warnings.concat(scan_files(/errors\[:/, "POTENTIAL: Accessing errors as hash (errors[:field]) changed behavior in 6.1."))
+      @rules['deprecations'].each do |rule|
+        regex = Regexp.new(rule['pattern'])
+        warnings.concat(scan_files(regex, rule['message']))
+      end
 
       if warnings.any?
         puts "\n⚠️  DEPRECATION WARNINGS:"
