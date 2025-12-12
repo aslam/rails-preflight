@@ -13,9 +13,10 @@ module RailsUpgradeAudit
   class UpgradeAnalyzer
     DATA_PATH = File.expand_path('../../database/compatibility.yml', __dir__)
 
-    def initialize(target_rails, lockfile_path = "Gemfile.lock")
+    def initialize(target_rails, project_path = Dir.pwd)
       @target_rails = target_rails
-      @lockfile_path = lockfile_path
+      @project_path = project_path
+      @lockfile_path = File.join(project_path, "Gemfile.lock")
       # In a real gem, we might bundle the yaml or load it differently.
       # For now, we assume it's in the gem structure.
       @rules = YAML.load_file(DATA_PATH)
@@ -25,9 +26,9 @@ module RailsUpgradeAudit
       puts "🔍 Starting Audit for Rails #{@target_rails}..."
       check_ruby_version
       scan_gems
-      DockerAnalyzer.new.run
-      DeprecationAnalyzer.new.run
-      ConfigAnalyzer.new.run
+      DockerAnalyzer.new(@project_path).run
+      DeprecationAnalyzer.new(@project_path).run
+      ConfigAnalyzer.new(@project_path).run
     end
 
     private
@@ -36,8 +37,9 @@ module RailsUpgradeAudit
       puts "\n[1/2] Checking Ruby Version..."
 
       # 1. Detect Current Ruby
-      if File.exist?(".ruby-version")
-        current_raw = File.read(".ruby-version").strip
+      ruby_version_file = File.join(@project_path, ".ruby-version")
+      if File.exist?(ruby_version_file)
+        current_raw = File.read(ruby_version_file).strip
         source = ".ruby-version"
       else
         current_raw = RUBY_VERSION

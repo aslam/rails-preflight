@@ -21,4 +21,6 @@ if ARGV.empty?
 end
 
 target = ARGV[0]
-RailsUpgradeAudit::UpgradeAnalyzer.new(target).run
+project_path = ARGV[1] || Dir.pwd
+
+RailsUpgradeAudit::UpgradeAnalyzer.new(target, project_path).run

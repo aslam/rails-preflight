@@ -14,16 +14,37 @@ Upgrading Rails is hard. Estimating the upgrade is harder.
 
 ## Installation
 
+### Option A: Add to your project (Recommended)
+
+Add this line to your application's `Gemfile` (usually in the `development` group):
+
+```ruby
+group :development do
+  gem 'rails_upgrade_audit', git: 'https://github.com/aslam/rails-upgrade-audit.git'
+end
+```
+
+Then run:
+
+```bash
+bundle install
+bundle exec rails-upgrade-audit 6.1
+```
+
+### Option B: Standalone
+
 This tool is designed to be run as a standalone script or cloned into your toolbox.
 
 ```bash
-git clone [https://github.com/yourusername/rails-upgrade-audit.git](https://github.com/yourusername/rails-upgrade-audit.git)
+git clone https://github.com/aslam/rails-upgrade-audit.git
 cd rails-upgrade-audit
-chmod +x bin/audit
+bin/rails-upgrade-audit 6.1 /path/to/your/app
 ```
 
-Next Steps:
+## Features:
 
-- Deprecation Audit: Scanning code for deprecated Rails methods.
-- Configuration Check: verifying config/application.rb.
-- Detailed Gem Compatibility: checking gem versions against a matrix.
+- **Ruby Version Checks:** Ensures compatibility between your lockfile and target Rails version.
+- **Deprecation Audit:** Scans code for deprecated Rails methods (e.g. `update_attributes`).
+- **Configuration Check:** Verifies critical files like `config/application.rb` for upgrades.
+- **Docker Analysis:** Checks for common Docker pitfalls (Alpine packages, PID 1 issues).
+- **Private Gem Detection:** Highlights internal gems that might block upgrades.

@@ -1,8 +1,8 @@
 # lib/rails_upgrade_audit/docker_analyzer.rb
 module RailsUpgradeAudit
   class DockerAnalyzer
-    def initialize(dockerfile_path = "Dockerfile")
-      @dockerfile_path = dockerfile_path
+    def initialize(root_path = Dir.pwd)
+      @dockerfile_path = File.join(root_path, "Dockerfile")
     end
 
     def run
