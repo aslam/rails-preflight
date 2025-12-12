@@ -48,3 +48,12 @@ bin/rails-upgrade-audit 6.1 /path/to/your/app
 - **Configuration Check:** Verifies critical files like `config/application.rb` for upgrades.
 - **Docker Analysis:** Checks for common Docker pitfalls (Alpine packages, PID 1 issues).
 - **Private Gem Detection:** Highlights internal gems that might block upgrades.
+
+## Roadmap / Future Ideas:
+
+- **Database Analysis:** Detecting schema issues like 4-byte integers in large tables or missing foreign keys.
+- **Asset Pipeline Check:** Verifying Node/Yarn versions and precompilation config.
+- **Full Compatibility Report:** Generating a comprehensive HTML/JSON report of the audit.
+- **Dynamic Data:** Downloading the latest compatibility databases on the fly.
+- **Changelog Analysis:** Cross-referencing your code against Rails changelogs for specific deprecations.
+
