@@ -24,13 +24,34 @@ module RailsUpgradeAudit
           result[:checks] << { message: w, status: :warning }
         end
       else
-        result[:checks] << { message: "No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)", status: :passed }
+      result[:checks] << { message: "No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)", status: :passed }
       end
       
+      # Rubocop Advisory Check
+      if check_rubocop_rails
+        result[:checks] << { 
+          message: "✅ Action: `rubocop-rails` detected. Run `bundle exec rubocop -a` to find and fix more issues.",
+          status: :passed 
+        }
+      else
+        result[:checks] << { 
+          message: "💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.",
+          status: :warning 
+        }
+      end
+
       result
     end
 
     private
+
+    def check_rubocop_rails
+      lockfile_path = File.join(@root_path, "Gemfile.lock")
+      return false unless File.exist?(lockfile_path)
+      
+      content = File.read(lockfile_path)
+      content.include?("rubocop-rails")
+    end
 
     def scan_files(regex, message)
       found = []
