@@ -104,7 +104,7 @@ module RailsUpgradeAudit
       parser.specs.each do |spec|
         next if ['rails', 'rake'].include?(spec.name)
 
-        if is_private?(spec.name)
+        if is_private?(spec)
           private_gems << spec.name
           print "🔒"
         else
@@ -124,16 +124,32 @@ module RailsUpgradeAudit
       result
     end
 
-    def is_private?(gem_name)
-      url = URI("https://rubygems.org/api/v1/gems/#{gem_name}.json")
-      http = Net::HTTP.new(url.host, url.port)
-      http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE # Fix for your local SSL issue
+    def is_private?(spec)
+      # Heuristic 1: If source is not Rubygems (e.g. Git, Path), assume private/custom
+      return true unless spec.source.is_a?(Bundler::Source::Rubygems)
 
-      response = http.request(Net::HTTP::Get.new(url))
-      response.code == '404'
-    rescue
-      false
+      # Heuristic 2: Check remotes. If only rubygems.org, it's public.
+      remotes = spec.source.remotes.map(&:to_s)
+      return false if remotes.all? { |r| r.include?("rubygems.org") }
+
+      # Fallback: Check Rubygems API securely
+      url = URI("https://rubygems.org/api/v1/gems/#{spec.name}.json")
+      
+      begin
+        response = Net::HTTP.start(url.host, url.port, use_ssl: true, open_timeout: 2, read_timeout: 2) do |http|
+          http.request(Net::HTTP::Get.new(url))
+        end
+        response.code == '404'
+      rescue StandardError
+        # Fail safe - if we can't verify, don't scream "Private", but maybe we should?
+        # For now, let's assume if we can't find it on public internet and it has mixed sources, it might be private.
+        # But to avoid false positives on network errors, we'll return false (assumed public) or handle strictly?
+        # Given the user request "Gracefully degrade", we'll return false but maybe log invisible warning?
+        # Actually returning true (Private) on valid network error is annoying.
+        # Let's return false (Assume public) on network failure to avoid blocking, 
+        # as this is just an audit tool.
+        false
+      end
     end
   end
 end
