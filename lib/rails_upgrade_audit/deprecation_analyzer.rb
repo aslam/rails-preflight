@@ -9,7 +9,7 @@ module RailsUpgradeAudit
     end
 
     def run
-      puts "\n[3/X] Checking for Deprecations..."
+      result = { title: "Deprecation Warnings", status: :passed, checks: [] }
       
       warnings = []
 
@@ -19,11 +19,15 @@ module RailsUpgradeAudit
       end
 
       if warnings.any?
-        puts "\n⚠️  DEPRECATION WARNINGS:"
-        warnings.each { |w| puts w }
+        result[:status] = :warning
+        warnings.each do |w|
+          result[:checks] << { message: w, status: :warning }
+        end
       else
-        puts "✅ No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)"
+        result[:checks] << { message: "No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)", status: :passed }
       end
+      
+      result
     end
 
     private

@@ -17,24 +17,39 @@ module RailsUpgradeAudit
       @target_rails = target_rails
       @project_path = project_path
       @lockfile_path = File.join(project_path, "Gemfile.lock")
-      # In a real gem, we might bundle the yaml or load it differently.
-      # For now, we assume it's in the gem structure.
       @rules = YAML.load_file(DATA_PATH)
     end
 
     def run
-      puts "🔍 Starting Audit for Rails #{@target_rails}..."
-      check_ruby_version
-      scan_gems
-      DockerAnalyzer.new(@project_path).run
-      DeprecationAnalyzer.new(@project_path).run
-      ConfigAnalyzer.new(@project_path).run
-      DatabaseAnalyzer.new(@project_path, @rules['rails_versions'][@target_rails]['database_rules']).run
+      puts "🔍 Starting Audit for Rails #{@target_rails} (Generating HTML Report)..."
+      
+      results = []
+      
+      results << check_ruby_version
+      results << scan_gems
+      results << DockerAnalyzer.new(@project_path).run
+      results << DeprecationAnalyzer.new(@project_path).run
+      results << ConfigAnalyzer.new(@project_path).run
+      results << DatabaseAnalyzer.new(@project_path, @rules['rails_versions'][@target_rails]['database_rules']).run
+
+      report_data = {
+        target_rails: @target_rails,
+        results: results
+      }
+
+      html = ReportGenerator.new(report_data).generate
+      
+      output_path = File.join(@project_path, "upgrade_audit.html")
+      File.write(output_path, html)
+      
+      puts "\n✅ Report generated at: #{output_path}"
+      puts "   Open it in your browser to see the results."
     end
 
     private
 
     def check_ruby_version
+      result = { title: "Ruby Version", status: :passed, checks: [] }
       puts "\n[1/2] Checking Ruby Version..."
 
       # 1. Detect Current Ruby
@@ -55,24 +70,29 @@ module RailsUpgradeAudit
       constraints = @rules['rails_versions'][@target_rails]
 
       unless constraints
-        puts "❓ Unknown Rails version: #{@target_rails}"
-        return
+        result[:status] = :warning
+        result[:checks] << { message: "Unknown Rails version: #{@target_rails}", status: :warning }
+        return result
       end
 
       min_ver = Gem::Version.new(constraints['required_ruby'].split.last)
       max_ver = Gem::Version.new(constraints['max_ruby'])
 
       if current_ver < min_ver
-        puts "🔴 BLOCKER: Rails #{@target_rails} needs Ruby >= #{min_ver}. You have #{current_ver}."
+        result[:status] = :failed
+        result[:checks] << { message: "BLOCKER: Rails #{@target_rails} needs Ruby >= #{min_ver}. You have #{current_ver}.", status: :failed }
       elsif current_ver > max_ver
-        puts "🔴 BLOCKER: Rails #{@target_rails} is NOT compatible with Ruby #{current_ver}."
-        puts "   (Max recommended: #{max_ver}). Expect keyword argument errors!"
+        result[:status] = :failed
+        result[:checks] << { message: "BLOCKER: Rails #{@target_rails} is NOT compatible with Ruby #{current_ver}. (Max recommended: #{max_ver}).", status: :failed }
       else
-        puts "✅ Ruby #{current_ver} (#{source}) is compatible."
+        result[:checks] << { message: "Ruby #{current_ver} (#{source}) is compatible.", status: :passed }
       end
+      
+      result
     end
 
     def scan_gems
+      result = { title: "Private Gems", status: :passed, checks: [] }
       puts "\n[2/2] Scanning Gems..."
 
       # Bypass Bundler IO to avoid version mismatch errors
@@ -84,8 +104,6 @@ module RailsUpgradeAudit
       parser.specs.each do |spec|
         next if ['rails', 'rake'].include?(spec.name)
 
-        # Quick "Private Gem" Check
-        # Real tool would use threads, simplified here for MVP
         if is_private?(spec.name)
           private_gems << spec.name
           print "🔒"
@@ -93,11 +111,17 @@ module RailsUpgradeAudit
           print "."
         end
       end
+      
+      puts "" # Newline after progress dots
 
-      puts "\n\n" + "="*40
-      puts "🔒 PRIVATE GEMS DETECTED:"
-      puts private_gems.any? ? private_gems : "None"
-      puts "="*40
+      if private_gems.any?
+        result[:status] = :warning
+        result[:checks] << { message: "Private Gems Detected", status: :warning, details: private_gems }
+      else
+        result[:checks] << { message: "No private gems detected.", status: :passed }
+      end
+      
+      result
     end
 
     def is_private?(gem_name)

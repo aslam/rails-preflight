@@ -6,8 +6,8 @@ module RailsUpgradeAudit
     end
 
     def run
-      puts "\n[4/X] Checking Configuration..."
-
+      result = { title: "Configuration", status: :passed, checks: [] }
+      
       issues = []
 
       # 1. Check load_defaults
@@ -28,11 +28,17 @@ module RailsUpgradeAudit
       end
 
       if issues.any?
-        puts "\n🛠️  CONFIGURATION ISSUES:"
-        issues.each { |i| puts i }
+        result[:status] = :warning
+        issues.each do |issue| 
+            # Parse prefix emoji for status if possible, or defaulting to warning
+            status = issue.start_with?("❓") ? :failed : :warning
+            result[:checks] << { message: issue, status: status }
+        end
       else
-        puts "✅ Configuration looks baseline sane."
+        result[:checks] << { message: "Configuration looks baseline sane.", status: :passed }
       end
+      
+      result
     end
   end
 end

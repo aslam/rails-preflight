@@ -9,23 +9,37 @@ module RailsUpgradeAudit
     end
 
     def run
-      puts "\n[5/X] Scanning Database Schema..."
+      result = { title: "Database Schema", status: :passed, checks: [] }
       
       unless File.exist?(@schema_path)
-        puts "⚠️  No db/schema.rb found. Skipping database checks."
-        return
+        result[:status] = :warning
+        result[:checks] << { message: "No db/schema.rb found. Skipping database checks.", status: :warning }
+        return result
       end
 
       if @rules.empty?
-        puts "✅ No database specific rules found for this Rails version."
-        return
+        # No rules means we didn't find anything specific to check, so it passes "vacuously" or we can say info.
+        # But for consistency let's just return empty passed.
+        return result
       end
 
       content = File.read(@schema_path)
       scan_schema(content)
-      output_results
+      
+      if @warnings.any?
+        result[:status] = @warnings.any? { |w| w[:severity] == 'critical' } ? :failed : :warning
+        @warnings.each do |w|
+           result[:checks] << {
+             message: w[:message], 
+             status: w[:severity] == 'critical' ? :failed : :warning,
+             details: w[:type]
+           }
+        end
+      end
+      
+      result
     end
-
+    
     private
 
     def scan_schema(content)
@@ -41,16 +55,7 @@ module RailsUpgradeAudit
       end
     end
 
-    def output_results
-      if @warnings.any?
-        puts "\n📉 DATABASE SCHEMA RISKS DETECTED:"
-        @warnings.each do |w|
-          icon = w[:severity] == 'critical' ? '🔴 CRITICAL:' : '⚠️ '
-          puts "\n#{icon} #{w[:message]}"
-        end
-      else
-        puts "✅ Database schema looks healthy according to version rules."
-      end
-    end
+    # output_results method removed as it is no longer used
+
   end
 end

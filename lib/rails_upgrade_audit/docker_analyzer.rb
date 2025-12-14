@@ -6,26 +6,44 @@ module RailsUpgradeAudit
     end
 
     def run
-      puts "\n[3/3] Scanning Dockerfile..."
+      result = { title: "Docker Configuration", status: :passed, checks: [] }
+      
+      dockerfile = @dockerfile_path # Use @dockerfile_path as defined in initialize
 
-      unless File.exist?(@dockerfile_path)
-        puts "⚠️  No Dockerfile found at #{@dockerfile_path}. Skipping."
-        return
+      unless File.exist?(dockerfile)
+        result[:status] = :warning
+        result[:checks] << { message: "No Dockerfile found at #{dockerfile}. Skipping.", status: :warning }
+        return result
       end
 
-      content = File.read(@dockerfile_path)
-      warnings = []
+      content = File.read(dockerfile)
+      
+      # Check Ruby version in Dockerfile
+      if match = content.match(/FROM ruby:(\S+)/)
+        docker_ruby = match[1]
+        result[:checks] << { message: "Dockerfile uses Base Image: ruby:#{docker_ruby}", status: :passed }
+      else
+        result[:checks] << { message: "Could not detect FROM ruby image in Dockerfile.", status: :warning }
+        result[:status] = :warning
+      end
 
+      # Check for typical pitfalls
+      if content.include?("bundle install") && !content.include?("without")
+        result[:status] = :warning
+        result[:checks] << { message: "Optimization: 'bundle install' should probably use '--without development test'", status: :warning }
+      end
+      
       # RULE 1: Alpine + Nokogiri/PG Trap
       if content.match?(/alpine/)
         unless content.match?(/build-base|libxml2-dev|postgresql-dev/)
-          warnings << "🔴 ALPINE RISK: Found 'alpine' base image." \
-                      "\n   Ensure 'apk add build-base libxml2-dev' is present for native extensions."
+          result[:status] = :warning
+          result[:checks] << { message: "ALPINE RISK: Found 'alpine' base image. Ensure 'apk add build-base libxml2-dev' is present for native extensions.", status: :warning }
         end
 
         # RULE 2: Timezone Trap (Alpine doesn't have tzdata by default)
         unless content.match?(/tzdata/)
-          warnings << "⚠️  TIMEZONE RISK: Alpine images miss 'tzdata'. Rails Time.zone will fail."
+          result[:status] = :warning
+          result[:checks] << { message: "TIMEZONE RISK: Alpine images miss 'tzdata'. Rails Time.zone will fail.", status: :warning }
         end
       end
 
