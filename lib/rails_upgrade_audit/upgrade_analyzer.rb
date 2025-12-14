@@ -5,9 +5,6 @@ require 'json'
 require 'yaml'
 require 'uri'
 
-# Shim for Bundler/Ruby 3.4 compatibility
-class Object; def taint; self; end; def untaint; self; end; end
-class String; def taint; self; end; def untaint; self; end; end
 
 module RailsUpgradeAudit
   class UpgradeAnalyzer
