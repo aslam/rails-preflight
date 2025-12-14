@@ -5,6 +5,14 @@ module RailsUpgradeAudit
       @dockerfile_path = File.join(root_path, "Dockerfile")
     end
 
+    def detect_ruby_version
+      return nil unless File.exist?(@dockerfile_path)
+      content = File.read(@dockerfile_path)
+      if match = content.match(/FROM ruby:(\S+)/)
+        match[1]
+      end
+    end
+
     def run
       result = { title: "Docker Configuration", status: :passed, checks: [] }
       
@@ -49,21 +57,22 @@ module RailsUpgradeAudit
 
       # RULE 3: Node/Yarn Version Trap for Webpacker
       if content.match?(/NODE_VERSION\s*=\s*['"]?1[0-2]/)
-        warnings << "⚠️  NODE JS: Detected Node 10/12. Rails 6+ (Webpacker) usually requires Node 14+."
+        result[:status] = :warning
+        result[:checks] << { message: "NODE JS: Detected Node 10/12. Rails 6+ (Webpacker) usually requires Node 14+.", status: :warning }
       end
 
       # RULE 4: PID 1 Zombie Problem
       unless content.match?(/tini|dumb-init/)
-        warnings << "⚠️  ZOMBIE PROCESSES: No init process (tini/dumb-init) detected." \
-                    "\n   Rails cannot handle signals properly as PID 1."
+        result[:status] = :warning
+        result[:checks] << { message: "ZOMBIE PROCESSES: No init process (tini/dumb-init) detected. Rails cannot handle signals properly as PID 1.", status: :warning }
       end
 
-      if warnings.any?
-        puts "\n🐳 DOCKER WARNINGS FOUND:"
-        warnings.each { |w| puts w }
-      else
-        puts "✅ Dockerfile looks clean (Standard checks passed)."
+      if result[:checks].none? { |c| c[:status] != :passed }
+         # If we didn't add any specific failures but found the file
+         # We implicitly passed.
       end
+
+      result
     end
   end
 end

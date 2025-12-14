@@ -57,6 +57,9 @@ module RailsUpgradeAudit
       if File.exist?(ruby_version_file)
         current_raw = File.read(ruby_version_file).strip
         source = ".ruby-version"
+      elsif docker_version = DockerAnalyzer.new(@project_path).detect_ruby_version
+        current_raw = docker_version
+        source = "Dockerfile"
       else
         current_raw = RUBY_VERSION
         source = "System (RUBY_VERSION)"
