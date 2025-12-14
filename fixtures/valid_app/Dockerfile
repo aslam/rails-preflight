@@ -1,4 +1,3 @@
-# syntax = docker/dockerfile:experimental
 FROM ruby:2.5.9-buster as base
 
 SHELL ["/bin/bash", "-c"]
@@ -16,39 +15,17 @@ FROM base AS prod-install
 
 RUN gem install bundler -v '1.17.3'
 
-RUN --mount=type=secret,id=GITHUB_USER --mount=type=secret,id=GITHUB_TOKEN \ 
-		GITHUB_USER="$(cat /run/secrets/GITHUB_USER)" GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" && \
-		bundle config rubygems.pkg.github.com "$GITHUB_USER:$GITHUB_TOKEN" ; \
-		EXIT_STATUS=0 ; \
-		bundle install --without development test -j4 --retry 3 || EXIT_STATUS=$? ; \
-		bundle config unset rubygems.pkg.github.com ; \
-		exit $EXIT_STATUS
+RUN bundle install --without development test -j4 --retry 3
 
 FROM prod-install AS test-install
 
-RUN --mount=type=secret,id=GITHUB_USER --mount=type=secret,id=GITHUB_TOKEN \ 
-		GITHUB_USER="$(cat /run/secrets/GITHUB_USER)" GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" && \
-		bundle config rubygems.pkg.github.com "$GITHUB_USER:$GITHUB_TOKEN" ; \
-		EXIT_STATUS=0 ; \
-		bundle install --with development test -j4 --retry 3 || EXIT_STATUS=$? ; \
-		bundle config unset rubygems.pkg.github.com ; \
-		exit $EXIT_STATUS
+RUN bundle install --with development test -j4 --retry 3
 
 FROM base AS development
 
-ARG ZSCALER_CERT
-RUN if [ ! -z "$ZSCALER_CERT" ]; then \
-		echo "$ZSCALER_CERT" > /usr/local/share/ca-certificates/zscaler-root-ca.crt && \
-		update-ca-certificates; \
-	fi
-
 RUN gem install bundler -v '1.17.3'
 	
-RUN --mount=type=secret,id=GITHUB_TOKEN \
-		GITHUB_TOKEN="$(cat /run/secrets/GITHUB_TOKEN)" && \
-		bundle config rubygems.pkg.github.com "$GITHUB_TOKEN:x-oauth-basic" ; \
-		bundle install --with development test -j4 --retry 3 && \
-		bundle config unset rubygems.pkg.github.com
+RUN bundle install --with development test -j4 --retry 3
 
 FROM ruby:2.5.9-buster as post-install
 

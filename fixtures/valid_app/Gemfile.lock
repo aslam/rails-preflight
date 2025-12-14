@@ -2,7 +2,7 @@ GEM
   remote: https://rubygems.org/
   remote: https://rubygems.pkg.github.com/example-org/
   specs:
-
+    rails (5.2.0)
 PLATFORMS
   ruby
 

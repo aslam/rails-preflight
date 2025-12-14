@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rails Upgrade Audit Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    .section { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+    .section-header { background: #f9f9f9; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
+    .section-body { padding: 15px; }
+    .item { margin-bottom: 10px; padding: 10px; border-radius: 4px; }
+    .passed { background-color: #e6fffa; border-left: 5px solid #38b2ac; }
+    .warning { background-color: #fffaf0; border-left: 5px solid #ed8936; }
+    .failed { background-color: #fff5f5; border-left: 5px solid #f56565; }
+    .badge { padding: 2px 8px; border-radius: 12px; font-size: 0.8em; color: white; }
+    .badge-passed { background-color: #38b2ac; }
+    .badge-warning { background-color: #ed8936; }
+    .badge-failed { background-color: #f56565; }
+    .meta { color: #666; font-size: 0.9em; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Rails Upgrade Audit</h1>
+  <div class="meta">
+    Target Rails Version: <strong>5.2</strong><br>
+    Generated at: 2025-12-14 16:39:01 +0530
+  </div>
+
+  
+    <div class="section">
+      <div class="section-header">
+        <span>Ruby Version</span>
+        <span class="badge badge-passed">PASSED</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item passed">
+              <strong>Ruby 2.5.9 (Dockerfile) is compatible.</strong>
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <span>Private Gems</span>
+        <span class="badge badge-warning">WARNING</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item warning">
+              <strong>Private Gems Detected</strong>
+              
+                <ul>
+                  
+                    <li>git-gem</li>
+                  
+                </ul>
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <span>Docker Configuration</span>
+        <span class="badge badge-warning">WARNING</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item passed">
+              <strong>Dockerfile uses Base Image: ruby:2.5.9-buster</strong>
+              
+            </div>
+          
+            <div class="item warning">
+              <strong>ZOMBIE PROCESSES: No init process (tini/dumb-init) detected. Rails cannot handle signals properly as PID 1.</strong>
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <span>Deprecation Warnings</span>
+        <span class="badge badge-passed">PASSED</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item passed">
+              <strong>No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)</strong>
+              
+            </div>
+          
+            <div class="item warning">
+              <strong>💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.</strong>
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <span>Configuration</span>
+        <span class="badge badge-warning">WARNING</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item failed">
+              <strong>❓  CONFIG: config/application.rb not found.</strong>
+              
+            </div>
+          
+            <div class="item warning">
+              <strong>ℹ️  CONFIG: No 'new_framework_defaults' initializer found. Make sure you run 'rails app:update'.</strong>
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <span>Database Schema</span>
+        <span class="badge badge-warning">WARNING</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item warning">
+              <strong>No db/schema.rb found. Skipping database checks.</strong>
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+
+</body>
+</html>
