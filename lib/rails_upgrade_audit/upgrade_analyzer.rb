@@ -29,6 +29,7 @@ module RailsUpgradeAudit
       DockerAnalyzer.new(@project_path).run
       DeprecationAnalyzer.new(@project_path).run
       ConfigAnalyzer.new(@project_path).run
+      DatabaseAnalyzer.new(@project_path, @rules['rails_versions'][@target_rails]['database_rules']).run
     end
 
     private
