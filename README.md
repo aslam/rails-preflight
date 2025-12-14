@@ -42,18 +42,18 @@ bin/rails-upgrade-audit 6.1 /path/to/your/app
 ```
 
 ## Features:
-
-- **Ruby Version Checks:** Ensures compatibility between your lockfile and target Rails version.
-- **Deprecation Audit:** Scans code for deprecated Rails methods (e.g. `update_attributes`).
-- **Configuration Check:** Verifies critical files like `config/application.rb` for upgrades.
-- **Docker Analysis:** Checks for common Docker pitfalls (Alpine packages, PID 1 issues).
-- **Private Gem Detection:** Highlights internal gems that might block upgrades.
-
-## Roadmap / Future Ideas:
-
-- **Database Analysis:** Detecting schema issues like 4-byte integers in large tables or missing foreign keys.
-- **Asset Pipeline Check:** Verifying Node/Yarn versions and precompilation config.
-- **Full Compatibility Report:** Generating a comprehensive HTML/JSON report of the audit.
-- **Dynamic Data:** Downloading the latest compatibility databases on the fly.
-- **Changelog Analysis:** Cross-referencing your code against Rails changelogs for specific deprecations.
-
+ 
+ - **HTML Report Generation:** Generates a self-contained `upgrade_audit.html` report to share with stakeholders. 📊
+ - **Database Schema Analysis:** Detects risks like 4-byte integer overflows and legacy MySQL charsets, customized for your target Rails version. 🗄️
+ - **Hybrid Code Analysis:** 
+    - **Triage:** Fast regex-based scan for major blockers (e.g. `update_attributes`).
+    - **Advisory:** Checks for `rubocop-rails` and generates a config to help you deep clean your code. 🤖
+ - **Ruby Version Checks:** Ensures compatibility between your lockfile and target Rails version.
+ - **Configuration Check:** Verifies critical files like `config/application.rb` for upgrades.
+ - **Docker Analysis:** Checks for common Docker pitfalls (Alpine packages, PID 1 issues).
+ - **Private Gem Detection:** Highlights internal gems that might block upgrades.
+ 
+ ## Roadmap / Future Ideas:
+ 
+ - **Asset Pipeline Check:** Verifying Node/Yarn versions and precompilation config.
+ - **Dynamic Data:** Downloading the latest compatibility databases on the fly.
