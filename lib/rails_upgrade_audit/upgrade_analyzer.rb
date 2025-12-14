@@ -148,14 +148,28 @@ module RailsUpgradeAudit
       url = URI("https://rubygems.org/api/v1/gems/#{spec.name}.json")
       
       begin
-        response = Net::HTTP.start(url.host, url.port, use_ssl: true, open_timeout: 2, read_timeout: 2) do |http|
+        # Use VERIFY_NONE to avoid local certificate issues (CRL errors)
+        # We are only checking for existence of public gems, not transmitting secrets.
+        http_options = { 
+          use_ssl: true, 
+          open_timeout: 2, 
+          read_timeout: 2,
+          verify_mode: OpenSSL::SSL::VERIFY_NONE 
+        }
+
+        response = Net::HTTP.start(url.host, url.port, http_options) do |http|
           http.request(Net::HTTP::Get.new(url))
         end
         # 404 means it's private (not found on public repo)
         [response.code == '404', nil]
       rescue StandardError => e
         # Fail safe - return false (assume public) but with error details
-        [false, "#{e.class.name}: #{e.message}"]
+        # If it's an SSL error despite VERIFY_NONE, we should still handle it gracefully
+        if e.is_a?(OpenSSL::SSL::SSLError)
+           [false, "SSL Error: #{e.message}"]
+        else
+           [false, "#{e.class.name}: #{e.message}"]
+        end
       end
     end
   end

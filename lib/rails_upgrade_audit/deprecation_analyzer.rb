@@ -1,11 +1,11 @@
-# lib/rails_upgrade_audit/deprecation_analyzer.rb
 module RailsUpgradeAudit
+  require 'pathname'
   class DeprecationAnalyzer
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
 
-    def initialize(root_path = Dir.pwd)
+    def initialize(root_path = Dir.pwd, database_path = DATA_PATH)
       @root_path = root_path
-      @rules = YAML.load_file(DATA_PATH)
+      @rules = YAML.load_file(database_path)
     end
 
     def run
@@ -15,16 +15,34 @@ module RailsUpgradeAudit
 
       @rules['deprecations'].each do |rule|
         regex = Regexp.new(rule['pattern'])
-        warnings.concat(scan_files(regex, rule['message']))
+        # Pass the whole rule to scan_files
+        warnings.concat(scan_files(regex, rule))
       end
 
       if warnings.any?
         result[:status] = :warning
         warnings.each do |w|
-          result[:checks] << { message: w, status: :warning }
+          # w is now a structured hash
+          # Construct a rich message for the simple check output, 
+          # but we could also pass the structured data in `details` if the ReportGenerator supports it.
+          # For now, let's keep the message informative and compatible.
+          
+          msg = "[#{w[:confidence]} Confidence] #{w[:message]}\n" \
+                "   Found in: #{w[:file]}:#{w[:line]}\n" \
+                "   Snippet: `#{w[:snippet]}`"
+          
+          if w[:guide_link]
+             msg += "\n   Guide: #{w[:guide_link]}" 
+          end
+
+          result[:checks] << { 
+            message: msg, 
+            status: :warning, 
+            details: w 
+          }
         end
       else
-      result[:checks] << { message: "No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)", status: :passed }
+        result[:checks] << { message: "No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)", status: :passed }
       end
       
       # Rubocop Advisory Check
@@ -53,7 +71,7 @@ module RailsUpgradeAudit
       content.include?("rubocop-rails")
     end
 
-    def scan_files(regex, message)
+    def scan_files(regex, rule)
       found = []
       # Naive generic scan of app/ and lib/
       target_files = Dir.glob(File.join(@root_path, "{app,lib,test,spec}/**/*"))
@@ -66,7 +84,17 @@ module RailsUpgradeAudit
         content.each_line.with_index(1) do |line, line_num|
           if line.match?(regex)
             relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path))
-            found << "#{message}\n   Example: #{relative_path}:#{line_num}: #{line.strip}"
+            
+            found << {
+              message: rule['message'],
+              file: relative_path.to_s,
+              line: line_num,
+              snippet: line.strip,
+              confidence: rule['confidence'] || "Unknown",
+              guide_link: rule['guide_link'],
+              recategorization: rule['recategorization'],
+              severity: rule['severity']
+            }
           end
         end
       end
