@@ -91,6 +91,9 @@ module RailsUpgradeAudit
 
         content = File.read(file)
         content.each_line.with_index(1) do |line, line_num|
+          # Skip method definitions to avoid false positives (e.g. "def update_attributes")
+          next if line.lstrip.start_with?("def ")
+
           if line.match?(regex)
             relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path))
             

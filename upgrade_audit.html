@@ -35,7 +35,7 @@
   <h1>Rails Upgrade Audit</h1>
   <div class="meta">
     Target Rails Version: <strong>5.2</strong><br>
-    Generated at: 2025-12-15 16:00:14 +0530
+    Generated at: 2025-12-15 16:15:49 +0530
   </div>
 
   
@@ -181,8 +181,8 @@
                 
                 <!-- Stats Row -->
                 <div style="display: flex; gap: 15px; font-size: 0.85em; color: #555; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
-                  <span>Occurrences: <strong>2</strong></span>
-                  <span>Files: <strong>1</strong></span>
+                  <span>Occurrences: <strong>4</strong></span>
+                  <span>Files: <strong>3</strong></span>
                   <span>Models: <strong>0</strong></span>
                   <span>Controllers: <strong>0</strong></span>
                 </div>
@@ -190,7 +190,7 @@
                 <!-- Expandable Details -->
                 <details>
                   <summary style="cursor: pointer; color: #3182ce; font-weight: 500; font-size: 0.9em; margin-bottom: 10px;">
-                    Expand to see 2 individual instances
+                    Expand to see 4 individual instances
                   </summary>
                   
                   <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 300px; overflow-y: auto;">
@@ -205,6 +205,12 @@
                       <tbody>
                         
                           <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">lib/rails_upgrade_audit/deprecation_analyzer.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">94</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;"># Skip method definitions to avoid false positives (e.g. "def update_attributes")</td>
+                          </tr>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
                             <td style="padding: 8px; color: #4a5568;">test/deprecation_analyzer_test.rb</td>
                             <td style="padding: 8px; color: #4a5568;">46</td>
                             <td style="padding: 8px; font-family: monospace; color: #c53030;"># The real rule is `update_attributes!?`.</td>
@@ -214,6 +220,12 @@
                             <td style="padding: 8px; color: #4a5568;">test/deprecation_analyzer_test.rb</td>
                             <td style="padding: 8px; color: #4a5568;">48</td>
                             <td style="padding: 8px; font-family: monospace; color: #c53030;">File.write(File.join(@app_dir, "user.rb"), "User.update_attributes(name: 'foo')")</td>
+                          </tr>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">test/false_positives.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">14</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;">user.update_attributes(name: "foo")</td>
                           </tr>
                         
                       </tbody>

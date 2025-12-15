@@ -41,8 +41,20 @@ cd rails-upgrade-audit
 bin/rails-upgrade-audit 6.1 /path/to/your/app
 ```
 
-## Features:
+ ## Features:
  
+- **Executive Summary:** High-level dashboard showing Target Rails Version, Overall Risk, and Estimated Effort. 📊
+- **Upgrade Risk Score:** A quantitative score (out of 40) to help prioritize upgrades.
+    - _Scoring Model (Heuristic):_
+        - **Private Gems:** +3 points each (Unknown compatibility risk)
+        - **Ruby Blocker:** +5 points (Incompatible Ruby version)
+        - **Docker Issues:** +2 points (Infrastructure risk)
+        - **Deprecations:** +0.2 points each (Capped at 10 points)
+- **Fixability Metadata:** Classification of findings by effort (`low`, `medium`, `high`, `unknown`).
+- **Grouped Findings:** Deprecations are aggregated by message to reduce noise, with expandable individual instances.
+- **Smart False-Positive Handling:**
+    - Detects word boundaries to avoid partial matches (e.g. `order_taker_update_attributes`).
+    - Ignores method definitions (`def ...`) to allow overrides without noise.
  - **HTML Report Generation:** Generates a self-contained `upgrade_audit.html` report to share with stakeholders. 📊
  - **Database Schema Analysis:** Detects risks like 4-byte integer overflows and legacy MySQL charsets, customized for your target Rails version. 🗄️
  - **Hybrid Code Analysis:** 
@@ -57,7 +69,7 @@ bin/rails-upgrade-audit 6.1 /path/to/your/app
  
  - **Asset Pipeline Check:** Verifying Node/Yarn versions and precompilation config.
  - **Dynamic Data:** Downloading the latest compatibility databases on the fly.
-
+ - **Tuning:** The risk score weights are currently hardcoded and may need tuning based on real-world usage.
 
 ## Next Steps
 - Tune the risk calculation thresholds as we get more real-world data.
