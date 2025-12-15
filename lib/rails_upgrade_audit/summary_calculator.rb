@@ -8,11 +8,38 @@ module RailsUpgradeAudit
       {
         overall_risk: calculate_risk,
         estimated_effort: calculate_effort,
-        primary_blockers: identify_blockers
+        primary_blockers: identify_blockers,
+        upgrade_score: calculate_score
       }
     end
 
     private
+
+    def calculate_score
+      score = 0
+      
+      # 1. Private Gems (+3 each)
+      score += count_private_gems * 3
+      
+      # 2. Ruby Version (+5 if blocker)
+      ruby_check = @results.find { |r| r[:title] == "Ruby Version" }
+      if ruby_check && ruby_check[:status] == :failed
+        score += 5
+      end
+      
+      # 3. Docker Issues (+2 if warnings/failed)
+      docker_check = @results.find { |r| r[:title] == "Docker Analysis" }
+      if docker_check && (docker_check[:status] == :warning || docker_check[:status] == :failed)
+        score += 2
+      end
+      
+      # 4. Deprecations (+0.2 each, capped at 10)
+      deprecations_score = count_deprecations * 0.2
+      score += [deprecations_score, 10.0].min
+      
+      # Return scaled string "X / 40"
+      "#{score.round(1)} / 40"
+    end
 
     def calculate_risk
       # Risk Logic:

@@ -35,7 +35,7 @@
   <h1>Rails Upgrade Audit</h1>
   <div class="meta">
     Target Rails Version: <strong>5.2</strong><br>
-    Generated at: 2025-12-15 15:30:14 +0530
+    Generated at: 2025-12-15 15:40:26 +0530
   </div>
 
   
@@ -45,6 +45,10 @@
         <div class="summary-item">
           <div class="summary-label">Target Rails</div>
           <div class="summary-value">5.2</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Risk Score</div>
+          <div class="summary-value">8.2 / 40</div>
         </div>
         <div class="summary-item">
           <div class="summary-label">Overall Risk</div>
@@ -159,8 +163,8 @@
                 
                 <!-- Stats Row -->
                 <div style="display: flex; gap: 15px; font-size: 0.85em; color: #555; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
-                  <span>Occurrences: <strong>6</strong></span>
-                  <span>Files: <strong>2</strong></span>
+                  <span>Occurrences: <strong>2</strong></span>
+                  <span>Files: <strong>1</strong></span>
                   <span>Models: <strong>0</strong></span>
                   <span>Controllers: <strong>0</strong></span>
                 </div>
@@ -168,7 +172,7 @@
                 <!-- Expandable Details -->
                 <details>
                   <summary style="cursor: pointer; color: #3182ce; font-weight: 500; font-size: 0.9em; margin-bottom: 10px;">
-                    Expand to see 6 individual instances
+                    Expand to see 2 individual instances
                   </summary>
                   
                   <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 300px; overflow-y: auto;">
@@ -192,30 +196,6 @@
                             <td style="padding: 8px; color: #4a5568;">test/deprecation_analyzer_test.rb</td>
                             <td style="padding: 8px; color: #4a5568;">48</td>
                             <td style="padding: 8px; font-family: monospace; color: #c53030;">File.write(File.join(@app_dir, "user.rb"), "User.update_attributes(name: 'foo')")</td>
-                          </tr>
-                        
-                          <tr style="border-bottom: 1px solid #edf2f7;">
-                            <td style="padding: 8px; color: #4a5568;">test/dummy_deprecations.rb</td>
-                            <td style="padding: 8px; color: #4a5568;">3</td>
-                            <td style="padding: 8px; font-family: monospace; color: #c53030;">update_attributes(name: "John")</td>
-                          </tr>
-                        
-                          <tr style="border-bottom: 1px solid #edf2f7;">
-                            <td style="padding: 8px; color: #4a5568;">test/dummy_deprecations.rb</td>
-                            <td style="padding: 8px; color: #4a5568;">4</td>
-                            <td style="padding: 8px; font-family: monospace; color: #c53030;">update_attributes(email: "test@test.com")</td>
-                          </tr>
-                        
-                          <tr style="border-bottom: 1px solid #edf2f7;">
-                            <td style="padding: 8px; color: #4a5568;">test/dummy_deprecations.rb</td>
-                            <td style="padding: 8px; color: #4a5568;">8</td>
-                            <td style="padding: 8px; font-family: monospace; color: #c53030;">update_attributes(status: "active")</td>
-                          </tr>
-                        
-                          <tr style="border-bottom: 1px solid #edf2f7;">
-                            <td style="padding: 8px; color: #4a5568;">test/dummy_deprecations.rb</td>
-                            <td style="padding: 8px; color: #4a5568;">14</td>
-                            <td style="padding: 8px; font-family: monospace; color: #c53030;">update_attributes(published: true)</td>
                           </tr>
                         
                       </tbody>

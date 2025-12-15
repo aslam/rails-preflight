@@ -54,4 +54,42 @@ class SummaryCalculatorTest < Minitest::Test
     assert_equal "Large", summary[:estimated_effort]
     assert_includes summary[:primary_blockers], "BLOCKER: Ruby too old"
   end
+  def test_calculate_score
+    results = [
+      { 
+        title: "Private Gems", 
+        status: :warning, 
+        checks: [
+          { message: "Private Gems Detected", status: :warning, details: ["a", "b"] } # 2 * 3 = 6
+        ] 
+      },
+      { 
+        title: "Ruby Version", 
+        status: :failed, 
+        checks: [{ message: "BLOCKER", status: :failed }] # +5
+      },
+      {
+        title: "Docker Analysis",
+        status: :warning,
+        checks: [] # +2
+      },
+      {
+        title: "Deprecation Warnings",
+        status: :warning,
+        checks: [
+            { status: :warning, message: "Deprecation A" },
+            { status: :warning, message: "Deprecation B" },
+            { status: :warning, message: "Deprecation C" },
+            { status: :warning, message: "Deprecation D" },
+            { status: :warning, message: "Deprecation E" } 
+        ] # 5 * 0.2 = 1.0
+      }
+    ]
+    # Total: 6 + 5 + 2 + 1.0 = 14.0
+
+    calculator = RailsUpgradeAudit::SummaryCalculator.new(results)
+    summary = calculator.calculate
+
+    assert_equal "14.0 / 40", summary[:upgrade_score]
+  end
 end

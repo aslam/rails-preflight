@@ -59,6 +59,10 @@ module RailsUpgradeAudit
                   <div class="summary-value"><%= @data[:target_rails] %></div>
                 </div>
                 <div class="summary-item">
+                  <div class="summary-label">Risk Score</div>
+                  <div class="summary-value"><%= @data[:summary][:upgrade_score] %></div>
+                </div>
+                <div class="summary-item">
                   <div class="summary-label">Overall Risk</div>
                   <div class="summary-value risk-<%= @data[:summary][:overall_risk].downcase %>">
                     <%= @data[:summary][:overall_risk] %>
