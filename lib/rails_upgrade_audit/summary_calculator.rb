@@ -93,9 +93,11 @@ module RailsUpgradeAudit
       end
 
       # 3. Deprecations
-      deprecation_count = count_deprecations
-      if deprecation_count > 0
-        blockers << "#{deprecation_count} Rails deprecations found"
+      distinct_count = count_deprecations
+      total_count = total_deprecation_occurrences
+      
+      if distinct_count > 0
+        blockers << "#{distinct_count} distinct deprecation types (#{total_count} total occurrences)"
       end
 
       # 4. Incomplete Analysis
@@ -116,6 +118,18 @@ module RailsUpgradeAudit
       return 0 if section[:status] == :passed
 
       section[:checks].count { |c| c[:status] == :warning && !c[:message].start_with?("💡 Recommendation") }
+    end
+
+    def total_deprecation_occurrences
+      section = @results.find { |r| r[:title] == "Deprecation Warnings" }
+      return 0 unless section
+      return 0 if section[:status] == :passed
+
+      # Sum up occurrences from stats if available, otherwise just count the entries
+      section[:checks].sum do |c| 
+        next 0 unless c[:status] == :warning && !c[:message].start_with?("💡 Recommendation")
+        c.dig(:stats, :occurrences) || 1
+      end
     end
 
     def count_private_gems

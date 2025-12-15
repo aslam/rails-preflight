@@ -92,4 +92,24 @@ class SummaryCalculatorTest < Minitest::Test
 
     assert_equal "14.0 / 40", summary[:upgrade_score]
   end
+
+  def test_calculate_deprecation_occurrences
+    results = [
+      {
+        title: "Deprecation Warnings",
+        status: :warning,
+        checks: [
+          { status: :warning, message: "Deprecation A", stats: { occurrences: 10 } },
+          { status: :warning, message: "Deprecation B", stats: { occurrences: 5 } },
+          { status: :warning, message: "Deprecation C" } # Default to 1
+        ]
+      }
+    ]
+
+    calculator = RailsUpgradeAudit::SummaryCalculator.new(results)
+    summary = calculator.calculate
+
+    # 3 distinct types, 10 + 5 + 1 = 16 total occurrences
+    assert_includes summary[:primary_blockers], "3 distinct deprecation types (16 total occurrences)"
+  end
 end
