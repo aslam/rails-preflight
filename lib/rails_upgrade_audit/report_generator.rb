@@ -31,6 +31,16 @@ module RailsUpgradeAudit
             .badge-warning { background-color: #ed8936; }
             .badge-failed { background-color: #f56565; }
             .meta { color: #666; font-size: 0.9em; margin-bottom: 20px; }
+            .summary-card { background: #f0f4f8; border: 1px solid #d9e2ec; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+            .summary-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #102a43; border-bottom: 1px solid #bcccdc; padding-bottom: 10px; }
+            .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+            .summary-item { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            .summary-label { font-size: 0.8em; color: #486581; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+            .summary-value { font-size: 1.4em; font-weight: bold; }
+            .risk-high { color: #e53e3e; }
+            .risk-medium { color: #dd6b20; }
+            .risk-low { color: #38a169; }
+            .blockers-list { margin: 0; padding-left: 20px; font-size: 0.9em; color: #e53e3e; }
           </style>
         </head>
         <body>
@@ -39,6 +49,40 @@ module RailsUpgradeAudit
             Target Rails Version: <strong><%= @data[:target_rails] %></strong><br>
             Generated at: <%= @generated_at %>
           </div>
+
+          <% if @data[:summary] %>
+            <div class="summary-card">
+              <div class="summary-title">Upgrade Readiness Summary</div>
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <div class="summary-label">Target Rails</div>
+                  <div class="summary-value"><%= @data[:target_rails] %></div>
+                </div>
+                <div class="summary-item">
+                  <div class="summary-label">Overall Risk</div>
+                  <div class="summary-value risk-<%= @data[:summary][:overall_risk].downcase %>">
+                    <%= @data[:summary][:overall_risk] %>
+                  </div>
+                </div>
+                <div class="summary-item">
+                  <div class="summary-label">Estimated Effort</div>
+                  <div class="summary-value"><%= @data[:summary][:estimated_effort] %></div>
+                </div>
+                <div class="summary-item" style="grid-column: span 1 / -1;">
+                  <div class="summary-label">Primary Blockers</div>
+                  <% if @data[:summary][:primary_blockers].any? %>
+                    <ul class="blockers-list">
+                      <% @data[:summary][:primary_blockers].each do |blocker| %>
+                        <li><%= blocker %></li>
+                      <% end %>
+                    </ul>
+                  <% else %>
+                    <div style="color: #38a169; font-weight: bold;">None detected! 🎉</div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
 
           <% @data[:results].each do |section| %>
             <div class="section">

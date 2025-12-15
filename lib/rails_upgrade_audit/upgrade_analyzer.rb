@@ -4,6 +4,7 @@ require 'net/http'
 require 'json'
 require 'yaml'
 require 'uri'
+require_relative 'summary_calculator'
 
 
 module RailsUpgradeAudit
@@ -33,6 +34,10 @@ module RailsUpgradeAudit
         target_rails: @target_rails,
         results: results
       }
+
+      # Calculate Summary
+      summary_calc = SummaryCalculator.new(results)
+      report_data[:summary] = summary_calc.calculate
 
       html = ReportGenerator.new(report_data).generate
       

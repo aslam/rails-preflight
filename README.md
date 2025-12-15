@@ -57,3 +57,8 @@ bin/rails-upgrade-audit 6.1 /path/to/your/app
  
  - **Asset Pipeline Check:** Verifying Node/Yarn versions and precompilation config.
  - **Dynamic Data:** Downloading the latest compatibility databases on the fly.
+
+
+## Next Steps
+- Tune the risk calculation thresholds as we get more real-world data.
+- Add more granular checks (e.g. database compatibility info in summary).
