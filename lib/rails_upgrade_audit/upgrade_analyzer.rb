@@ -19,7 +19,7 @@ module RailsUpgradeAudit
     end
 
     def run
-      puts "🔍 Starting Audit for Rails #{@target_rails} (Generating HTML Report)..."
+      puts "🔍 Starting Audit for Rails #{@target_rails}..."
       
       results = []
       
@@ -90,7 +90,13 @@ module RailsUpgradeAudit
         result[:status] = :failed
         result[:checks] << { message: "BLOCKER: Rails #{@target_rails} is NOT compatible with Ruby #{current_ver}. (Max recommended: #{max_ver}).", status: :failed, fix_effort: :high }
       else
-        result[:checks] << { message: "Ruby #{current_ver} (#{source}) is compatible.", status: :passed, fix_effort: :low }
+        result[:checks] << { message: "Ruby #{current_ver} (#{source}) is compatible with Rails #{@target_rails}.", status: :passed, fix_effort: :low }
+      end
+
+      # EOL Check (Ruby < 3.1 is generally considered EOL for modern standards or soon to be)
+      if current_ver < Gem::Version.new("3.1")
+        result[:status] = :warning if result[:status] == :passed
+        result[:checks] << { message: "EOL Ruby: Ruby #{current_ver} is End-of-Life. Upgrade to Ruby 3.1+.", status: :warning, fix_effort: :high }
       end
       
       result

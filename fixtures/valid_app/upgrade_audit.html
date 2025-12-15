@@ -19,26 +19,89 @@
     .badge-warning { background-color: #ed8936; }
     .badge-failed { background-color: #f56565; }
     .meta { color: #666; font-size: 0.9em; margin-bottom: 20px; }
+    .summary-card { background: #f0f4f8; border: 1px solid #d9e2ec; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    .summary-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #102a43; border-bottom: 1px solid #bcccdc; padding-bottom: 10px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .summary-item { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .summary-label { font-size: 0.8em; color: #486581; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+    .summary-value { font-size: 1.4em; font-weight: bold; }
+    .risk-high { color: #e53e3e; }
+    .risk-medium { color: #dd6b20; }
+    .risk-low { color: #38a169; }
+    .blockers-list { margin: 0; padding-left: 20px; font-size: 0.9em; color: #e53e3e; }
   </style>
 </head>
 <body>
   <h1>Rails Upgrade Audit</h1>
   <div class="meta">
-    Target Rails Version: <strong>5.2</strong><br>
-    Generated at: 2025-12-14 16:39:01 +0530
+    Target Rails Version: <strong>6.0</strong><br>
+    Generated at: 2025-12-15 16:27:23 +0530
   </div>
+
+  
+    <div class="summary-card">
+      <div class="summary-title">Upgrade Readiness Summary</div>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-label">Target Rails</div>
+          <div class="summary-value">6.0</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Risk Score</div>
+          <div class="summary-value">0.0 / 40</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Overall Risk</div>
+          <div class="summary-value risk-high">
+            High
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Estimated Effort</div>
+          <div class="summary-value">Small</div>
+        </div>
+        <div class="summary-item" style="grid-column: span 1 / -1;">
+          <div class="summary-label">Primary Blockers</div>
+          
+            <div style="color: #38a169; font-weight: bold;">None detected! 🎉</div>
+          
+        </div>
+      </div>
+    </div>
+  
 
   
     <div class="section">
       <div class="section-header">
         <span>Ruby Version</span>
-        <span class="badge badge-passed">PASSED</span>
+        <span class="badge badge-warning">WARNING</span>
       </div>
       <div class="section-body">
         
           
             <div class="item passed">
-              <strong>Ruby 2.5.9 (Dockerfile) is compatible.</strong>
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>Ruby 2.5.9 (Dockerfile) is compatible with Rails 6.0.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>EOL Ruby: Ruby 2.5.9 is End-of-Life. Upgrade to Ruby 3.1+.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: HIGH</span>
+                  
+                </div>
+                
               
             </div>
           
@@ -49,19 +112,21 @@
     <div class="section">
       <div class="section-header">
         <span>Private Gems</span>
-        <span class="badge badge-warning">WARNING</span>
+        <span class="badge badge-passed">PASSED</span>
       </div>
       <div class="section-body">
         
           
-            <div class="item warning">
-              <strong>Private Gems Detected</strong>
+            <div class="item passed">
               
-                <ul>
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>No private gems detected.</strong>
                   
-                    <li>git-gem</li>
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
                   
-                </ul>
+                </div>
+                
               
             </div>
           
@@ -78,12 +143,67 @@
         
           
             <div class="item passed">
-              <strong>Dockerfile uses Base Image: ruby:2.5.9-buster</strong>
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>Dockerfile uses Base Image: ruby:2.5.9-buster</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
               
             </div>
           
             <div class="item warning">
-              <strong>ZOMBIE PROCESSES: No init process (tini/dumb-init) detected. Rails cannot handle signals properly as PID 1.</strong>
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>ZOMBIE PROCESSES: No init process (tini/dumb-init) detected. Rails cannot handle signals properly as PID 1.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>EOL Ruby: Ruby 2.5 is End-of-Life. Upgrade to Ruby 3.1+.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: HIGH</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>Locale: Missing 'ENV LANG' or 'ENV LC_ALL'. This can cause encoding issues.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>Timezone: 'tzdata' package seems missing. Rails Time.zone requires it.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
               
             </div>
           
@@ -100,12 +220,24 @@
         
           
             <div class="item passed">
-              <strong>No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)</strong>
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)</strong>
+                  
+                </div>
+                
               
             </div>
           
             <div class="item warning">
-              <strong>💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.</strong>
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.</strong>
+                  
+                </div>
+                
               
             </div>
           
@@ -122,12 +254,24 @@
         
           
             <div class="item failed">
-              <strong>❓  CONFIG: config/application.rb not found.</strong>
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>❓  CONFIG: config/application.rb not found.</strong>
+                  
+                </div>
+                
               
             </div>
           
             <div class="item warning">
-              <strong>ℹ️  CONFIG: No 'new_framework_defaults' initializer found. Make sure you run 'rails app:update'.</strong>
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>ℹ️  CONFIG: No 'new_framework_defaults' initializer found. Make sure you run 'rails app:update'.</strong>
+                  
+                </div>
+                
               
             </div>
           
@@ -144,7 +288,13 @@
         
           
             <div class="item warning">
-              <strong>No db/schema.rb found. Skipping database checks.</strong>
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>No db/schema.rb found. Skipping database checks.</strong>
+                  
+                </div>
+                
               
             </div>
           
