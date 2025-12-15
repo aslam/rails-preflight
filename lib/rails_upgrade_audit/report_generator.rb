@@ -41,6 +41,9 @@ module RailsUpgradeAudit
             .risk-medium { color: #dd6b20; }
             .risk-low { color: #38a169; }
             .blockers-list { margin: 0; padding-left: 20px; font-size: 0.9em; color: #e53e3e; }
+            .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.9em; }
+            .legend { display: inline-flex; gap: 20px; align-items: center; justify-content: center; margin-top: 10px; }
+            .legend-item { display: flex; align-items: center; gap: 8px; }
           </style>
         </head>
         <body>
@@ -172,6 +175,19 @@ module RailsUpgradeAudit
               </div>
             </div>
           <% end %>
+
+          <div class="footer">
+            <div class="legend">
+              <div class="legend-item">
+                <strong>Severity:</strong> Upgrade blocking impact
+              </div>
+              <span style="color: #cbd5e0;">|</span>
+              <div class="legend-item">
+                <strong>Fix Effort:</strong> Implementation cost
+              </div>
+            </div>
+            <p style="margin-top: 10px;">Rauls Upgrade Audit Tool</p>
+          </div>
 
         </body>
         </html>
