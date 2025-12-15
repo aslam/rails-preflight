@@ -112,4 +112,33 @@ class SummaryCalculatorTest < Minitest::Test
     # 3 distinct types, 10 + 5 + 1 = 16 total occurrences
     assert_includes summary[:primary_blockers], "3 distinct deprecation types (16 total occurrences)"
   end
+
+  def test_generate_suggested_path
+    results = [
+      {
+        title: "Ruby Version",
+        status: :failed,
+        checks: [{ message: "BLOCKER: Need Ruby 3.1", status: :failed }]
+      },
+      {
+        title: "Private Gems",
+        status: :warning,
+        checks: [{ message: "Private Gems Detected", status: :warning, details: ["private_gem"] }]
+      },
+      {
+         title: "Deprecation Warnings",
+         status: :warning,
+         checks: [{ status: :warning, message: "Deprecation A", stats: { occurrences: 1 } }]
+      }
+    ]
+
+    calculator = RailsUpgradeAudit::SummaryCalculator.new(results, "7.1")
+    summary = calculator.calculate
+    path = summary[:suggested_path]
+
+    assert_includes path, "Upgrade Ruby (Blocker detected: BLOCKER: Need Ruby 3.1)"
+    assert_includes path, "Audit 1 Private Gems for Rails 7.1 readiness"
+    assert_includes path, "Fix 1 distinct deprecation patterns (e.g. update_attributes, etc.)"
+    assert_includes path, "Proceed with Rails Upgrade: ... -> 7.1"
+  end
 end

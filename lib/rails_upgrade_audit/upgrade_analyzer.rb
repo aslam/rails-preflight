@@ -36,7 +36,7 @@ module RailsUpgradeAudit
       }
 
       # Calculate Summary
-      summary_calc = SummaryCalculator.new(results)
+      summary_calc = SummaryCalculator.new(results, @target_rails)
       report_data[:summary] = summary_calc.calculate
 
       html = ReportGenerator.new(report_data).generate

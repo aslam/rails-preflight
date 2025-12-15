@@ -89,6 +89,19 @@ module RailsUpgradeAudit
                 </div>
               </div>
             </div>
+
+            <% if @data[:summary][:suggested_path] && @data[:summary][:suggested_path].any? %>
+              <div class="summary-card" style="border-left: 5px solid #38b2ac;">
+                <div class="summary-title" style="color: #234e52; border-bottom-color: #38b2ac;">🚀 Suggested Upgrade Path</div>
+                <div style="background: #fff; padding: 15px; border-radius: 4px;">
+                  <ol style="margin: 0; padding-left: 20px; font-size: 1.1em;">
+                    <% @data[:summary][:suggested_path].each do |step| %>
+                      <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;"><%= step %></li>
+                    <% end %>
+                  </ol>
+                </div>
+              </div>
+            <% end %>
           <% end %>
 
           <% @data[:results].each do |section| %>

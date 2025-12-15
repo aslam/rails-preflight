@@ -1,7 +1,8 @@
 module RailsUpgradeAudit
   class SummaryCalculator
-    def initialize(results)
+    def initialize(results, target_rails = "Unknown")
       @results = results
+      @target_rails = target_rails
     end
 
     def calculate
@@ -9,7 +10,8 @@ module RailsUpgradeAudit
         overall_risk: calculate_risk,
         estimated_effort: calculate_effort,
         primary_blockers: identify_blockers,
-        upgrade_score: calculate_score
+        upgrade_score: calculate_score,
+        suggested_path: generate_suggested_path
       }
     end
 
@@ -107,6 +109,44 @@ module RailsUpgradeAudit
       end
 
       blockers
+    end
+
+    def generate_suggested_path
+      steps = []
+      
+      # Step 1: Ruby Version
+      ruby_check = @results.find { |r| r[:title] == "Ruby Version" }
+      if ruby_check
+        failed = ruby_check[:checks].find { |c| c[:status] == :failed }
+        if failed
+          # Extract required version if possible or generic message
+          steps << "Upgrade Ruby (Blocker detected: #{failed[:message]})"
+        elsif ruby_check[:status] == :warning
+          steps << "Plan Ruby Upgrade (Warnings detected)"
+        end
+      end
+      
+      # Step 2: Private Gems
+      if count_private_gems > 0
+        steps << "Audit #{count_private_gems} Private Gems for Rails #{@target_rails} readiness"
+      end
+
+      # Step 3: Deprecations
+      dep_count = count_deprecations
+      if dep_count > 0
+        steps << "Fix #{dep_count} distinct deprecation patterns (e.g. update_attributes, etc.)"
+      end
+
+      # Step 4: Docker
+      docker_check = @results.find { |r| r[:title] == "Docker Analysis" }
+      if docker_check && docker_check[:status] != :passed
+        steps << "Update Dockerfile (Init process / Entrypoint adjustments)"
+      end
+
+      # Step 5: Final Upgrade
+      steps << "Proceed with Rails Upgrade: ... -> #{@target_rails}"
+      
+      steps
     end
 
     def count_deprecations
