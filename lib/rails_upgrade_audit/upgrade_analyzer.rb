@@ -51,7 +51,7 @@ module RailsUpgradeAudit
     private
 
     def check_ruby_version
-      result = { title: "Ruby Version", status: :passed, checks: [] }
+      result = { title: "Ruby Version", status: :passed, checks: [], confidence: :high }
       puts "\n[1/2] Checking Ruby Version..."
 
       # 1. Detect Current Ruby
@@ -103,7 +103,7 @@ module RailsUpgradeAudit
     end
 
     def scan_gems
-      result = { title: "Private Gems", status: :passed, checks: [] }
+      result = { title: "Private Gems", status: :passed, checks: [], confidence: :high }
       puts "\n[2/2] Scanning Gems..."
 
       # ... (omitted gem scanning logic for brevity, assuming it doesn't change)

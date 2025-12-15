@@ -43,6 +43,9 @@ bin/rails-upgrade-audit 6.1 /path/to/your/app
 
  ## Features:
  
+- **Confidence Scoring:** Each section is badged with a confidence level (`High`, `Medium`, `Low`) to help you gauge trust in the findings. 🔒
+- **Suggested Upgrade Path:** Auto-generated, step-by-step upgrade plan tailored to your specific audit results. 🚀
+- **Severity vs Fix Effort:** Clear distinction between upgrade blockers (Severity) and implementation cost (Fix Effort).
 - **Executive Summary:** High-level dashboard showing Target Rails Version, Overall Risk, and Estimated Effort. 📊
 - **Upgrade Risk Score:** A quantitative score (out of 40) to help prioritize upgrades.
     - _Scoring Model (Heuristic):_
@@ -67,6 +70,7 @@ bin/rails-upgrade-audit 6.1 /path/to/your/app
  
  ## Roadmap / Future Ideas:
  
+ - **Machine-readable output:** Support for `--format json` and `--format sarif` to unlock CI pipelines and dashboard integration. 🤖
  - **Asset Pipeline Check:** Verifying Node/Yarn versions and precompilation config.
  - **Dynamic Data:** Downloading the latest compatibility databases on the fly.
  - **Tuning:** The risk score weights are currently hardcoded and may need tuning based on real-world usage.

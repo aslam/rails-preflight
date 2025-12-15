@@ -30,6 +30,9 @@ module RailsUpgradeAudit
             .badge-passed { background-color: #38b2ac; }
             .badge-warning { background-color: #ed8936; }
             .badge-failed { background-color: #f56565; }
+            .badge-confidence-high { background-color: #2b6cb0; }
+            .badge-confidence-medium { background-color: #dd6b20; }
+            .badge-confidence-low { background-color: #718096; }
             .meta { color: #666; font-size: 0.9em; margin-bottom: 20px; }
             .summary-card { background: #f0f4f8; border: 1px solid #d9e2ec; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
             .summary-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #102a43; border-bottom: 1px solid #bcccdc; padding-bottom: 10px; }
@@ -107,7 +110,14 @@ module RailsUpgradeAudit
           <% @data[:results].each do |section| %>
             <div class="section">
               <div class="section-header">
-                <span><%= section[:title] %></span>
+                <div>
+                  <span><%= section[:title] %></span>
+                  <% if section[:confidence] %>
+                    <span class="badge badge-confidence-<%= section[:confidence] %>" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
+                      CONFIDENCE: <%= section[:confidence].upcase %>
+                    </span>
+                  <% end %>
+                </div>
                 <span class="badge badge-<%= section[:status] %>"><%= section[:status].upcase %></span>
               </div>
               <div class="section-body">

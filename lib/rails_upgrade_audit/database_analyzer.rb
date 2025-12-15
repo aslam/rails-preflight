@@ -9,7 +9,7 @@ module RailsUpgradeAudit
     end
 
     def run
-      result = { title: "Database Schema", status: :passed, checks: [] }
+      result = { title: "Database Schema", status: :passed, checks: [], confidence: :high }
       
       unless File.exist?(@schema_path)
         result[:status] = :warning

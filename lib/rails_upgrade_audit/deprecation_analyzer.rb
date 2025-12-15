@@ -9,7 +9,7 @@ module RailsUpgradeAudit
     end
 
     def run
-      result = { title: "Deprecation Warnings", status: :passed, checks: [] }
+      result = { title: "Deprecation Warnings", status: :passed, checks: [], confidence: :high }
       
       warnings = []
 

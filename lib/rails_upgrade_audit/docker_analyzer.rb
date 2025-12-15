@@ -14,7 +14,7 @@ module RailsUpgradeAudit
     end
 
     def run
-      result = { title: "Docker Configuration", status: :passed, checks: [] }
+      result = { title: "Docker Configuration", status: :passed, checks: [], confidence: :medium }
       
       unless File.exist?(@dockerfile_path)
         result[:status] = :warning

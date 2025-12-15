@@ -6,7 +6,7 @@ module RailsUpgradeAudit
     end
 
     def run
-      result = { title: "Configuration", status: :passed, checks: [] }
+      result = { title: "Configuration", status: :passed, checks: [], confidence: :high }
       
       issues = []
 
