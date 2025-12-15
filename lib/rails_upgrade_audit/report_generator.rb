@@ -114,7 +114,7 @@ module RailsUpgradeAudit
                         
                         <!-- Stats Row -->
                         <div style="display: flex; gap: 15px; font-size: 0.85em; color: #555; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
-                          <span>Occurrences: <strong><%= check[:stats][:occurrences] %></strong></span>
+                          <span>Occurrences: <strong><%= check[:stats][:occurrences] %></strong> <span style="font-weight:normal; color:#718096; font-size:0.9em;">(App: <strong><%= check[:stats][:occurrences_app] %></strong> / Test: <%= check[:stats][:occurrences_test] %>)</span></span>
                           <span>Files: <strong><%= check[:stats][:files] %></strong></span>
                           <span>Models: <strong><%= check[:stats][:models] %></strong></span>
                           <span>Controllers: <strong><%= check[:stats][:controllers] %></strong></span>

@@ -41,6 +41,8 @@ module RailsUpgradeAudit
             grouped: true,
             stats: {
               occurrences: occurrences.count,
+              occurrences_app: occurrences.count { |w| !w[:is_test] },
+              occurrences_test: occurrences.count { |w| w[:is_test] },
               files: files_affected,
               models: models_affected,
               controllers: controllers_affected,
@@ -96,11 +98,13 @@ module RailsUpgradeAudit
 
           if line.match?(regex)
             relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path))
-            
+            is_test = relative_path.to_s.start_with?('test/', 'spec/')
+
             found << {
               message: rule['message'],
               file: relative_path.to_s,
               line: line_num,
+              is_test: is_test,
               snippet: line.strip,
               confidence: rule['confidence'] || "Unknown",
               guide_link: rule['guide_link'],

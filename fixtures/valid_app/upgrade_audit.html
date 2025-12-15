@@ -35,7 +35,7 @@
   <h1>Rails Upgrade Audit</h1>
   <div class="meta">
     Target Rails Version: <strong>6.0</strong><br>
-    Generated at: 2025-12-15 16:27:23 +0530
+    Generated at: 2025-12-15 16:59:19 +0530
   </div>
 
   
@@ -48,7 +48,7 @@
         </div>
         <div class="summary-item">
           <div class="summary-label">Risk Score</div>
-          <div class="summary-value">0.0 / 40</div>
+          <div class="summary-value">0.2 / 40</div>
         </div>
         <div class="summary-item">
           <div class="summary-label">Overall Risk</div>
@@ -63,7 +63,11 @@
         <div class="summary-item" style="grid-column: span 1 / -1;">
           <div class="summary-label">Primary Blockers</div>
           
-            <div style="color: #38a169; font-weight: bold;">None detected! 🎉</div>
+            <ul class="blockers-list">
+              
+                <li>1 Rails deprecations found</li>
+              
+            </ul>
           
         </div>
       </div>
@@ -214,19 +218,66 @@
     <div class="section">
       <div class="section-header">
         <span>Deprecation Warnings</span>
-        <span class="badge badge-passed">PASSED</span>
+        <span class="badge badge-warning">WARNING</span>
       </div>
       <div class="section-body">
         
           
-            <div class="item passed">
+            <div class="item warning">
               
-                <!-- Standard Check -->
-                <div style="display: flex; justify-content: space-between;">
-                  <strong>No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)</strong>
-                  
+                <!-- Grouped Finding Header -->
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
+                  <div>
+                    <strong>DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead.</strong>
+                    
+                      <span class="badge" style="background-color: #4a5568;">Fix: LOW</span>
+                    
+                  </div>
+                  <span class="badge" style="background-color: #718096;">error</span>
                 </div>
                 
+                <!-- Stats Row -->
+                <div style="display: flex; gap: 15px; font-size: 0.85em; color: #555; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
+                  <span>Occurrences: <strong>2</strong> <span style="font-weight:normal; color:#718096; font-size:0.9em;">(App: <strong>0</strong> / Test: 2)</span></span>
+                  <span>Files: <strong>1</strong></span>
+                  <span>Models: <strong>0</strong></span>
+                  <span>Controllers: <strong>0</strong></span>
+                </div>
+
+                <!-- Expandable Details -->
+                <details>
+                  <summary style="cursor: pointer; color: #3182ce; font-weight: 500; font-size: 0.9em; margin-bottom: 10px;">
+                    Expand to see 2 individual instances
+                  </summary>
+                  
+                  <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 300px; overflow-y: auto;">
+                    <table style="width: 100%; font-size: 0.85em; border-collapse: collapse;">
+                      <thead style="background: #f7fafc; position: sticky; top: 0;">
+                        <tr>
+                          <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">File</th>
+                          <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Line</th>
+                          <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Snippet</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">test/example_test.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">5</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;"># update_attributes is deprecated in Rails 6.0</td>
+                          </tr>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">test/example_test.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">6</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;">user.update_attributes(name: "foo")</td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
               
             </div>
           
