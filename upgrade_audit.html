@@ -35,7 +35,7 @@
   <h1>Rails Upgrade Audit</h1>
   <div class="meta">
     Target Rails Version: <strong>5.2</strong><br>
-    Generated at: 2025-12-15 15:40:26 +0530
+    Generated at: 2025-12-15 16:00:14 +0530
   </div>
 
   
@@ -90,7 +90,12 @@
             <div class="item failed">
               
                 <!-- Standard Check -->
-                <strong>BLOCKER: Rails 5.2 is NOT compatible with Ruby 3.4.7. (Max recommended: 2.6.99).</strong>
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>BLOCKER: Rails 5.2 is NOT compatible with Ruby 3.4.7. (Max recommended: 2.6.99).</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: HIGH</span>
+                  
+                </div>
                 
               
             </div>
@@ -110,7 +115,12 @@
             <div class="item warning">
               
                 <!-- Standard Check -->
-                <strong>Private Gems Detected</strong>
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>Private Gems Detected</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: UNKNOWN</span>
+                  
+                </div>
                 
                   <ul>
                     
@@ -136,7 +146,10 @@
             <div class="item warning">
               
                 <!-- Standard Check -->
-                <strong>No Dockerfile found at /Users/syed/Workspace/rails-upgrade-audit/Dockerfile. Skipping.</strong>
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>No Dockerfile found at /Users/syed/Workspace/rails-upgrade-audit/Dockerfile. Skipping.</strong>
+                  
+                </div>
                 
               
             </div>
@@ -157,7 +170,12 @@
               
                 <!-- Grouped Finding Header -->
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
-                  <strong>DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead.</strong>
+                  <div>
+                    <strong>DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead.</strong>
+                    
+                      <span class="badge" style="background-color: #4a5568;">Fix: LOW</span>
+                    
+                  </div>
                   <span class="badge" style="background-color: #718096;">error</span>
                 </div>
                 
@@ -209,7 +227,10 @@
             <div class="item warning">
               
                 <!-- Standard Check -->
-                <strong>💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.</strong>
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.</strong>
+                  
+                </div>
                 
               
             </div>
@@ -229,7 +250,10 @@
             <div class="item failed">
               
                 <!-- Standard Check -->
-                <strong>❓  CONFIG: config/application.rb not found.</strong>
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>❓  CONFIG: config/application.rb not found.</strong>
+                  
+                </div>
                 
               
             </div>
@@ -237,7 +261,10 @@
             <div class="item warning">
               
                 <!-- Standard Check -->
-                <strong>ℹ️  CONFIG: No 'new_framework_defaults' initializer found. Make sure you run 'rails app:update'.</strong>
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>ℹ️  CONFIG: No 'new_framework_defaults' initializer found. Make sure you run 'rails app:update'.</strong>
+                  
+                </div>
                 
               
             </div>
@@ -257,7 +284,10 @@
             <div class="item warning">
               
                 <!-- Standard Check -->
-                <strong>No db/schema.rb found. Skipping database checks.</strong>
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>No db/schema.rb found. Skipping database checks.</strong>
+                  
+                </div>
                 
               
             </div>

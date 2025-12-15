@@ -41,22 +41,22 @@ module RailsUpgradeAudit
 
     def check_ruby_version(content, result)
       if docker_ruby = detect_ruby_version
-        result[:checks] << { message: "Dockerfile uses Base Image: ruby:#{docker_ruby}", status: :passed }
+        result[:checks] << { message: "Dockerfile uses Base Image: ruby:#{docker_ruby}", status: :passed, fix_effort: :low }
       else
-        result[:checks] << { message: "Could not detect FROM ruby image in Dockerfile.", status: :warning }
+        result[:checks] << { message: "Could not detect FROM ruby image in Dockerfile.", status: :warning, fix_effort: :medium }
       end
     end
 
     def check_package_manager_pitfalls(content, result)
       if content.include?("bundle install") && !content.include?("without")
-        result[:checks] << { message: "Optimization: 'bundle install' should probably use '--without development test'", status: :warning }
+        result[:checks] << { message: "Optimization: 'bundle install' should probably use '--without development test'", status: :warning, fix_effort: :low }
       end
     end
 
     def check_alpine_pitfalls(content, result)
       if content.match?(/alpine/)
         unless content.match?(/build-base|libxml2-dev|postgresql-dev/)
-          result[:checks] << { message: "ALPINE RISK: Found 'alpine' base image. Ensure 'apk add build-base libxml2-dev' is present for native extensions.", status: :warning }
+          result[:checks] << { message: "ALPINE RISK: Found 'alpine' base image. Ensure 'apk add build-base libxml2-dev' is present for native extensions.", status: :warning, fix_effort: :medium }
         end
 
         unless content.match?(/tzdata/)
@@ -71,7 +71,7 @@ module RailsUpgradeAudit
 
     def check_node_version(content, result)
       if content.match?(/NODE_VERSION\s*=\s*['"]?1[0-2]/)
-        result[:checks] << { message: "NODE JS: Detected Node 10/12. Rails 6+ (Webpacker) usually requires Node 14+.", status: :warning }
+        result[:checks] << { message: "NODE JS: Detected Node 10/12. Rails 6+ (Webpacker) usually requires Node 14+.", status: :warning, fix_effort: :medium }
       end
       
       # EOL Node Check
@@ -79,14 +79,14 @@ module RailsUpgradeAudit
       if match = content.match(/NODE_VERSION\s*[:=\s]\s*['"]?(\d+)/)
         major_version = match[1].to_i
         if major_version < 18
-          result[:checks] << { message: "EOL Node: Node #{major_version} is End-of-Life. Upgrade to Node 18+.", status: :warning }
+          result[:checks] << { message: "EOL Node: Node #{major_version} is End-of-Life. Upgrade to Node 18+.", status: :warning, fix_effort: :medium }
         end
       end
     end
 
     def check_zombie_processes(content, result)
       unless content.match?(/tini|dumb-init/)
-        result[:checks] << { message: "ZOMBIE PROCESSES: No init process (tini/dumb-init) detected. Rails cannot handle signals properly as PID 1.", status: :warning }
+        result[:checks] << { message: "ZOMBIE PROCESSES: No init process (tini/dumb-init) detected. Rails cannot handle signals properly as PID 1.", status: :warning, fix_effort: :low }
       end
     end
 
@@ -94,7 +94,7 @@ module RailsUpgradeAudit
       if match = content.match(/FROM ruby:(\d+\.\d+)/)
         version = match[1].to_f
         if version < 3.1
-          result[:checks] << { message: "EOL Ruby: Ruby #{match[1]} is End-of-Life. Upgrade to Ruby 3.1+.", status: :warning }
+          result[:checks] << { message: "EOL Ruby: Ruby #{match[1]} is End-of-Life. Upgrade to Ruby 3.1+.", status: :warning, fix_effort: :high }
         end
       end
     end
@@ -103,12 +103,12 @@ module RailsUpgradeAudit
       # Check for ENV LANG or LC_ALL
       # Regex: Start of line (ignoring whitespace), ENV, whitespace, LANG or LC_ALL
       unless content.match?(/^\s*ENV\s+(LANG|LC_ALL)/)
-        result[:checks] << { message: "Locale: Missing 'ENV LANG' or 'ENV LC_ALL'. This can cause encoding issues.", status: :warning }
+        result[:checks] << { message: "Locale: Missing 'ENV LANG' or 'ENV LC_ALL'. This can cause encoding issues.", status: :warning, fix_effort: :low }
       end
 
       # Check for tzdata availability generally
       unless content.match?(/tzdata/)
-        result[:checks] << { message: "Timezone: 'tzdata' package seems missing. Rails Time.zone requires it.", status: :warning }
+        result[:checks] << { message: "Timezone: 'tzdata' package seems missing. Rails Time.zone requires it.", status: :warning, fix_effort: :low }
       end
     end
 
@@ -135,7 +135,7 @@ module RailsUpgradeAudit
       # We could also check for "FROM ubuntu:22.04" or similar, but let's focus on the Alpine case as it's the most common trap with ruby images.
       
       if is_alpine_new && ruby_version < 3.1
-        result[:checks] << { message: "OpenSSL Mismatch: Alpine >= 3.17 uses OpenSSL 3.0, which may break recent Ruby versions < 3.1. Compatibility is poor.", status: :warning }
+        result[:checks] << { message: "OpenSSL Mismatch: Alpine >= 3.17 uses OpenSSL 3.0, which may break recent Ruby versions < 3.1. Compatibility is poor.", status: :warning, fix_effort: :high }
       end
     end
 

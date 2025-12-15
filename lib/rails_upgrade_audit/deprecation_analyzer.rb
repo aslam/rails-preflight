@@ -33,6 +33,7 @@ module RailsUpgradeAudit
           
           # Use the severity of the first occurrence (rule based)
           severity = occurrences.first[:severity] || "Warning"
+          fix_effort = occurrences.first[:fix_effort] || "low"
           
           result[:checks] << {
             message: message,
@@ -43,7 +44,8 @@ module RailsUpgradeAudit
               files: files_affected,
               models: models_affected,
               controllers: controllers_affected,
-              severity: severity
+              severity: severity,
+              fix_effort: fix_effort
             },
             details: occurrences # Pass all occurrences for the detail view
           }
@@ -100,7 +102,8 @@ module RailsUpgradeAudit
               confidence: rule['confidence'] || "Unknown",
               guide_link: rule['guide_link'],
               recategorization: rule['recategorization'],
-              severity: rule['severity']
+              severity: rule['severity'],
+              fix_effort: rule['fix_effort']
             }
           end
         end

@@ -76,7 +76,7 @@ module RailsUpgradeAudit
 
       unless constraints
         result[:status] = :warning
-        result[:checks] << { message: "Unknown Rails version: #{@target_rails}", status: :warning }
+        result[:checks] << { message: "Unknown Rails version: #{@target_rails}", status: :warning, fix_effort: :unknown }
         return result
       end
 
@@ -85,12 +85,12 @@ module RailsUpgradeAudit
 
       if current_ver < min_ver
         result[:status] = :failed
-        result[:checks] << { message: "BLOCKER: Rails #{@target_rails} needs Ruby >= #{min_ver}. You have #{current_ver}.", status: :failed }
+        result[:checks] << { message: "BLOCKER: Rails #{@target_rails} needs Ruby >= #{min_ver}. You have #{current_ver}.", status: :failed, fix_effort: :high }
       elsif current_ver > max_ver
         result[:status] = :failed
-        result[:checks] << { message: "BLOCKER: Rails #{@target_rails} is NOT compatible with Ruby #{current_ver}. (Max recommended: #{max_ver}).", status: :failed }
+        result[:checks] << { message: "BLOCKER: Rails #{@target_rails} is NOT compatible with Ruby #{current_ver}. (Max recommended: #{max_ver}).", status: :failed, fix_effort: :high }
       else
-        result[:checks] << { message: "Ruby #{current_ver} (#{source}) is compatible.", status: :passed }
+        result[:checks] << { message: "Ruby #{current_ver} (#{source}) is compatible.", status: :passed, fix_effort: :low }
       end
       
       result
@@ -99,6 +99,10 @@ module RailsUpgradeAudit
     def scan_gems
       result = { title: "Private Gems", status: :passed, checks: [] }
       puts "\n[2/2] Scanning Gems..."
+
+      # ... (omitted gem scanning logic for brevity, assuming it doesn't change)
+      # Actually, I need to match the full method if I want to use AllowMultiple effectively or just pinpoint the replacement.
+      # Let's target the checks insertion part.
 
       # Bypass Bundler IO to avoid version mismatch errors
       content = File.read(@lockfile_path)
@@ -127,14 +131,14 @@ module RailsUpgradeAudit
 
       if private_gems.any?
         result[:status] = :warning
-        result[:checks] << { message: "Private Gems Detected", status: :warning, details: private_gems }
+        result[:checks] << { message: "Private Gems Detected", status: :warning, details: private_gems, fix_effort: :unknown }
       else
-        result[:checks] << { message: "No private gems detected.", status: :passed }
+        result[:checks] << { message: "No private gems detected.", status: :passed, fix_effort: :low }
       end
 
       if inconclusive_gems.any?
         details = inconclusive_gems.map { |g| "#{g[:name]} (#{g[:error]})" }
-        result[:checks] << { message: "Analysis Incomplete: Could not verify #{inconclusive_gems.size} gems", status: :warning, details: details }
+        result[:checks] << { message: "Analysis Incomplete: Could not verify #{inconclusive_gems.size} gems", status: :warning, details: details, fix_effort: :unknown }
         result[:status] = :warning if result[:status] == :passed
       end
       

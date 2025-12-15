@@ -103,7 +103,12 @@ module RailsUpgradeAudit
                       <% if check[:grouped] %>
                         <!-- Grouped Finding Header -->
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
-                          <strong><%= check[:message] %></strong>
+                          <div>
+                            <strong><%= check[:message] %></strong>
+                            <% if check[:stats][:fix_effort] %>
+                              <span class="badge" style="background-color: #4a5568;">Fix: <%= check[:stats][:fix_effort].upcase %></span>
+                            <% end %>
+                          </div>
                           <span class="badge" style="background-color: #718096;"><%= check[:stats][:severity] %></span>
                         </div>
                         
@@ -145,7 +150,12 @@ module RailsUpgradeAudit
 
                       <% else %>
                         <!-- Standard Check -->
-                        <strong><%= check[:message] %></strong>
+                        <div style="display: flex; justify-content: space-between;">
+                          <strong><%= check[:message] %></strong>
+                          <% if check[:fix_effort] %>
+                             <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: <%= check[:fix_effort].upcase %></span>
+                          <% end %>
+                        </div>
                         <% if check[:details].is_a?(Array) %>
                           <ul>
                             <% check[:details].each do |detail| %>
