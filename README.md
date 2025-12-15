@@ -1,27 +1,74 @@
 # Rails Upgrade Audit 🛡️
 
-**Don't guess your upgrade timeline. Audit it.**
+**Assess Rails upgrade risk before you touch a single line of code.**
 
-A static analysis tool for Rails developers. It scans your legacy project's `Gemfile.lock`, `.ruby-version`, and `Dockerfile` to identify blockers, private dependencies, and infrastructure risks _before_ you write a single line of code.
+`rails-upgrade-audit` is a static analysis tool that scans legacy Rails applications and produces a **human-readable upgrade risk report**.
 
-## Why use this?
+It helps teams understand:
 
-Upgrading Rails is hard. Estimating the upgrade is harder.
+- what will block a Rails upgrade
+- what is easy vs painful to fix
+- where hidden dependency and infrastructure risks exist
 
-- **Ruby Version Traps:** Warning you if your target Rails version is incompatible with your current Ruby version (e.g., Rails 5.2 on Ruby 3.4).
-- **Private Gems:** Automatically detecting internal gems that need manual review.
-- **Docker Timebombs:** Catching OS-level issues like missing `tini` (zombie processes) or Alpine/OpenSSL conflicts.
+This tool is designed for **planning and estimation**, not automated migration.
+
+## Why this exists
+
+Rails upgrades fail not because teams can’t write code, but because they underestimate risk:
+
+- private gems with unknown compatibility
+- subtle framework deprecations
+- Ruby and OS lifecycle mismatches
+- Docker runtime issues that surface late
+
+`rails-upgrade-audit` makes these risks visible before you start upgrading.
+
+Think of it as **upgrade reconnaissance**, not a fixer.
+
+## What this tool does
+
+The audit analyzes your project for common Rails upgrade risk factors:
+
+- Ruby & Rails compatibility
+- End-of-life Ruby versions
+- Private / internal gem dependencies
+- Rails deprecations that block upgrades
+- Docker runtime risks (PID 1, locale, tzdata, base image)
+- Missing Rails configuration required for newer versions
+
+The output is a **single HTML report** designed to be:
+
+- readable by engineers
+- understandable by EMs and tech leads
+- usable in upgrade planning discussions
+
+## What this tool intentionally does NOT do
+
+- ❌ It does not modify your code
+- ❌ It does not auto-fix deprecations
+- ❌ It does not guarantee upgrade success
+- ❌ It is not a replacement for running tests or CI
+
+If you’re looking for a “one-click upgrade,” this is not that tool.
+
+## Who this is for
+
+This tool is especially useful if you are:
+
+- Upgrading a Rails 3 / 4 / 5 application
+- Planning a security-driven upgrade
+- Estimating upgrade effort before committing resources
+- Auditing multiple legacy Rails apps
+- A consultant or staff engineer responsible for upgrade strategy
 
 ## Installation
 
 ### Option A: Add to your project (Recommended)
 
-Add this line to your application's `Gemfile` (usually in the `development` group):
+Add this line to your application's `Gemfile`:
 
 ```ruby
-group :development do
-  gem 'rails_upgrade_audit', git: 'https://github.com/aslam/rails-upgrade-audit.git'
-end
+gem 'rails_upgrade_audit', require: false
 ```
 
 Then run:
@@ -36,45 +83,64 @@ bundle exec rails-upgrade-audit 6.1
 This tool is designed to be run as a standalone script or cloned into your toolbox.
 
 ```bash
-git clone https://github.com/aslam/rails-upgrade-audit.git
-cd rails-upgrade-audit
-bin/rails-upgrade-audit 6.1 /path/to/your/app
+gem install rails-upgrade-audit
 ```
 
- ## Features:
- 
-- **Confidence Scoring:** Each section is badged with a confidence level (`High`, `Medium`, `Low`) to help you gauge trust in the findings. 🔒
-- **Suggested Upgrade Path:** Auto-generated, step-by-step upgrade plan tailored to your specific audit results. 🚀
-- **Severity vs Fix Effort:** Clear distinction between upgrade blockers (Severity) and implementation cost (Fix Effort).
-- **Executive Summary:** High-level dashboard showing Target Rails Version, Overall Risk, and Estimated Effort. 📊
-- **Upgrade Risk Score:** A quantitative score (out of 40) to help prioritize upgrades.
-    - _Scoring Model (Heuristic):_
-        - **Private Gems:** +3 points each (Unknown compatibility risk)
-        - **Ruby Blocker:** +5 points (Incompatible Ruby version)
-        - **Docker Issues:** +2 points (Infrastructure risk)
-        - **Deprecations:** +0.2 points each (Capped at 10 points)
-- **Fixability Metadata:** Classification of findings by effort (`low`, `medium`, `high`, `unknown`).
-- **Grouped Findings:** Deprecations are aggregated by message to reduce noise, with expandable individual instances.
-- **Smart False-Positive Handling:**
-    - Detects word boundaries to avoid partial matches (e.g. `order_taker_update_attributes`).
-    - Ignores method definitions (`def ...`) to allow overrides without noise.
- - **HTML Report Generation:** Generates a self-contained `upgrade_audit.html` report to share with stakeholders. 📊
- - **Database Schema Analysis:** Detects risks like 4-byte integer overflows and legacy MySQL charsets, customized for your target Rails version. 🗄️
- - **Hybrid Code Analysis:** 
-    - **Triage:** Fast regex-based scan for major blockers (e.g. `update_attributes`).
-    - **Advisory:** Checks for `rubocop-rails` and generates a config to help you deep clean your code. 🤖
- - **Ruby Version Checks:** Ensures compatibility between your lockfile and target Rails version.
- - **Configuration Check:** Verifies critical files like `config/application.rb` for upgrades.
- - **Docker Analysis:** Checks for common Docker pitfalls (Alpine packages, PID 1 issues).
- - **Private Gem Detection:** Highlights internal gems that might block upgrades.
- 
- ## Roadmap / Future Ideas:
- 
- - **Machine-readable output:** Support for `--format json` and `--format sarif` to unlock CI pipelines and dashboard integration. 🤖
- - **Asset Pipeline Check:** Verifying Node/Yarn versions and precompilation config.
- - **Dynamic Data:** Downloading the latest compatibility databases on the fly.
- - **Tuning:** The risk score weights are currently hardcoded and may need tuning based on real-world usage.
+Then run:
 
-## Next Steps
-- Tune the risk calculation thresholds as we get more real-world data.
-- Add more granular checks (e.g. database compatibility info in summary).
+```bash
+rails-upgrade-audit 6.1 /path/to/your/app
+```
+
+The tool will analyze:
+
+- `Gemfile.lock`
+- `.ruby-version`
+- `Dockerfile` (if present)
+- `DB/schema.rb` (if present)
+- Application source code (static scan)
+
+And generate:
+
+```
+upgrade_audit.html
+```
+
+## Report Overview
+
+The tool generates a self-contained **HTML report** (`upgrade_audit.html`) that provides a comprehensive view of your upgrade readiness.
+
+### Key Sections
+
+1.  **Executive Summary**: A high-level dashboard showing:
+    *   **Risk Score**: A quantitative measure (0-40) of upgrade difficulty.
+    *   **Estimated Effort**: T-shirt sizing (Small, Medium, Large) for the upgrade.
+    *   **Primary Blockers**: The most critical issues stopping you from upgrading immediately.
+
+2.  **Suggested Upgrade Path**: A generated step-by-step guide tailored to your specific findings, helping you sequence the upgrade work.
+
+3.  **Detailed Findings**:
+    *   **Deprecations**: Grouped by message to reduce noise. Expandable to show individual file/line occurrences.
+    *   **Gem Compatibility**: Identifies private gems and known public gem incompatibilities.
+    *   **Configuration & Infrastructure**: Checks for Docker/OS issues and missing Rails config.
+    *   **Database Schema**: Highlights potential data issues (e.g. integer overflows).
+
+4.  **Confidence Badges**: Each section is marked with a confidence level (High/Medium/Low) based on the certainty of the analysis.
+
+## Roadmap
+
+For a detailed list of current features and future plans, please see [ROADMAP.md](ROADMAP.md).
+
+## Philosophy
+
+This tool favors:
+
+- clarity over completeness
+- honesty over false confidence
+- planning support over automation
+
+If it helps you avoid one failed upgrade attempt, it has done its job.
+
+## License
+
+MIT
