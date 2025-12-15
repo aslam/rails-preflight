@@ -35,7 +35,7 @@
   <h1>Rails Upgrade Audit</h1>
   <div class="meta">
     Target Rails Version: <strong>5.2</strong><br>
-    Generated at: 2025-12-15 15:23:10 +0530
+    Generated at: 2025-12-15 15:30:14 +0530
   </div>
 
   
@@ -65,7 +65,7 @@
               
                 <li>BLOCKER: Rails 5.2 is NOT compatible with Ruby 3.4.7. (Max recommended: 2.6.99).</li>
               
-                <li>2 Rails deprecations found</li>
+                <li>1 Rails deprecations found</li>
               
             </ul>
           
@@ -84,7 +84,10 @@
         
           
             <div class="item failed">
-              <strong>BLOCKER: Rails 5.2 is NOT compatible with Ruby 3.4.7. (Max recommended: 2.6.99).</strong>
+              
+                <!-- Standard Check -->
+                <strong>BLOCKER: Rails 5.2 is NOT compatible with Ruby 3.4.7. (Max recommended: 2.6.99).</strong>
+                
               
             </div>
           
@@ -101,13 +104,16 @@
         
           
             <div class="item warning">
-              <strong>Private Gems Detected</strong>
               
-                <ul>
-                  
-                    <li>rails_upgrade_audit</li>
-                  
-                </ul>
+                <!-- Standard Check -->
+                <strong>Private Gems Detected</strong>
+                
+                  <ul>
+                    
+                      <li>rails_upgrade_audit</li>
+                    
+                  </ul>
+                
               
             </div>
           
@@ -124,7 +130,10 @@
         
           
             <div class="item warning">
-              <strong>No Dockerfile found at /Users/syed/Workspace/rails-upgrade-audit/Dockerfile. Skipping.</strong>
+              
+                <!-- Standard Check -->
+                <strong>No Dockerfile found at /Users/syed/Workspace/rails-upgrade-audit/Dockerfile. Skipping.</strong>
+                
               
             </div>
           
@@ -141,27 +150,87 @@
         
           
             <div class="item warning">
-              <strong>[High Confidence] DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead.
-   Found in: test/deprecation_analyzer_test.rb:46
-   Snippet: `# The real rule is `update_attributes!?`.`
-   Guide: https://guides.rubyonrails.org/upgrading_ruby_on_rails.html#upgrading-from-rails-6-0-to-6-1</strong>
               
-                 <p>{message: "DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead.", file: "test/deprecation_analyzer_test.rb", line: 46, snippet: "# The real rule is `update_attributes!?`.", confidence: "High", guide_link: "https://guides.rubyonrails.org/upgrading_ruby_on_rails.html#upgrading-from-rails-6-0-to-6-1", recategorization: "Rails 6.0 -> 6.1", severity: "error"}</p>
+                <!-- Grouped Finding Header -->
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
+                  <strong>DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead.</strong>
+                  <span class="badge" style="background-color: #718096;">error</span>
+                </div>
+                
+                <!-- Stats Row -->
+                <div style="display: flex; gap: 15px; font-size: 0.85em; color: #555; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
+                  <span>Occurrences: <strong>6</strong></span>
+                  <span>Files: <strong>2</strong></span>
+                  <span>Models: <strong>0</strong></span>
+                  <span>Controllers: <strong>0</strong></span>
+                </div>
+
+                <!-- Expandable Details -->
+                <details>
+                  <summary style="cursor: pointer; color: #3182ce; font-weight: 500; font-size: 0.9em; margin-bottom: 10px;">
+                    Expand to see 6 individual instances
+                  </summary>
+                  
+                  <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 300px; overflow-y: auto;">
+                    <table style="width: 100%; font-size: 0.85em; border-collapse: collapse;">
+                      <thead style="background: #f7fafc; position: sticky; top: 0;">
+                        <tr>
+                          <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">File</th>
+                          <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Line</th>
+                          <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Snippet</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">test/deprecation_analyzer_test.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">46</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;"># The real rule is `update_attributes!?`.</td>
+                          </tr>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">test/deprecation_analyzer_test.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">48</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;">File.write(File.join(@app_dir, "user.rb"), "User.update_attributes(name: 'foo')")</td>
+                          </tr>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">test/dummy_deprecations.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">3</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;">update_attributes(name: "John")</td>
+                          </tr>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">test/dummy_deprecations.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">4</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;">update_attributes(email: "test@test.com")</td>
+                          </tr>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">test/dummy_deprecations.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">8</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;">update_attributes(status: "active")</td>
+                          </tr>
+                        
+                          <tr style="border-bottom: 1px solid #edf2f7;">
+                            <td style="padding: 8px; color: #4a5568;">test/dummy_deprecations.rb</td>
+                            <td style="padding: 8px; color: #4a5568;">14</td>
+                            <td style="padding: 8px; font-family: monospace; color: #c53030;">update_attributes(published: true)</td>
+                          </tr>
+                        
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+
               
             </div>
           
             <div class="item warning">
-              <strong>[High Confidence] DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead.
-   Found in: test/deprecation_analyzer_test.rb:48
-   Snippet: `File.write(File.join(@app_dir, "user.rb"), "User.update_attributes(name: 'foo')")`
-   Guide: https://guides.rubyonrails.org/upgrading_ruby_on_rails.html#upgrading-from-rails-6-0-to-6-1</strong>
               
-                 <p>{message: "DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead.", file: "test/deprecation_analyzer_test.rb", line: 48, snippet: "File.write(File.join(@app_dir, \"user.rb\"), \"User.update_attributes(name: 'foo')\")", confidence: "High", guide_link: "https://guides.rubyonrails.org/upgrading_ruby_on_rails.html#upgrading-from-rails-6-0-to-6-1", recategorization: "Rails 6.0 -> 6.1", severity: "error"}</p>
-              
-            </div>
-          
-            <div class="item warning">
-              <strong>💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.</strong>
+                <!-- Standard Check -->
+                <strong>💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.</strong>
+                
               
             </div>
           
@@ -178,12 +247,18 @@
         
           
             <div class="item failed">
-              <strong>❓  CONFIG: config/application.rb not found.</strong>
+              
+                <!-- Standard Check -->
+                <strong>❓  CONFIG: config/application.rb not found.</strong>
+                
               
             </div>
           
             <div class="item warning">
-              <strong>ℹ️  CONFIG: No 'new_framework_defaults' initializer found. Make sure you run 'rails app:update'.</strong>
+              
+                <!-- Standard Check -->
+                <strong>ℹ️  CONFIG: No 'new_framework_defaults' initializer found. Make sure you run 'rails app:update'.</strong>
+                
               
             </div>
           
@@ -200,7 +275,10 @@
         
           
             <div class="item warning">
-              <strong>No db/schema.rb found. Skipping database checks.</strong>
+              
+                <!-- Standard Check -->
+                <strong>No db/schema.rb found. Skipping database checks.</strong>
+                
               
             </div>
           

@@ -21,24 +21,31 @@ module RailsUpgradeAudit
 
       if warnings.any?
         result[:status] = :warning
-        warnings.each do |w|
-          # w is now a structured hash
-          # Construct a rich message for the simple check output, 
-          # but we could also pass the structured data in `details` if the ReportGenerator supports it.
-          # For now, let's keep the message informative and compatible.
+        
+        # Group warnings by message
+        grouped_warnings = warnings.group_by { |w| w[:message] }
+        
+        grouped_warnings.each do |message, occurrences|
+          # Calculate stats
+          files_affected = occurrences.map { |w| w[:file] }.uniq.count
+          models_affected = occurrences.count { |w| w[:file].include?('app/models') }
+          controllers_affected = occurrences.count { |w| w[:file].include?('app/controllers') }
           
-          msg = "[#{w[:confidence]} Confidence] #{w[:message]}\n" \
-                "   Found in: #{w[:file]}:#{w[:line]}\n" \
-                "   Snippet: `#{w[:snippet]}`"
+          # Use the severity of the first occurrence (rule based)
+          severity = occurrences.first[:severity] || "Warning"
           
-          if w[:guide_link]
-             msg += "\n   Guide: #{w[:guide_link]}" 
-          end
-
-          result[:checks] << { 
-            message: msg, 
-            status: :warning, 
-            details: w 
+          result[:checks] << {
+            message: message,
+            status: :warning,
+            grouped: true,
+            stats: {
+              occurrences: occurrences.count,
+              files: files_affected,
+              models: models_affected,
+              controllers: controllers_affected,
+              severity: severity
+            },
+            details: occurrences # Pass all occurrences for the detail view
           }
         end
       else

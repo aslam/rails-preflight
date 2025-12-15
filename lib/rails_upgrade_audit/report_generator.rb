@@ -96,15 +96,61 @@ module RailsUpgradeAudit
                 <% else %>
                   <% section[:checks].each do |check| %>
                     <div class="item <%= check[:status] %>">
-                      <strong><%= check[:message] %></strong>
-                      <% if check[:details].is_a?(Array) %>
-                        <ul>
-                          <% check[:details].each do |detail| %>
-                            <li><%= detail %></li>
-                          <% end %>
-                        </ul>
-                      <% elsif check[:details] %>
-                         <p><%= check[:details] %></p>
+                      <% if check[:grouped] %>
+                        <!-- Grouped Finding Header -->
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
+                          <strong><%= check[:message] %></strong>
+                          <span class="badge" style="background-color: #718096;"><%= check[:stats][:severity] %></span>
+                        </div>
+                        
+                        <!-- Stats Row -->
+                        <div style="display: flex; gap: 15px; font-size: 0.85em; color: #555; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
+                          <span>Occurrences: <strong><%= check[:stats][:occurrences] %></strong></span>
+                          <span>Files: <strong><%= check[:stats][:files] %></strong></span>
+                          <span>Models: <strong><%= check[:stats][:models] %></strong></span>
+                          <span>Controllers: <strong><%= check[:stats][:controllers] %></strong></span>
+                        </div>
+
+                        <!-- Expandable Details -->
+                        <details>
+                          <summary style="cursor: pointer; color: #3182ce; font-weight: 500; font-size: 0.9em; margin-bottom: 10px;">
+                            Expand to see <%= check[:stats][:occurrences] %> individual instances
+                          </summary>
+                          
+                          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 300px; overflow-y: auto;">
+                            <table style="width: 100%; font-size: 0.85em; border-collapse: collapse;">
+                              <thead style="background: #f7fafc; position: sticky; top: 0;">
+                                <tr>
+                                  <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">File</th>
+                                  <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Line</th>
+                                  <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Snippet</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <% check[:details].each do |occ| %>
+                                  <tr style="border-bottom: 1px solid #edf2f7;">
+                                    <td style="padding: 8px; color: #4a5568;"><%= occ[:file] %></td>
+                                    <td style="padding: 8px; color: #4a5568;"><%= occ[:line] %></td>
+                                    <td style="padding: 8px; font-family: monospace; color: #c53030;"><%= occ[:snippet] %></td>
+                                  </tr>
+                                <% end %>
+                              </tbody>
+                            </table>
+                          </div>
+                        </details>
+
+                      <% else %>
+                        <!-- Standard Check -->
+                        <strong><%= check[:message] %></strong>
+                        <% if check[:details].is_a?(Array) %>
+                          <ul>
+                            <% check[:details].each do |detail| %>
+                              <li><%= detail %></li>
+                            <% end %>
+                          </ul>
+                        <% elsif check[:details] %>
+                           <p><%= check[:details] %></p>
+                        <% end %>
                       <% end %>
                     </div>
                   <% end %>
