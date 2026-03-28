@@ -22,13 +22,14 @@ module RailsPreflight
       puts "🔍 Starting Audit for Rails #{@target_rails}..."
       
       results = []
+      database_rules = target_rails_rules&.fetch('database_rules', nil)
       
       results << check_ruby_version
       results << scan_gems
       results << DockerAnalyzer.new(@project_path).run
       results << DeprecationAnalyzer.new(@project_path).run
       results << ConfigAnalyzer.new(@project_path).run
-      results << DatabaseAnalyzer.new(@project_path, @rules['rails_versions'][@target_rails]['database_rules']).run
+      results << DatabaseAnalyzer.new(@project_path, database_rules).run
 
       report_data = {
         target_rails: @target_rails,
@@ -72,7 +73,7 @@ module RailsPreflight
       current_ver = Gem::Version.new(current_str)
 
       # 2. Check Constraints
-      constraints = @rules['rails_versions'][@target_rails]
+      constraints = target_rails_rules
 
       unless constraints
         result[:status] = :warning
@@ -105,6 +106,17 @@ module RailsPreflight
     def scan_gems
       result = { title: "Private Gems", status: :passed, checks: [], confidence: :high }
       puts "\n[2/2] Scanning Gems..."
+
+      unless File.exist?(@lockfile_path)
+        result[:status] = :warning
+        result[:confidence] = :medium
+        result[:checks] << {
+          message: "No Gemfile.lock found. Skipping gem compatibility checks.",
+          status: :warning,
+          fix_effort: :low
+        }
+        return result
+      end
 
       # Bypass Bundler IO to avoid version mismatch errors
       content = File.read(@lockfile_path)
@@ -182,6 +194,10 @@ module RailsPreflight
            [false, "#{e.class.name}: #{e.message}"]
         end
       end
+    end
+
+    def target_rails_rules
+      @target_rails_rules ||= @rules.fetch('rails_versions', {})[@target_rails]
     end
   end
 end

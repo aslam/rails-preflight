@@ -3,6 +3,8 @@ require 'erb'
 
 module RailsPreflight
   class ReportGenerator
+    include ERB::Util
+
     def initialize(data)
       @data = data
       @generated_at = Time.now
@@ -52,8 +54,8 @@ module RailsPreflight
         <body>
           <h1>RailsPreFlight</h1>
           <div class="meta">
-            Target Rails Version: <strong><%= @data[:target_rails] %></strong><br>
-            Generated at: <%= @generated_at %>
+            Target Rails Version: <strong><%= h(@data[:target_rails]) %></strong><br>
+            Generated at: <%= h(@generated_at) %>
           </div>
 
           <% if @data[:summary] %>
@@ -62,28 +64,28 @@ module RailsPreflight
               <div class="summary-grid">
                 <div class="summary-item">
                   <div class="summary-label">Target Rails</div>
-                  <div class="summary-value"><%= @data[:target_rails] %></div>
+                  <div class="summary-value"><%= h(@data[:target_rails]) %></div>
                 </div>
                 <div class="summary-item">
                   <div class="summary-label">Risk Score</div>
-                  <div class="summary-value"><%= @data[:summary][:upgrade_score] %></div>
+                  <div class="summary-value"><%= h(@data[:summary][:upgrade_score]) %></div>
                 </div>
                 <div class="summary-item">
                   <div class="summary-label">Overall Risk</div>
-                  <div class="summary-value risk-<%= @data[:summary][:overall_risk].downcase %>">
-                    <%= @data[:summary][:overall_risk] %>
+                  <div class="summary-value <%= risk_class(@data[:summary][:overall_risk]) %>">
+                    <%= h(@data[:summary][:overall_risk]) %>
                   </div>
                 </div>
                 <div class="summary-item">
                   <div class="summary-label">Estimated Effort</div>
-                  <div class="summary-value"><%= @data[:summary][:estimated_effort] %></div>
+                  <div class="summary-value"><%= h(@data[:summary][:estimated_effort]) %></div>
                 </div>
                 <div class="summary-item" style="grid-column: span 1 / -1;">
                   <div class="summary-label">Primary Blockers</div>
                   <% if @data[:summary][:primary_blockers].any? %>
                     <ul class="blockers-list">
                       <% @data[:summary][:primary_blockers].each do |blocker| %>
-                        <li><%= blocker %></li>
+                        <li><%= h(blocker) %></li>
                       <% end %>
                     </ul>
                   <% else %>
@@ -99,7 +101,7 @@ module RailsPreflight
                 <div style="background: #fff; padding: 15px; border-radius: 4px;">
                   <ol style="margin: 0; padding-left: 20px; font-size: 1.1em;">
                     <% @data[:summary][:suggested_path].each do |step| %>
-                      <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;"><%= step %></li>
+                      <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;"><%= h(step) %></li>
                     <% end %>
                   </ol>
                 </div>
@@ -111,14 +113,14 @@ module RailsPreflight
             <div class="section">
               <div class="section-header">
                 <div>
-                  <span><%= section[:title] %></span>
+                  <span><%= h(section[:title]) %></span>
                   <% if section[:confidence] %>
-                    <span class="badge badge-confidence-<%= section[:confidence] %>" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
-                      CONFIDENCE: <%= section[:confidence].upcase %>
+                    <span class="badge <%= confidence_class(section[:confidence]) %>" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
+                      CONFIDENCE: <%= h(section[:confidence].to_s.upcase) %>
                     </span>
                   <% end %>
                 </div>
-                <span class="badge badge-<%= section[:status] %>"><%= section[:status].upcase %></span>
+                <span class="badge <%= status_class(section[:status]) %>"><%= h(section[:status].to_s.upcase) %></span>
               </div>
               <div class="section-body">
                 <% if section[:checks].empty? %>
@@ -130,26 +132,26 @@ module RailsPreflight
                         <!-- Grouped Finding Header -->
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
                           <div>
-                            <strong><%= check[:message] %></strong>
+                            <strong><%= h(check[:message]) %></strong>
                             <% if check[:stats][:fix_effort] %>
-                              <span class="badge" style="background-color: #4a5568;">Fix: <%= check[:stats][:fix_effort].upcase %></span>
+                              <span class="badge" style="background-color: #4a5568;">Fix: <%= h(check[:stats][:fix_effort].to_s.upcase) %></span>
                             <% end %>
                           </div>
-                          <span class="badge" style="background-color: #718096;"><%= check[:stats][:severity] %></span>
+                          <span class="badge" style="background-color: #718096;"><%= h(check[:stats][:severity]) %></span>
                         </div>
                         
                         <!-- Stats Row -->
                         <div style="display: flex; gap: 15px; font-size: 0.85em; color: #555; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
-                          <span>Occurrences: <strong><%= check[:stats][:occurrences] %></strong> <span style="font-weight:normal; color:#718096; font-size:0.9em;">(App: <strong><%= check[:stats][:occurrences_app] %></strong> / Test: <%= check[:stats][:occurrences_test] %>)</span></span>
-                          <span>Files: <strong><%= check[:stats][:files] %></strong></span>
-                          <span>Models: <strong><%= check[:stats][:models] %></strong></span>
-                          <span>Controllers: <strong><%= check[:stats][:controllers] %></strong></span>
+                          <span>Occurrences: <strong><%= h(check[:stats][:occurrences]) %></strong> <span style="font-weight:normal; color:#718096; font-size:0.9em;">(App: <strong><%= h(check[:stats][:occurrences_app]) %></strong> / Test: <%= h(check[:stats][:occurrences_test]) %>)</span></span>
+                          <span>Files: <strong><%= h(check[:stats][:files]) %></strong></span>
+                          <span>Models: <strong><%= h(check[:stats][:models]) %></strong></span>
+                          <span>Controllers: <strong><%= h(check[:stats][:controllers]) %></strong></span>
                         </div>
 
                         <!-- Expandable Details -->
                         <details>
                           <summary style="cursor: pointer; color: #3182ce; font-weight: 500; font-size: 0.9em; margin-bottom: 10px;">
-                            Expand to see <%= check[:stats][:occurrences] %> individual instances
+                            Expand to see <%= h(check[:stats][:occurrences]) %> individual instances
                           </summary>
                           
                           <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 300px; overflow-y: auto;">
@@ -164,9 +166,9 @@ module RailsPreflight
                               <tbody>
                                 <% check[:details].each do |occ| %>
                                   <tr style="border-bottom: 1px solid #edf2f7;">
-                                    <td style="padding: 8px; color: #4a5568;"><%= occ[:file] %></td>
-                                    <td style="padding: 8px; color: #4a5568;"><%= occ[:line] %></td>
-                                    <td style="padding: 8px; font-family: monospace; color: #c53030;"><%= occ[:snippet] %></td>
+                                    <td style="padding: 8px; color: #4a5568;"><%= h(occ[:file]) %></td>
+                                    <td style="padding: 8px; color: #4a5568;"><%= h(occ[:line]) %></td>
+                                    <td style="padding: 8px; font-family: monospace; color: #c53030;"><%= h(occ[:snippet]) %></td>
                                   </tr>
                                 <% end %>
                               </tbody>
@@ -177,19 +179,19 @@ module RailsPreflight
                       <% else %>
                         <!-- Standard Check -->
                         <div style="display: flex; justify-content: space-between;">
-                          <strong><%= check[:message] %></strong>
+                          <strong><%= h(check[:message]) %></strong>
                           <% if check[:fix_effort] %>
-                             <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: <%= check[:fix_effort].upcase %></span>
+                             <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: <%= h(check[:fix_effort].to_s.upcase) %></span>
                           <% end %>
                         </div>
                         <% if check[:details].is_a?(Array) %>
                           <ul>
                             <% check[:details].each do |detail| %>
-                              <li><%= detail %></li>
+                              <li><%= h(detail) %></li>
                             <% end %>
                           </ul>
                         <% elsif check[:details] %>
-                           <p><%= check[:details] %></p>
+                           <p><%= h(check[:details]) %></p>
                         <% end %>
                       <% end %>
                     </div>
@@ -217,6 +219,20 @@ module RailsPreflight
       ERB
 
       ERB.new(template).result(binding)
+    end
+
+    private
+
+    def confidence_class(confidence)
+      "badge-confidence-#{confidence.to_s.downcase}"
+    end
+
+    def risk_class(risk)
+      "risk-#{risk.to_s.downcase}"
+    end
+
+    def status_class(status)
+      "badge-#{status}"
     end
   end
 end

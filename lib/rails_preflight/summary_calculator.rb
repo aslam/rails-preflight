@@ -30,7 +30,7 @@ module RailsPreflight
       end
       
       # 3. Docker Issues (+2 if warnings/failed)
-      docker_check = @results.find { |r| r[:title] == "Docker Analysis" }
+      docker_check = find_section("Docker Configuration")
       if docker_check && (docker_check[:status] == :warning || docker_check[:status] == :failed)
         score += 2
       end
@@ -44,13 +44,9 @@ module RailsPreflight
     end
 
     def calculate_risk
-      # Risk Logic:
-      # High: Any failed checks (blockers) or > 3 warnings
-      # Medium: 1-3 warnings
-      # Low: 0 warnings, 0 failures
-      if failed_checks_count > 0 || warning_checks_count > 3
+      if failed_checks_count > 0 || significant_warning_checks_count > 3
         "High"
-      elsif warning_checks_count > 0
+      elsif significant_warning_checks_count > 0
         "Medium"
       else
         "Low"
@@ -138,7 +134,7 @@ module RailsPreflight
       end
 
       # Step 4: Docker
-      docker_check = @results.find { |r| r[:title] == "Docker Analysis" }
+      docker_check = find_section("Docker Configuration")
       if docker_check && docker_check[:status] != :passed
         steps << "Update Dockerfile (Init process / Entrypoint adjustments)"
       end
@@ -157,7 +153,7 @@ module RailsPreflight
       # If status is warning, count the checks that are warnings
       return 0 if section[:status] == :passed
 
-      section[:checks].count { |c| c[:status] == :warning && !c[:message].start_with?("💡 Recommendation") }
+      section[:checks].count { |check| actionable_deprecation_warning?(check) }
     end
 
     def total_deprecation_occurrences
@@ -166,10 +162,19 @@ module RailsPreflight
       return 0 if section[:status] == :passed
 
       # Sum up occurrences from stats if available, otherwise just count the entries
-      section[:checks].sum do |c| 
-        next 0 unless c[:status] == :warning && !c[:message].start_with?("💡 Recommendation")
-        c.dig(:stats, :occurrences) || 1
+      section[:checks].sum do |check|
+        next 0 unless actionable_deprecation_warning?(check)
+        check.dig(:stats, :occurrences) || 1
       end
+    end
+
+    def actionable_deprecation_warning?(check)
+      actionable_warning?(check) && check.dig(:stats, :severity).to_s.downcase != "info"
+    end
+
+    def actionable_warning?(check)
+      return false unless check[:status] == :warning
+      !recommendation_check?(check)
     end
 
     def count_private_gems
@@ -179,17 +184,25 @@ module RailsPreflight
     end
 
     def find_check(section_title, message_start)
-      section = @results.find { |r| r[:title] == section_title }
+      section = find_section(section_title)
       return nil unless section
       section[:checks].find { |c| c[:message].start_with?(message_start) }
+    end
+
+    def find_section(title)
+      @results.find { |result| result[:title] == title }
     end
 
     def failed_checks_count
       @results.sum { |section| section[:checks].count { |c| c[:status] == :failed } }
     end
 
-    def warning_checks_count
-      @results.sum { |section| section[:checks].count { |c| c[:status] == :warning } }
+    def significant_warning_checks_count
+      @results.sum { |section| section[:checks].count { |check| actionable_warning?(check) } }
+    end
+
+    def recommendation_check?(check)
+      check[:message].to_s.start_with?("💡 Recommendation")
     end
   end
 end

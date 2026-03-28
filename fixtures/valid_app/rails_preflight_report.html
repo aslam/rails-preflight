@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RailsPreFlight Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    .section { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+    .section-header { background: #f9f9f9; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
+    .section-body { padding: 15px; }
+    .item { margin-bottom: 10px; padding: 10px; border-radius: 4px; }
+    .passed { background-color: #e6fffa; border-left: 5px solid #38b2ac; }
+    .warning { background-color: #fffaf0; border-left: 5px solid #ed8936; }
+    .failed { background-color: #fff5f5; border-left: 5px solid #f56565; }
+    .badge { padding: 2px 8px; border-radius: 12px; font-size: 0.8em; color: white; }
+    .badge-passed { background-color: #38b2ac; }
+    .badge-warning { background-color: #ed8936; }
+    .badge-failed { background-color: #f56565; }
+    .badge-confidence-high { background-color: #2b6cb0; }
+    .badge-confidence-medium { background-color: #dd6b20; }
+    .badge-confidence-low { background-color: #718096; }
+    .meta { color: #666; font-size: 0.9em; margin-bottom: 20px; }
+    .summary-card { background: #f0f4f8; border: 1px solid #d9e2ec; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    .summary-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #102a43; border-bottom: 1px solid #bcccdc; padding-bottom: 10px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .summary-item { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .summary-label { font-size: 0.8em; color: #486581; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+    .summary-value { font-size: 1.4em; font-weight: bold; }
+    .risk-high { color: #e53e3e; }
+    .risk-medium { color: #dd6b20; }
+    .risk-low { color: #38a169; }
+    .blockers-list { margin: 0; padding-left: 20px; font-size: 0.9em; color: #e53e3e; }
+    .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.9em; }
+    .legend { display: inline-flex; gap: 20px; align-items: center; justify-content: center; margin-top: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+  </style>
+</head>
+<body>
+  <h1>RailsPreFlight</h1>
+  <div class="meta">
+    Target Rails Version: <strong>6.1</strong><br>
+    Generated at: 2026-03-28 20:41:10 +0530
+  </div>
+
+  
+    <div class="summary-card">
+      <div class="summary-title">Upgrade Readiness Summary</div>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-label">Target Rails</div>
+          <div class="summary-value">6.1</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Risk Score</div>
+          <div class="summary-value">2.0 / 40</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Overall Risk</div>
+          <div class="summary-value risk-high">
+            High
+          </div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Estimated Effort</div>
+          <div class="summary-value">Small</div>
+        </div>
+        <div class="summary-item" style="grid-column: span 1 / -1;">
+          <div class="summary-label">Primary Blockers</div>
+          
+            <div style="color: #38a169; font-weight: bold;">None detected! 🎉</div>
+          
+        </div>
+      </div>
+    </div>
+
+    
+      <div class="summary-card" style="border-left: 5px solid #38b2ac;">
+        <div class="summary-title" style="color: #234e52; border-bottom-color: #38b2ac;">🚀 Suggested Upgrade Path</div>
+        <div style="background: #fff; padding: 15px; border-radius: 4px;">
+          <ol style="margin: 0; padding-left: 20px; font-size: 1.1em;">
+            
+              <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">Plan Ruby Upgrade (Warnings detected)</li>
+            
+              <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">Update Dockerfile (Init process / Entrypoint adjustments)</li>
+            
+              <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">Proceed with Rails Upgrade: ... -&gt; 6.1</li>
+            
+          </ol>
+        </div>
+      </div>
+    
+  
+
+  
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <span>Ruby Version</span>
+          
+            <span class="badge badge-confidence-high" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
+              CONFIDENCE: HIGH
+            </span>
+          
+        </div>
+        <span class="badge badge-warning">WARNING</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item passed">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>Ruby 2.5.9 (Dockerfile) is compatible with Rails 6.1.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>EOL Ruby: Ruby 2.5.9 is End-of-Life. Upgrade to Ruby 3.1+.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: HIGH</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <span>Private Gems</span>
+          
+            <span class="badge badge-confidence-high" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
+              CONFIDENCE: HIGH
+            </span>
+          
+        </div>
+        <span class="badge badge-passed">PASSED</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item passed">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>No private gems detected.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <span>Docker Configuration</span>
+          
+            <span class="badge badge-confidence-medium" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
+              CONFIDENCE: MEDIUM
+            </span>
+          
+        </div>
+        <span class="badge badge-warning">WARNING</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item passed">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>Dockerfile uses Base Image: ruby:2.5.9-buster</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>ZOMBIE PROCESSES: No init process (tini/dumb-init) detected. Rails cannot handle signals properly as PID 1.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>EOL Ruby: Ruby 2.5 is End-of-Life. Upgrade to Ruby 3.1+.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: HIGH</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>Locale: Missing &#39;ENV LANG&#39; or &#39;ENV LC_ALL&#39;. This can cause encoding issues.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>Timezone: &#39;tzdata&#39; package seems missing. Rails Time.zone requires it.</strong>
+                  
+                     <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: LOW</span>
+                  
+                </div>
+                
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <span>Deprecation Warnings</span>
+          
+            <span class="badge badge-confidence-high" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
+              CONFIDENCE: HIGH
+            </span>
+          
+        </div>
+        <span class="badge badge-passed">PASSED</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item passed">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)</strong>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.</strong>
+                  
+                </div>
+                
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <span>Configuration</span>
+          
+            <span class="badge badge-confidence-high" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
+              CONFIDENCE: HIGH
+            </span>
+          
+        </div>
+        <span class="badge badge-warning">WARNING</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item failed">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>❓  CONFIG: config/application.rb not found.</strong>
+                  
+                </div>
+                
+              
+            </div>
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>ℹ️  CONFIG: No &#39;new_framework_defaults&#39; initializer found. Make sure you run &#39;rails app:update&#39;.</strong>
+                  
+                </div>
+                
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+    <div class="section">
+      <div class="section-header">
+        <div>
+          <span>Database Schema</span>
+          
+            <span class="badge badge-confidence-high" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
+              CONFIDENCE: HIGH
+            </span>
+          
+        </div>
+        <span class="badge badge-warning">WARNING</span>
+      </div>
+      <div class="section-body">
+        
+          
+            <div class="item warning">
+              
+                <!-- Standard Check -->
+                <div style="display: flex; justify-content: space-between;">
+                  <strong>No db/schema.rb found. Skipping database checks.</strong>
+                  
+                </div>
+                
+              
+            </div>
+          
+        
+      </div>
+    </div>
+  
+
+  <div class="footer">
+    <div class="legend">
+      <div class="legend-item">
+        <strong>Severity:</strong> Upgrade blocking impact
+      </div>
+      <span style="color: #cbd5e0;">|</span>
+      <div class="legend-item">
+        <strong>Fix Effort:</strong> Implementation cost
+      </div>
+    </div>
+    <p style="margin-top: 10px;">RailsPreFlight</p>
+  </div>
+
+</body>
+</html>

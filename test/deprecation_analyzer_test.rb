@@ -44,11 +44,15 @@ class DeprecationAnalyzerTest < Minitest::Test
     assert_equal :warning, result[:status]
     check = result[:checks].first
 
-    assert_match(/High Confidence/, check[:message])
-    assert_match /Guide.*example\.com/, check[:message]
+    assert_equal "Don't use this", check[:message]
+    assert_equal true, check[:grouped]
+    assert_equal 1, check.dig(:stats, :occurrences)
+    assert_equal 1, check.dig(:stats, :occurrences_app)
+    assert_equal 0, check.dig(:stats, :occurrences_test)
 
-    detail = check[:details]
+    detail = check[:details].first
     assert_equal "High", detail[:confidence]
+    assert_equal "http://example.com", detail[:guide_link]
     assert_equal "Rails 6.0 -> 6.1", detail[:recategorization]
     assert_equal "app/model.rb", detail[:file]
     assert_equal 2, detail[:line]

@@ -69,7 +69,7 @@ class SummaryCalculatorTest < Minitest::Test
         checks: [{ message: "BLOCKER", status: :failed }] # +5
       },
       {
-        title: "Docker Analysis",
+        title: "Docker Configuration",
         status: :warning,
         checks: [] # +2
       },
@@ -91,6 +91,40 @@ class SummaryCalculatorTest < Minitest::Test
     summary = calculator.calculate
 
     assert_equal "14.0 / 40", summary[:upgrade_score]
+  end
+
+  def test_recommendation_only_does_not_raise_risk
+    results = [
+      {
+        title: "Deprecation Warnings",
+        status: :warning,
+        checks: [
+          { status: :warning, message: "💡 Recommendation: Install `rubocop-rails` gem." }
+        ]
+      }
+    ]
+
+    calculator = RailsPreflight::SummaryCalculator.new(results)
+    summary = calculator.calculate
+
+    assert_equal "Low", summary[:overall_risk]
+    assert_equal "0.0 / 40", summary[:upgrade_score]
+  end
+
+  def test_docker_configuration_contributes_to_summary
+    results = [
+      {
+        title: "Docker Configuration",
+        status: :warning,
+        checks: [{ status: :warning, message: "Locale missing" }]
+      }
+    ]
+
+    calculator = RailsPreflight::SummaryCalculator.new(results)
+    summary = calculator.calculate
+
+    assert_equal "2.0 / 40", summary[:upgrade_score]
+    assert_includes summary[:suggested_path], "Update Dockerfile (Init process / Entrypoint adjustments)"
   end
 
   def test_calculate_deprecation_occurrences
