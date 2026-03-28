@@ -1,8 +1,8 @@
-# Rails Upgrade Audit 🛡️
+# RailsPreFlight 🛡️
 
 **Assess Rails upgrade risk before you touch a single line of code.**
 
-`rails-upgrade-audit` is a static analysis tool that scans legacy Rails applications and produces a **human-readable upgrade risk report**.
+`rails-preflight` is a static analysis tool that scans legacy Rails applications and produces a **human-readable upgrade risk report**.
 
 It helps teams understand:
 
@@ -21,7 +21,7 @@ Rails upgrades fail not because teams can’t write code, but because they under
 - Ruby and OS lifecycle mismatches
 - Docker runtime issues that surface late
 
-`rails-upgrade-audit` makes these risks visible before you start upgrading.
+`rails-preflight` makes these risks visible before you start upgrading.
 
 Think of it as **upgrade reconnaissance**, not a fixer.
 
@@ -68,14 +68,14 @@ This tool is especially useful if you are:
 Add this line to your application's `Gemfile`:
 
 ```ruby
-gem 'rails_upgrade_audit', require: false
+gem 'rails_preflight', require: false
 ```
 
 Then run:
 
 ```bash
 bundle install
-bundle exec rails-upgrade-audit 6.1
+bundle exec rails-preflight 6.1
 ```
 
 ### Option B: Standalone
@@ -83,13 +83,13 @@ bundle exec rails-upgrade-audit 6.1
 This tool is designed to be run as a standalone script or cloned into your toolbox.
 
 ```bash
-gem install rails-upgrade-audit
+gem install rails_preflight
 ```
 
 Then run:
 
 ```bash
-rails-upgrade-audit 6.1 /path/to/your/app
+rails-preflight 6.1 /path/to/your/app
 ```
 
 The tool will analyze:
@@ -103,12 +103,12 @@ The tool will analyze:
 And generate:
 
 ```
-upgrade_audit.html
+rails_preflight_report.html
 ```
 
 ## Report Overview
 
-The tool generates a self-contained **HTML report** (`upgrade_audit.html`) that provides a comprehensive view of your upgrade readiness.
+The tool generates a self-contained **HTML report** (`rails_preflight_report.html`) that provides a comprehensive view of your upgrade readiness.
 
 ### Key Sections
 

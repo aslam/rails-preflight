@@ -1,6 +1,6 @@
 require "minitest/autorun"
 require "yaml"
-require_relative "../lib/rails_upgrade_audit/deprecation_analyzer"
+require_relative "../lib/rails_preflight/deprecation_analyzer"
 
 class DeprecationAnalyzerTest < Minitest::Test
   def setup
@@ -36,30 +36,17 @@ class DeprecationAnalyzerTest < Minitest::Test
 
   def test_detects_and_structures_deprecation
     File.write(File.join(@app_dir, "model.rb"), "def foo\n  deprecated_method\nend")
-
-    # Mock constant path for test by subclassing or stubbing, 
-    # but since constant is hardcoded in class, we might need to mock YAML.load_file.
-    # However, allow me to use a trick: redefine the constant or just pass rules if analyzer supported it.
-    # Analyzer loads from constants. Let's rely on stubbing YAML.load_file? 
-    # Or better, just integration test with the REAL yaml file, but that might change over time.
-    # Let's simple create a file that matches a REAL rule.
-    # The real rule is `update_attributes!?`.
-    
     File.write(File.join(@app_dir, "user.rb"), "User.update_attributes(name: 'foo')")
-    
-    # Pass the mock database path
-    analyzer = RailsUpgradeAudit::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml"))
-    
+
+    analyzer = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml"))
     result = analyzer.run
-    
+
     assert_equal :warning, result[:status]
     check = result[:checks].first
-    
-    # The mock rule has confidence High
+
     assert_match(/High Confidence/, check[:message])
-    # The mock rule has guide link http://example.com
     assert_match /Guide.*example\.com/, check[:message]
-    
+
     detail = check[:details]
     assert_equal "High", detail[:confidence]
     assert_equal "Rails 6.0 -> 6.1", detail[:recategorization]

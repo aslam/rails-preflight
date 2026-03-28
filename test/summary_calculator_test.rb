@@ -1,5 +1,5 @@
 require 'minitest/autorun'
-require_relative '../lib/rails_upgrade_audit/summary_calculator'
+require_relative '../lib/rails_preflight/summary_calculator'
 
 class SummaryCalculatorTest < Minitest::Test
   def test_calculate_low_risk_small_effort
@@ -9,7 +9,7 @@ class SummaryCalculatorTest < Minitest::Test
       { title: "Deprecation Warnings", status: :passed, checks: [] }
     ]
 
-    calculator = RailsUpgradeAudit::SummaryCalculator.new(results)
+    calculator = RailsPreflight::SummaryCalculator.new(results)
     summary = calculator.calculate
 
     assert_equal "Low", summary[:overall_risk]
@@ -28,7 +28,7 @@ class SummaryCalculatorTest < Minitest::Test
       }
     ]
 
-    calculator = RailsUpgradeAudit::SummaryCalculator.new(results)
+    calculator = RailsPreflight::SummaryCalculator.new(results)
     summary = calculator.calculate
 
     assert_equal "Medium", summary[:overall_risk] # Only warnings, but many
@@ -47,7 +47,7 @@ class SummaryCalculatorTest < Minitest::Test
       }
     ]
 
-    calculator = RailsUpgradeAudit::SummaryCalculator.new(results)
+    calculator = RailsPreflight::SummaryCalculator.new(results)
     summary = calculator.calculate
 
     assert_equal "High", summary[:overall_risk]
@@ -87,7 +87,7 @@ class SummaryCalculatorTest < Minitest::Test
     ]
     # Total: 6 + 5 + 2 + 1.0 = 14.0
 
-    calculator = RailsUpgradeAudit::SummaryCalculator.new(results)
+    calculator = RailsPreflight::SummaryCalculator.new(results)
     summary = calculator.calculate
 
     assert_equal "14.0 / 40", summary[:upgrade_score]
@@ -106,7 +106,7 @@ class SummaryCalculatorTest < Minitest::Test
       }
     ]
 
-    calculator = RailsUpgradeAudit::SummaryCalculator.new(results)
+    calculator = RailsPreflight::SummaryCalculator.new(results)
     summary = calculator.calculate
 
     # 3 distinct types, 10 + 5 + 1 = 16 total occurrences
@@ -132,7 +132,7 @@ class SummaryCalculatorTest < Minitest::Test
       }
     ]
 
-    calculator = RailsUpgradeAudit::SummaryCalculator.new(results, "7.1")
+    calculator = RailsPreflight::SummaryCalculator.new(results, "7.1")
     summary = calculator.calculate
     path = summary[:suggested_path]
 

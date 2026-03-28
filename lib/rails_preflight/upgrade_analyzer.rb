@@ -1,4 +1,4 @@
-# lib/rails_upgrade_audit/upgrade_analyzer.rb
+# lib/rails_preflight/upgrade_analyzer.rb
 require 'bundler'
 require 'net/http'
 require 'json'
@@ -7,7 +7,7 @@ require 'uri'
 require_relative 'summary_calculator'
 
 
-module RailsUpgradeAudit
+module RailsPreflight
   class UpgradeAnalyzer
     DATA_PATH = File.expand_path('../../database/compatibility.yml', __dir__)
 
@@ -41,7 +41,7 @@ module RailsUpgradeAudit
 
       html = ReportGenerator.new(report_data).generate
       
-      output_path = File.join(@project_path, "upgrade_audit.html")
+      output_path = File.join(@project_path, "rails_preflight_report.html")
       File.write(output_path, html)
       
       puts "\n✅ Report generated at: #{output_path}"
@@ -105,10 +105,6 @@ module RailsUpgradeAudit
     def scan_gems
       result = { title: "Private Gems", status: :passed, checks: [], confidence: :high }
       puts "\n[2/2] Scanning Gems..."
-
-      # ... (omitted gem scanning logic for brevity, assuming it doesn't change)
-      # Actually, I need to match the full method if I want to use AllowMultiple effectively or just pinpoint the replacement.
-      # Let's target the checks insertion part.
 
       # Bypass Bundler IO to avoid version mismatch errors
       content = File.read(@lockfile_path)

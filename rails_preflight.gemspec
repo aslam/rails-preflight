@@ -1,21 +1,21 @@
 # frozen_string_literal: true
 
-require_relative "lib/rails_upgrade_audit/version"
+require_relative "lib/rails_preflight/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "rails_upgrade_audit"
-  spec.version = RailsUpgradeAudit::VERSION
+  spec.name = "rails_preflight"
+  spec.version = RailsPreflight::VERSION
   spec.authors = ["Syed Aslam"]
   spec.email = ["aslam.maqsood@gmail.com"]
 
-  spec.summary = "A tool to audit Rails applications for upgrade readiness."
-  spec.description = "Checks Ruby version compatibility, private gems, and Dockerfile best practices for Rails upgrades."
-  spec.homepage = "https://github.com/aslam/rails_upgrade_audit"
+  spec.summary = "Pre-upgrade audit and readiness checks for Rails applications."
+  spec.description = "Checks Ruby version compatibility, private gems, and Dockerfile best practices before Rails upgrades."
+  spec.homepage = "https://github.com/aslam/rails-preflight"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.5.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/aslam/rails_upgrade_audit"
+  spec.metadata["source_code_uri"] = "https://github.com/aslam/rails-preflight"
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
     `git ls-files -z`.split("\x0").reject do |f|

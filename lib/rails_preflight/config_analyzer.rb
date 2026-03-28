@@ -1,5 +1,5 @@
-# lib/rails_upgrade_audit/config_analyzer.rb
-module RailsUpgradeAudit
+# lib/rails_preflight/config_analyzer.rb
+module RailsPreflight
   class ConfigAnalyzer
     def initialize(root_path = Dir.pwd)
       @root_path = root_path

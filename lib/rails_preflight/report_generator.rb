@@ -1,7 +1,7 @@
-# lib/rails_upgrade_audit/report_generator.rb
+# lib/rails_preflight/report_generator.rb
 require 'erb'
 
-module RailsUpgradeAudit
+module RailsPreflight
   class ReportGenerator
     def initialize(data)
       @data = data
@@ -15,7 +15,7 @@ module RailsUpgradeAudit
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Rails Upgrade Audit Report</title>
+          <title>RailsPreFlight Report</title>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
             h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -50,7 +50,7 @@ module RailsUpgradeAudit
           </style>
         </head>
         <body>
-          <h1>Rails Upgrade Audit</h1>
+          <h1>RailsPreFlight</h1>
           <div class="meta">
             Target Rails Version: <strong><%= @data[:target_rails] %></strong><br>
             Generated at: <%= @generated_at %>
@@ -209,7 +209,7 @@ module RailsUpgradeAudit
                 <strong>Fix Effort:</strong> Implementation cost
               </div>
             </div>
-            <p style="margin-top: 10px;">Rauls Upgrade Audit Tool</p>
+            <p style="margin-top: 10px;">RailsPreFlight</p>
           </div>
 
         </body>

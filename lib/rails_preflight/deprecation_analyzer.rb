@@ -1,4 +1,4 @@
-module RailsUpgradeAudit
+module RailsPreflight
   require 'pathname'
   class DeprecationAnalyzer
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)

@@ -1,4 +1,4 @@
-module RailsUpgradeAudit
+module RailsPreflight
   class SummaryCalculator
     def initialize(results, target_rails = "Unknown")
       @results = results

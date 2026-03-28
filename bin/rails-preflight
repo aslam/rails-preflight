@@ -12,15 +12,15 @@ require 'bundler/setup'
 lib = File.expand_path("../lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
-require 'rails_upgrade_audit'
+require 'rails_preflight'
 
 if ARGV.empty?
-  puts "Usage: rails-upgrade-audit [TARGET_RAILS_VERSION]"
-  puts "Example: rails-upgrade-audit 5.2"
+  puts "Usage: rails-preflight [TARGET_RAILS_VERSION]"
+  puts "Example: rails-preflight 5.2"
   exit 1
 end
 
 target = ARGV[0]
 project_path = ARGV[1] || Dir.pwd
 
-RailsUpgradeAudit::UpgradeAnalyzer.new(target, project_path).run
+RailsPreflight::UpgradeAnalyzer.new(target, project_path).run

@@ -1,5 +1,5 @@
 require "minitest/autorun"
-require_relative "../lib/rails_upgrade_audit/docker_analyzer"
+require_relative "../lib/rails_preflight/docker_analyzer"
 
 class DockerAnalyzerTest < Minitest::Test
   def setup
@@ -21,7 +21,7 @@ class DockerAnalyzerTest < Minitest::Test
       ENV LANG=C.UTF-8
     DOCKERFILE
     
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
     
     assert_equal :passed, result[:status], "Should pass valid config: #{result[:checks]}"
@@ -32,7 +32,7 @@ class DockerAnalyzerTest < Minitest::Test
       FROM ruby:2.7.6
     DOCKERFILE
 
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
     assert_equal :warning, result[:status]
@@ -45,7 +45,7 @@ class DockerAnalyzerTest < Minitest::Test
       ENV NODE_VERSION 12.0.0
     DOCKERFILE
 
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
     assert result[:checks].any? { |c| c[:message].include?("EOL Node") }
@@ -57,7 +57,7 @@ class DockerAnalyzerTest < Minitest::Test
       # Missing ENV LANG
     DOCKERFILE
 
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
     assert result[:checks].any? { |c| c[:message].include?("Locale") }
@@ -70,7 +70,7 @@ class DockerAnalyzerTest < Minitest::Test
       RUN apk add tzdata
     DOCKERFILE
 
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
     assert result[:checks].any? { |c| c[:message].include?("OpenSSL Mismatch") }

@@ -2,7 +2,7 @@
 
 ## Project Principles
 
-To ensure `rails-upgrade-audit` remains a trusted tool for planning and estimation, we adhere to the following core principles. These rules guide development and prevent scope creep.
+To ensure `rails-preflight` remains a trusted tool for planning and estimation, we adhere to the following core principles. These rules guide development and prevent scope creep.
 
 The OSS core is and will remain:
 

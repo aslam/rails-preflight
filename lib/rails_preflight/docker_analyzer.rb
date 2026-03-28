@@ -1,5 +1,5 @@
-# lib/rails_upgrade_audit/docker_analyzer.rb
-module RailsUpgradeAudit
+# lib/rails_preflight/docker_analyzer.rb
+module RailsPreflight
   class DockerAnalyzer
     def initialize(root_path = Dir.pwd)
       @dockerfile_path = File.join(root_path, "Dockerfile")

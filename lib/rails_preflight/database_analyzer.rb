@@ -1,6 +1,6 @@
-# lib/rails_upgrade_audit/database_analyzer.rb
+# lib/rails_preflight/database_analyzer.rb
 
-module RailsUpgradeAudit
+module RailsPreflight
   class DatabaseAnalyzer
     def initialize(project_path, rules = [])
       @schema_path = File.join(project_path, "db/schema.rb")
