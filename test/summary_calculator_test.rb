@@ -127,6 +127,18 @@ class SummaryCalculatorTest < Minitest::Test
     assert_includes summary[:suggested_path], "Address Dockerfile findings"
   end
 
+  def test_score_is_capped_at_40
+    results = [
+      {
+        title: "Private Gems",
+        status: :warning,
+        checks: [{ message: "Private Gems Detected", status: :warning, details: Array.new(20) { |i| "gem_#{i}" } }]
+      }
+    ]
+
+    assert_equal "40.0 / 40", RailsPreflight::SummaryCalculator.new(results).calculate[:upgrade_score]
+  end
+
   def test_calculate_deprecation_occurrences
     results = [
       {

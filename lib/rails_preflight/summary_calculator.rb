@@ -39,8 +39,7 @@ module RailsPreflight
       deprecations_score = count_deprecations * 0.2
       score += [deprecations_score, 10.0].min
       
-      # Return scaled string "X / 40"
-      "#{score.round(1)} / 40"
+      "#{[score, 40.0].min.round(1)} / 40"
     end
 
     def calculate_risk
