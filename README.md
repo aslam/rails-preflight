@@ -120,7 +120,7 @@ The tool generates a self-contained **HTML report** (`rails_preflight_report.htm
 2.  **Suggested Upgrade Path**: A generated step-by-step guide tailored to your specific findings, helping you sequence the upgrade work.
 
 3.  **Detailed Findings**:
-    *   **Deprecations**: Grouped by message to reduce noise. Expandable to show individual file/line occurrences.
+    *   **Deprecations**: Grouped by message to reduce noise. Expandable to show individual file/line occurrences, with a link to the relevant Rails guide.
     *   **Gem Compatibility**: Identifies private gems and known public gem incompatibilities.
     *   **Configuration & Infrastructure**: Checks for Docker/OS issues and missing Rails config.
     *   **Database Schema**: Highlights potential data issues (e.g. integer overflows).

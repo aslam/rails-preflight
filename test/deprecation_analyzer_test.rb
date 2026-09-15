@@ -46,6 +46,7 @@ class DeprecationAnalyzerTest < Minitest::Test
 
     assert_equal "Don't use this", check[:message]
     assert_equal true, check[:grouped]
+    assert_equal "http://example.com", check[:guide_link]
     assert_equal 1, check.dig(:stats, :occurrences)
     assert_equal 1, check.dig(:stats, :occurrences_app)
     assert_equal 0, check.dig(:stats, :occurrences_test)

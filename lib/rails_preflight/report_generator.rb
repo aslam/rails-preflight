@@ -135,6 +135,9 @@ module RailsPreflight
                             <% if check[:stats][:fix_effort] %>
                               <span class="badge" style="background-color: #4a5568;">Fix: <%= h(check[:stats][:fix_effort].to_s.upcase) %></span>
                             <% end %>
+                            <% if guide_link?(check[:guide_link]) %>
+                              <a href="<%= h(check[:guide_link]) %>" target="_blank" rel="noopener" style="font-size: 0.85em; margin-left: 8px;">Upgrade guide ↗</a>
+                            <% end %>
                           </div>
                           <span class="badge" style="background-color: #718096;"><%= h(check[:stats][:severity]) %></span>
                         </div>
@@ -232,6 +235,11 @@ module RailsPreflight
 
     def confidence_class(confidence)
       "badge-confidence-#{confidence.to_s.downcase}"
+    end
+
+    # Links come from the rules database; render https only.
+    def guide_link?(url)
+      url.to_s.start_with?("https://")
     end
 
     def occurrences_note(count)

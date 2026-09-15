@@ -53,4 +53,29 @@ class ReportGeneratorTest < Minitest::Test
     assert_includes html, 'href="#section-deprecation-warnings"'
     assert_includes html, 'id="section-deprecation-warnings"'
   end
+
+  def test_links_deprecations_to_their_upgrade_guide
+    html = RailsPreflight::ReportGenerator.new(
+      target_rails: "7.2",
+      results: [{
+        title: "Deprecation Warnings", status: :warning, confidence: :medium,
+        checks: [
+          grouped_check("Use update", "https://guides.rubyonrails.org/6_1_release_notes.html"),
+          grouped_check("Sneaky", "javascript:alert(1)")
+        ]
+      }]
+    ).generate
+
+    assert_includes html, 'href="https://guides.rubyonrails.org/6_1_release_notes.html"'
+    refute_includes html, "javascript:alert(1)"
+  end
+
+  private
+
+  def grouped_check(message, guide_link)
+    {
+      message: message, status: :warning, grouped: true, guide_link: guide_link, details: [],
+      stats: { occurrences: 1, occurrences_app: 1, occurrences_test: 0, files: 1, models: 0, controllers: 0, severity: "warning", fix_effort: "low" }
+    }
+  end
 end

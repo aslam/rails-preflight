@@ -42,6 +42,7 @@ module RailsPreflight
             status: status,
             kind: (:tip if info),
             grouped: true,
+            guide_link: occurrences.first[:guide_link],
             stats: {
               occurrences: occurrences.count,
               occurrences_app: occurrences.count { |w| !w[:is_test] },

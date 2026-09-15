@@ -17,7 +17,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - Ruby compatibility per target Rails (5.0 – 8.1), read from `.ruby-version`, `Gemfile.lock`, or the Dockerfile
 - EOL checks for Ruby and Node
 - Private gem detection (git/path sources, non-rubygems.org remotes)
-- Deprecation scan, grouped by pattern, with app vs test occurrence counts; a blocker when the target Rails removes the API; commented-out code is skipped
+- Deprecation scan, grouped by pattern, with app vs test occurrence counts; a blocker when the target Rails removes the API; commented-out code is skipped; each links to its Rails guide
 - Stops with a clear message when the directory isn't a Rails app
 - Config checks: `config.load_defaults` missing or behind the current Rails version
 - Docker checks: EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3 mismatch
@@ -26,14 +26,12 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 ## Now: make the report correct and readable
 
-1. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them. Prefer stable sources (Rails guides, API docs, commits) over blog posts, which rot.
-
-2. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
+1. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
 
 ## Next: cover more of the upgrade
 
 - **Step-by-step upgrade path.** Rails recommends moving one minor version at a time. Use current → target to list each hop (5.2 → 6.0 → 6.1 → 7.0 → …) and the Ruby version it needs.
-- **Grow the deprecation rules.** There are two today. Add rules for each hop from the official upgrade guides, and apply only those whose `removed_in` falls within the jump.
+- **Grow the deprecation rules.** There are two today. Add rules for each hop from the official upgrade guides, and apply only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
 - **Scan views and `config/`.** Only Ruby files under `app/`, `lib/`, `test/` and `spec/` are scanned today. Many removals live in config and routes (e.g. `Rails.application.secrets`, removed in 7.2) or in templates.
 - **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements. Each entry records its source and the Rails versions it applies to, so stale entries expire instead of lingering.
 - **Database rules by version range**, not only when the target is exactly 6.0. Support `structure.sql`.
