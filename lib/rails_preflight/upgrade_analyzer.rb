@@ -26,7 +26,7 @@ module RailsPreflight
       puts "🔍 Starting Audit: Rails #{current_rails || 'unknown'} → #{@target_rails}..."
 
       results = []
-      database_rules = target_rails_rules&.fetch('database_rules', nil)
+      database_rules = @rules.fetch('database_rules', []).select { |rule| Gem::Version.new(rule['since']) <= Gem::Version.new(@target_rails) }
 
       results << check_rails_version
       results << check_ruby_version

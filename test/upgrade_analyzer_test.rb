@@ -113,6 +113,16 @@ class UpgradeAnalyzerTest < Minitest::Test
     refute File.exist?(File.join(@tmp_dir, "rails_preflight_report.html"))
   end
 
+  def test_database_rules_apply_to_targets_past_their_version
+    FileUtils.mkdir_p(File.join(@tmp_dir, "db"))
+    File.write(File.join(@tmp_dir, "db", "schema.rb"), %(create_table "users", id: :integer, charset: "utf8mb3" do |t|\nend\n))
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    assert_includes report, "Legacy utf8mb3 charset detected."
+    assert_includes report, "Integer IDs detected."
+  end
+
   private
 
   def report

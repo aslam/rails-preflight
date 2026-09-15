@@ -9,8 +9,9 @@ module RailsPreflight
     end
 
     def run
-      result = { title: "Database Schema", status: :passed, checks: [], confidence: :high }
-      
+      # Pattern-based, so medium confidence
+      result = { title: "Database Schema", status: :passed, checks: [], confidence: :medium }
+
       unless File.exist?(@schema_path)
         result[:status] = :warning
         result[:checks] << { message: "No db/schema.rb found. Skipping database checks.", status: :warning, kind: :unknown }
@@ -18,28 +19,27 @@ module RailsPreflight
       end
 
       if @rules.empty?
-        # No rules means we didn't find anything specific to check, so it passes "vacuously" or we can say info.
-        # But for consistency let's just return empty passed.
+        result[:checks] << { message: "No database checks apply to this target Rails version.", status: :passed }
         return result
       end
 
       content = File.read(@schema_path)
       scan_schema(content)
-      
+
       if @warnings.any?
         result[:status] = @warnings.any? { |w| w[:severity] == 'critical' } ? :failed : :warning
         @warnings.each do |w|
            result[:checks] << {
-             message: w[:message], 
+             message: w[:message],
              status: w[:severity] == 'critical' ? :failed : :warning,
              details: w[:type]
            }
         end
       end
-      
+
       result
     end
-    
+
     private
 
     def scan_schema(content)
@@ -54,8 +54,5 @@ module RailsPreflight
         end
       end
     end
-
-    # output_results method removed as it is no longer used
-
   end
 end
