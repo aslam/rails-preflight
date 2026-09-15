@@ -8,6 +8,8 @@ require "rails_preflight"
 class UpgradeAnalyzerTest < Minitest::Test
   def setup
     @tmp_dir = Dir.mktmpdir
+    FileUtils.mkdir_p(File.join(@tmp_dir, "config"))
+    File.write(File.join(@tmp_dir, "config", "environment.rb"), "")
   end
 
   def teardown
@@ -100,6 +102,15 @@ class UpgradeAnalyzerTest < Minitest::Test
     RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
 
     assert_includes report, "Could not read current Rails version from Gemfile.lock."
+  end
+
+  def test_refuses_a_directory_that_is_not_a_rails_app
+    FileUtils.rm(File.join(@tmp_dir, "config", "environment.rb"))
+
+    error = assert_raises(RailsPreflight::Error) { RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run }
+
+    assert_includes error.message, "doesn't look like a Rails app"
+    refute File.exist?(File.join(@tmp_dir, "rails_preflight_report.html"))
   end
 
   private

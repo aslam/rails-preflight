@@ -19,6 +19,10 @@ module RailsPreflight
     end
 
     def run
+      unless File.exist?(File.join(@project_path, "config", "environment.rb"))
+        raise Error, "#{@project_path} doesn't look like a Rails app (no config/environment.rb)."
+      end
+
       puts "🔍 Starting Audit: Rails #{current_rails || 'unknown'} → #{@target_rails}..."
 
       results = []
