@@ -1,5 +1,7 @@
 require "minitest/autorun"
 require "yaml"
+require "tmpdir"
+require "fileutils"
 require_relative "../lib/rails_preflight/deprecation_analyzer"
 
 class DeprecationAnalyzerTest < Minitest::Test

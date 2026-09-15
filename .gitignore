@@ -1,3 +1,4 @@
 .DS_Store
 roadmap/
 rails_preflight_report.html
+Gemfile.lock

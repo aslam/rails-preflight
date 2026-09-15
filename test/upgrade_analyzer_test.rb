@@ -1,6 +1,7 @@
 require "minitest/autorun"
 require "tmpdir"
 require "fileutils"
+require "stringio"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 require "rails_preflight"
@@ -10,9 +11,11 @@ class UpgradeAnalyzerTest < Minitest::Test
     @tmp_dir = Dir.mktmpdir
     FileUtils.mkdir_p(File.join(@tmp_dir, "config"))
     File.write(File.join(@tmp_dir, "config", "environment.rb"), "")
+    @real_stdout, $stdout = $stdout, StringIO.new # UpgradeAnalyzer#run prints progress
   end
 
   def teardown
+    $stdout = @real_stdout
     FileUtils.remove_entry @tmp_dir
   end
 

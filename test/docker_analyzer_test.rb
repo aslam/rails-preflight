@@ -1,4 +1,6 @@
 require "minitest/autorun"
+require "tmpdir"
+require "fileutils"
 require_relative "../lib/rails_preflight/docker_analyzer"
 
 class DockerAnalyzerTest < Minitest::Test

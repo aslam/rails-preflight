@@ -67,13 +67,10 @@ Install it globally and point it at your app. It only reads files, so the app ca
 
 ```bash
 gem install rails_preflight
+rails-preflight 7.2 /path/to/your/app
 ```
 
-Then run:
-
-```bash
-rails-preflight 6.1 /path/to/your/app
-```
+Leave out the path to audit the current directory.
 
 The tool will analyze:
 
@@ -123,6 +120,15 @@ This tool favors:
 - planning support over automation
 
 If it helps you avoid one failed upgrade attempt, it has done its job.
+
+## Development
+
+```bash
+bundle install
+bundle exec rake
+```
+
+CI runs the suite on every Ruby from 2.7 to 4.0.
 
 ## License
 
