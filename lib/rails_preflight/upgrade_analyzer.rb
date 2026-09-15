@@ -179,14 +179,8 @@ module RailsPreflight
       url = URI("https://rubygems.org/api/v1/gems/#{spec.name}.json")
       
       begin
-        # Use VERIFY_NONE to avoid local certificate issues (CRL errors)
-        # We are only checking for existence of public gems, not transmitting secrets.
-        http_options = { 
-          use_ssl: true, 
-          open_timeout: 2, 
-          read_timeout: 2,
-          verify_mode: OpenSSL::SSL::VERIFY_NONE 
-        }
+        # Certificate errors are reported as inconclusive below, never silently trusted.
+        http_options = { use_ssl: true, open_timeout: 2, read_timeout: 2 }
 
         response = Net::HTTP.start(url.host, url.port, http_options) do |http|
           http.request(Net::HTTP::Get.new(url))
@@ -194,8 +188,7 @@ module RailsPreflight
         # 404 means it's private (not found on public repo)
         [response.code == '404', nil]
       rescue StandardError => e
-        # Fail safe - return false (assume public) but with error details
-        # If it's an SSL error despite VERIFY_NONE, we should still handle it gracefully
+        # Inconclusive: surfaced as "Analysis Incomplete" in the report
         if e.is_a?(OpenSSL::SSL::SSLError)
            [false, "SSL Error: #{e.message}"]
         else
