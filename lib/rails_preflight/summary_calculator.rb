@@ -1,8 +1,9 @@
 module RailsPreflight
   class SummaryCalculator
-    def initialize(results, target_rails = "Unknown")
+    def initialize(results, target_rails = "Unknown", current_rails = nil)
       @results = results
       @target_rails = target_rails
+      @current_rails = current_rails
     end
 
     def calculate
@@ -139,7 +140,7 @@ module RailsPreflight
       end
 
       # Step 5: Final Upgrade
-      steps << "Proceed with Rails Upgrade: ... -> #{@target_rails}"
+      steps << (@current_rails ? "Upgrade Rails #{@current_rails} → #{@target_rails}" : "Upgrade Rails to #{@target_rails}")
       
       steps
     end

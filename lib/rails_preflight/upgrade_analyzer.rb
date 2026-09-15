@@ -19,11 +19,12 @@ module RailsPreflight
     end
 
     def run
-      puts "🔍 Starting Audit for Rails #{@target_rails}..."
-      
+      puts "🔍 Starting Audit: Rails #{current_rails || 'unknown'} → #{@target_rails}..."
+
       results = []
       database_rules = target_rails_rules&.fetch('database_rules', nil)
-      
+
+      results << check_rails_version
       results << check_ruby_version
       results << scan_gems
       results << DockerAnalyzer.new(@project_path).run
@@ -33,11 +34,12 @@ module RailsPreflight
 
       report_data = {
         target_rails: @target_rails,
+        current_rails: current_rails&.to_s,
         results: results
       }
 
       # Calculate Summary
-      summary_calc = SummaryCalculator.new(results, @target_rails)
+      summary_calc = SummaryCalculator.new(results, @target_rails, current_rails&.to_s)
       report_data[:summary] = summary_calc.calculate
 
       html = ReportGenerator.new(report_data).generate
@@ -50,6 +52,23 @@ module RailsPreflight
     end
 
     private
+
+    def check_rails_version
+      result = { title: "Rails Version", status: :passed, checks: [], confidence: :high }
+
+      if current_rails.nil?
+        result[:status] = :warning
+        result[:confidence] = :low
+        result[:checks] << { message: "Could not read current Rails version from Gemfile.lock.", status: :warning, fix_effort: :low }
+      elsif Gem::Version.new(current_rails.segments.first(2).join(".")) >= Gem::Version.new(@target_rails)
+        result[:status] = :warning
+        result[:checks] << { message: "Already on Rails #{current_rails}: #{@target_rails} is not an upgrade.", status: :warning, fix_effort: :low }
+      else
+        result[:checks] << { message: "Rails #{current_rails} (Gemfile.lock) → #{@target_rails}", status: :passed, fix_effort: :low }
+      end
+
+      result
+    end
 
     def check_ruby_version
       result = { title: "Ruby Version", status: :passed, checks: [], confidence: :high }
@@ -126,14 +145,10 @@ module RailsPreflight
         return result
       end
 
-      # Bypass Bundler IO to avoid version mismatch errors
-      content = File.read(@lockfile_path)
-      parser = Bundler::LockfileParser.new(content)
-
       private_gems = []
       inconclusive_gems = []
 
-      parser.specs.each do |spec|
+      lockfile_specs.each do |spec|
         next if ['rails', 'rake'].include?(spec.name)
 
         is_priv, error = is_private?(spec)
@@ -195,6 +210,16 @@ module RailsPreflight
            [false, "#{e.class.name}: #{e.message}"]
         end
       end
+    end
+
+    # railties is in every Rails app's lockfile, even without the rails meta-gem.
+    def current_rails
+      lockfile_specs.find { |s| s.name == "railties" || s.name == "rails" }&.version
+    end
+
+    # Bypass Bundler IO to avoid version mismatch errors
+    def lockfile_specs
+      @lockfile_specs ||= File.exist?(@lockfile_path) ? Bundler::LockfileParser.new(File.read(@lockfile_path)).specs : []
     end
 
     def target_rails_rules

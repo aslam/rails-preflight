@@ -77,19 +77,45 @@ class UpgradeAnalyzerTest < Minitest::Test
     refute_includes report, RUBY_VERSION
   end
 
+  def test_reports_current_rails_version_from_lockfile
+    write_lockfile(rails: "7.1.3")
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    assert_includes report, "Rails 7.1.3 (Gemfile.lock) → 7.2"
+    assert_includes report, "Upgrade Rails 7.1.3 → 7.2"
+  end
+
+  def test_flags_target_that_is_not_an_upgrade
+    write_lockfile(rails: "7.2.1")
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    assert_includes report, "Already on Rails 7.2.1: 7.2 is not an upgrade."
+  end
+
+  def test_unknown_current_rails_is_reported
+    write_lockfile
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    assert_includes report, "Could not read current Rails version from Gemfile.lock."
+  end
+
   private
 
   def report
     File.read(File.join(@tmp_dir, "rails_preflight_report.html"))
   end
 
-  def write_lockfile(ruby: nil)
+  def write_lockfile(ruby: nil, rails: nil)
     ruby_section = ruby ? "RUBY VERSION\n   ruby #{ruby}\n\n" : ""
+    rails_spec = rails ? "\n    railties (#{rails})" : ""
     File.write(File.join(@tmp_dir, "Gemfile.lock"), <<~LOCKFILE)
       GEM
         remote: https://rubygems.org/
         specs:
-          rake (13.0.6)
+          rake (13.0.6)#{rails_spec}
 
       PLATFORMS
         ruby

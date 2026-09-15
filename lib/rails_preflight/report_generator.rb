@@ -54,7 +54,7 @@ module RailsPreflight
         <body>
           <h1>RailsPreFlight</h1>
           <div class="meta">
-            Target Rails Version: <strong><%= h(@data[:target_rails]) %></strong><br>
+            Rails: <strong><%= h(rails_jump) %></strong><br>
             Generated at: <%= h(@generated_at) %>
           </div>
 
@@ -63,8 +63,8 @@ module RailsPreflight
               <div class="summary-title">Upgrade Readiness Summary</div>
               <div class="summary-grid">
                 <div class="summary-item">
-                  <div class="summary-label">Target Rails</div>
-                  <div class="summary-value"><%= h(@data[:target_rails]) %></div>
+                  <div class="summary-label">Rails</div>
+                  <div class="summary-value"><%= h(rails_jump) %></div>
                 </div>
                 <div class="summary-item">
                   <div class="summary-label">Risk Score</div>
@@ -222,6 +222,10 @@ module RailsPreflight
     end
 
     private
+
+    def rails_jump
+      "#{@data[:current_rails] || 'unknown'} → #{@data[:target_rails]}"
+    end
 
     def confidence_class(confidence)
       "badge-confidence-#{confidence.to_s.downcase}"

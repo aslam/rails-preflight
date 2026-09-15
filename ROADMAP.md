@@ -13,6 +13,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 ## Shipped
 
+- Current Rails version from `Gemfile.lock`, shown as `current → target` in the report and upgrade path
 - Ruby compatibility per target Rails (5.0 – 8.1), read from `.ruby-version`, `Gemfile.lock`, or the Dockerfile
 - EOL checks for Ruby and Node
 - Private gem detection (git/path sources, non-rubygems.org remotes)
@@ -24,9 +25,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 ## Now: make the report correct and readable
 
-1. **Detect the app's current Rails version** from `Gemfile.lock`. Today the tool only knows the target, so it can't tell which changes apply to this jump. Most items below build on this.
-
-2. **Replace the summary with numbers that explain themselves.** The summary currently shows three measures, computed independently, that often disagree:
+1. **Replace the summary with numbers that explain themselves.** The summary currently shows three measures, computed independently, that often disagree:
    - *Risk Score* (`7.0 / 40`): +3 per private gem, +5 for a Ruby blocker, +2 for any Docker warning, +0.2 per deprecation type. The weights are arbitrary and 40 is a cap, not a scale.
    - *Overall Risk* (High / Medium / Low): High if any single check failed.
    - *Estimated Effort* (Small / Medium / Large): thresholds on deprecation and private gem counts.
@@ -40,16 +39,16 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
    Explain confidence levels in the report legend.
 
-3. **Stop counting noise as risk.**
+2. **Stop counting noise as risk.**
    - A missing `new_framework_defaults` initializer is flagged even after a finished upgrade, when the file is meant to be deleted. Flag `load_defaults` lagging behind the current Rails version instead. That's the real signal.
    - EOL Ruby is reported in both the Ruby and Docker sections.
    - Tips (install `rubocop-rails`, set `BUNDLE_WITHOUT`) are warnings and raise the risk. Give them their own kind, set as a field instead of inferred from a 💡 in the message text.
    - The deprecation scan flags commented-out code. Skip comment lines.
    - Pointed at a directory that isn't a Rails app, it produces a High-risk report. Say so and stop.
 
-4. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them. Prefer stable sources (Rails guides, API docs, commits) over blog posts, which rot.
+3. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them. Prefer stable sources (Rails guides, API docs, commits) over blog posts, which rot.
 
-5. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
+4. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
 
 ## Next: cover more of the upgrade
 

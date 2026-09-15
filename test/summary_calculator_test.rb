@@ -178,13 +178,13 @@ class SummaryCalculatorTest < Minitest::Test
       }
     ]
 
-    calculator = RailsPreflight::SummaryCalculator.new(results, "7.1")
+    calculator = RailsPreflight::SummaryCalculator.new(results, "7.1", "6.1.7")
     summary = calculator.calculate
     path = summary[:suggested_path]
 
     assert_includes path, "Upgrade Ruby (Blocker detected: BLOCKER: Need Ruby 3.1)"
     assert_includes path, "Audit 1 Private Gems for Rails 7.1 readiness"
     assert_includes path, "Fix 1 distinct deprecation patterns (e.g. update_attributes, etc.)"
-    assert_includes path, "Proceed with Rails Upgrade: ... -> 7.1"
+    assert_includes path, "Upgrade Rails 6.1.7 → 7.1"
   end
 end
