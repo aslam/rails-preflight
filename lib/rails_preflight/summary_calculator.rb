@@ -136,7 +136,7 @@ module RailsPreflight
       # Step 4: Docker
       docker_check = find_section("Docker Configuration")
       if docker_check && docker_check[:status] != :passed
-        steps << "Update Dockerfile (Init process / Entrypoint adjustments)"
+        steps << "Address Dockerfile findings"
       end
 
       # Step 5: Final Upgrade

@@ -33,7 +33,7 @@ The audit analyzes your project for common Rails upgrade risk factors:
 - End-of-life Ruby versions
 - Private / internal gem dependencies
 - Rails deprecations that block upgrades
-- Docker runtime risks (PID 1, locale, tzdata, base image)
+- Docker runtime risks (EOL base image, locale, tzdata, OpenSSL mismatch)
 - Missing Rails configuration required for newer versions
 
 The output is a **single HTML report** designed to be:

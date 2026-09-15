@@ -124,7 +124,7 @@ class SummaryCalculatorTest < Minitest::Test
     summary = calculator.calculate
 
     assert_equal "2.0 / 40", summary[:upgrade_score]
-    assert_includes summary[:suggested_path], "Update Dockerfile (Init process / Entrypoint adjustments)"
+    assert_includes summary[:suggested_path], "Address Dockerfile findings"
   end
 
   def test_calculate_deprecation_occurrences
