@@ -45,6 +45,8 @@ module RailsPreflight
       # Calculate Summary
       summary_calc = SummaryCalculator.new(results, @target_rails, current_rails&.to_s)
       report_data[:summary] = summary_calc.calculate
+      summary = report_data[:summary]
+      puts "Blockers: #{summary[:blockers].size} · To fix: #{summary[:to_fix].size} · Couldn't check: #{summary[:unknowns].size}"
 
       html = ReportGenerator.new(report_data).generate
       
@@ -76,7 +78,6 @@ module RailsPreflight
 
     def check_ruby_version
       result = { title: "Ruby Version", status: :passed, checks: [], confidence: :high }
-      puts "\n[1/2] Checking Ruby Version..."
 
       constraints = target_rails_rules
 
@@ -137,7 +138,6 @@ module RailsPreflight
 
     def scan_gems
       result = { title: "Private Gems", status: :passed, checks: [], confidence: :high }
-      puts "\n[2/2] Scanning Gems..."
 
       unless File.exist?(@lockfile_path)
         result[:status] = :warning
@@ -154,6 +154,7 @@ module RailsPreflight
       private_gems = []
       inconclusive_gems = []
 
+      print "Checking gems "
       lockfile_specs.each do |spec|
         next if ['rails', 'rake'].include?(spec.name)
 
