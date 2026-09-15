@@ -29,7 +29,7 @@ module RailsPreflight
       results << scan_gems
       results << DockerAnalyzer.new(@project_path).run
       results << DeprecationAnalyzer.new(@project_path).run
-      results << ConfigAnalyzer.new(@project_path).run
+      results << ConfigAnalyzer.new(@project_path, current_rails).run
       results << DatabaseAnalyzer.new(@project_path, database_rules).run
 
       report_data = {

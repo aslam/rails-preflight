@@ -18,7 +18,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - EOL checks for Ruby and Node
 - Private gem detection (git/path sources, non-rubygems.org remotes)
 - Deprecation scan, grouped by pattern, with app vs test occurrence counts
-- Config checks: `config.load_defaults`, `new_framework_defaults` initializer
+- Config checks: `config.load_defaults` missing or behind the current Rails version
 - Docker checks: EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3 mismatch
 - Database schema checks: charset and integer IDs (6.0 target only)
 - Single-file HTML report with a suggested path and per-section confidence
@@ -40,7 +40,6 @@ rails-preflight answers one question about a Rails app: **what stands between th
    Explain confidence levels in the report legend.
 
 2. **Stop counting noise as risk.**
-   - A missing `new_framework_defaults` initializer is flagged even after a finished upgrade, when the file is meant to be deleted. Flag `load_defaults` lagging behind the current Rails version instead. That's the real signal.
    - EOL Ruby is reported in both the Ruby and Docker sections.
    - Tips (install `rubocop-rails`, set `BUNDLE_WITHOUT`) are warnings and raise the risk. Give them their own kind, set as a field instead of inferred from a 💡 in the message text.
    - The deprecation scan flags commented-out code. Skip comment lines.
