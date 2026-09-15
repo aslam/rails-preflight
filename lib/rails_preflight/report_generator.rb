@@ -11,7 +11,8 @@ module RailsPreflight
     end
 
     def generate
-      template = <<~ERB
+      # Quoted heredoc: #{} inside the template is evaluated by ERB at render time, not here.
+      template = <<~'ERB'
         <!DOCTYPE html>
         <html lang="en">
         <head>
