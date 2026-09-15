@@ -44,8 +44,10 @@ rails-preflight answers one question about a Rails app: **what stands between th
    - A missing `new_framework_defaults` initializer is flagged even after a finished upgrade, when the file is meant to be deleted. Flag `load_defaults` lagging behind the current Rails version instead. That's the real signal.
    - EOL Ruby is reported in both the Ruby and Docker sections.
    - Tips (install `rubocop-rails`, set `BUNDLE_WITHOUT`) are warnings and raise the risk. Give them their own kind, set as a field instead of inferred from a 💡 in the message text.
+   - The deprecation scan flags commented-out code. Skip comment lines.
+   - Pointed at a directory that isn't a Rails app, it produces a High-risk report. Say so and stop.
 
-4. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them.
+4. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them. Prefer stable sources (Rails guides, API docs, commits) over blog posts, which rot.
 
 5. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
 
@@ -53,7 +55,8 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 - **Step-by-step upgrade path.** Rails recommends moving one minor version at a time. Use current → target to list each hop (5.2 → 6.0 → 6.1 → 7.0 → …) and the Ruby version it needs.
 - **Grow the deprecation rules.** There are two today. Add rules for each hop from the official upgrade guides, and apply only those whose `removed_in` falls within the jump.
-- **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements.
+- **Scan views and `config/`.** Only Ruby files under `app/`, `lib/`, `test/` and `spec/` are scanned today. Many removals live in config and routes (e.g. `Rails.application.secrets`, removed in 7.2) or in templates.
+- **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements. Each entry records its source and the Rails versions it applies to, so stale entries expire instead of lingering.
 - **Database rules by version range**, not only when the target is exactly 6.0. Support `structure.sql`.
 - **Go offline for gem checks.** Replace the rubygems.org lookup with lockfile-only heuristics, or put it behind an `--online` flag.
 - **Terminal summary.** Print blockers at the end of the run, for SSH sessions and CI logs.
@@ -63,7 +66,6 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 - JSON output with a stable schema, so CI can gate on it
 - Scope flags such as `--exclude-tests`
-- Routes analyzer (`match` without `via:`, legacy routing DSL)
 - Cross-check Ruby version sources (`.ruby-version` vs Dockerfile vs CI config)
 
 ## Not doing
