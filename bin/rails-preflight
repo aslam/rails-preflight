@@ -21,6 +21,7 @@ if ARGV.empty?
 end
 
 target = ARGV[0]
+abort "Target must be a Rails version such as 7.2 (got #{target.inspect})." unless Gem::Version.correct?(target)
 project_path = ARGV[1] || Dir.pwd
 
 RailsPreflight::UpgradeAnalyzer.new(target, project_path).run
