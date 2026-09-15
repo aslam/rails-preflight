@@ -3,10 +3,11 @@ module RailsPreflight
   class DeprecationAnalyzer
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
 
-    def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil)
+    def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil)
       @root_path = root_path
       @rules = YAML.load_file(database_path)
       @target_rails = target_rails
+      @current_rails = current_rails
     end
 
     def run
@@ -34,7 +35,7 @@ module RailsPreflight
           severity = occurrences.first[:severity] || "Warning"
           fix_effort = occurrences.first[:fix_effort] || "low"
           info = severity.to_s.downcase == "info"
-          # A removed API breaks the target outright; otherwise it's a warning to fix.
+          # An API this upgrade removes blocks it; otherwise it's a warning to fix.
           status = info ? :passed : (removed_by_target?(occurrences.first[:removed_in]) ? :failed : :warning)
 
           result[:checks] << {
@@ -43,6 +44,7 @@ module RailsPreflight
             kind: (:tip if info),
             grouped: true,
             guide_link: occurrences.first[:guide_link],
+            removed_in: occurrences.first[:removed_in],
             stats: {
               occurrences: occurrences.count,
               occurrences_app: occurrences.count { |w| !w[:is_test] },
@@ -82,8 +84,11 @@ module RailsPreflight
 
     private
 
+    # Removed after the current version and by the target: this upgrade breaks it.
     def removed_by_target?(removed_in)
-      removed_in && @target_rails && Gem::Version.new(removed_in.to_s) <= Gem::Version.new(@target_rails)
+      return false unless removed_in && @target_rails
+      removed = Gem::Version.new(removed_in.to_s)
+      removed <= Gem::Version.new(@target_rails) && (@current_rails.nil? || removed > Gem::Version.new(@current_rails))
     end
 
     def check_rubocop_rails

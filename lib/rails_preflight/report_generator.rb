@@ -87,7 +87,7 @@ module RailsPreflight
                   <summary><%= h(label) %> (<%= @data[:summary][key].size %>)</summary>
                   <ul>
                     <% @data[:summary][key].each do |finding| %>
-                      <li><a href="#<%= section_id(finding[:section]) %>"><%= h(finding[:section]) %></a>: <%= h(finding[:message]) %><%= occurrences_note(finding[:occurrences]) %></li>
+                      <li><%= finding_html(finding) %></li>
                     <% end %>
                   </ul>
                 </details>
@@ -100,7 +100,14 @@ module RailsPreflight
                 <div style="background: #fff; padding: 15px; border-radius: 4px;">
                   <ol style="margin: 0; padding-left: 20px; font-size: 1.1em;">
                     <% @data[:summary][:suggested_path].each do |step| %>
-                      <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;"><%= h(step) %></li>
+                      <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
+                        <strong><%= h(step[:title]) %></strong>
+                        <ul style="margin: 5px 0 0; padding-left: 18px; font-size: 0.85em;">
+                          <% step[:items].each do |item| %>
+                            <li><%= finding_html(item) %></li>
+                          <% end %>
+                        </ul>
+                      </li>
                     <% end %>
                   </ol>
                 </div>
@@ -240,6 +247,12 @@ module RailsPreflight
     # Links come from the rules database; render https only.
     def guide_link?(url)
       url.to_s.start_with?("https://")
+    end
+
+    # One finding line, linked to its section when it has one. Escapes everything it renders.
+    def finding_html(finding)
+      prefix = finding[:section] ? %(<a href="##{section_id(finding[:section])}">#{h(finding[:section])}</a>: ) : ""
+      prefix + h(finding[:message]) + occurrences_note(finding[:occurrences])
     end
 
     def occurrences_note(count)

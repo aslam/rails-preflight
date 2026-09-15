@@ -32,7 +32,7 @@ module RailsPreflight
       results << check_ruby_version
       results << scan_gems
       results << DockerAnalyzer.new(@project_path, checked_ruby: @eol_checked_ruby).run
-      results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails).run
+      results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails, current_rails: current_rails&.to_s).run
       results << ConfigAnalyzer.new(@project_path, current_rails).run
       results << DatabaseAnalyzer.new(@project_path, database_rules).run
 
@@ -43,7 +43,7 @@ module RailsPreflight
       }
 
       # Calculate Summary
-      summary_calc = SummaryCalculator.new(results, @target_rails, current_rails&.to_s)
+      summary_calc = SummaryCalculator.new(results, @target_rails, current_rails&.to_s, hops: upgrade_hops, app_ruby: app_ruby.first)
       report_data[:summary] = summary_calc.calculate
       summary = report_data[:summary]
       puts "Blockers: #{summary[:blockers].size} · To fix: #{summary[:to_fix].size} · Couldn't check: #{summary[:unknowns].size}"
@@ -87,9 +87,7 @@ module RailsPreflight
         return result
       end
 
-      # Handles 'ruby-2.5.9', '3.3', '3.3.5p100'
-      current_raw, source = detect_app_ruby
-      current_str = current_raw.to_s[/\d+\.\d+(?:\.\d+)?/]
+      current_str, source = app_ruby
 
       unless current_str
         result[:status] = :warning
@@ -134,6 +132,28 @@ module RailsPreflight
 
       docker_ruby = DockerAnalyzer.new(@project_path).detect_ruby_version
       [docker_ruby, "Dockerfile"] if docker_ruby
+    end
+
+    # [version, source]; version is nil when unparseable. Handles 'ruby-2.5.9', '3.3', '3.3.5p100'.
+    def app_ruby
+      @app_ruby ||= begin
+        raw, source = detect_app_ruby
+        [raw.to_s[/\d+\.\d+(?:\.\d+)?/], source]
+      end
+    end
+
+    # Rails recommends one minor version at a time: every known version after the current one, up to the target.
+    def upgrade_hops
+      from = current_rails && Gem::Version.new(current_rails.segments.first(2).join("."))
+      to = Gem::Version.new(@target_rails)
+      hops = @rules.fetch('rails_versions', {}).filter_map do |version, rules|
+        v = Gem::Version.new(version)
+        next unless v <= to && (from ? v > from : v == to)
+        { version: version, min_ruby: rules['required_ruby'].split.last, max_ruby: rules['max_ruby'] }
+      end
+      hops = hops.sort_by { |hop| Gem::Version.new(hop[:version]) }
+      hops << { version: @target_rails } unless target_rails_rules # target missing from compatibility.yml
+      hops
     end
 
     def scan_gems

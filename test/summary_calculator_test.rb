@@ -8,7 +8,7 @@ class SummaryCalculatorTest < Minitest::Test
         title: "Ruby Version",
         status: :failed,
         checks: [
-          { message: "BLOCKER: Ruby too old", status: :failed },
+          { message: "Ruby too old", status: :failed },
           { message: "EOL Ruby", status: :warning },
           { message: "Ruby unknown", status: :warning, kind: :unknown },
           { message: "Nice tip", status: :passed, kind: :tip },
@@ -19,7 +19,7 @@ class SummaryCalculatorTest < Minitest::Test
 
     summary = RailsPreflight::SummaryCalculator.new(results, "7.2").calculate
 
-    assert_equal ["BLOCKER: Ruby too old"], summary[:blockers].map { |f| f[:message] }
+    assert_equal ["Ruby too old"], summary[:blockers].map { |f| f[:message] }
     assert_equal ["EOL Ruby"], summary[:to_fix].map { |f| f[:message] }
     assert_equal ["Ruby unknown"], summary[:unknowns].map { |f| f[:message] }
   end
@@ -38,36 +38,56 @@ class SummaryCalculatorTest < Minitest::Test
     assert_equal [{ section: "Deprecation Warnings", message: "Use update", occurrences: 12 }], summary[:to_fix]
   end
 
-  def test_path_lists_blocking_sections_first_then_the_upgrade
+  def test_path_prepares_then_steps_through_each_minor_version
     results = [
-      { title: "Private Gems", status: :warning, checks: [{ message: "2 private gems", status: :warning, kind: :unknown }] },
+      { title: "Ruby Version", status: :failed, checks: [{ message: "Too old", status: :failed }] },
+      { title: "Private Gems", status: :warning, checks: [{ message: "1 private gem", status: :warning, kind: :unknown }] },
       { title: "Docker Configuration", status: :passed, checks: [{ message: "Fine", status: :passed }] },
       {
-        title: "Ruby Version",
+        title: "Deprecation Warnings",
         status: :failed,
-        checks: [{ message: "Too old", status: :failed }, { message: "EOL", status: :warning }]
-      },
-      { title: "Configuration", status: :warning, checks: [{ message: "load_defaults behind", status: :warning }] }
+        checks: [
+          { message: "Old API", status: :failed, removed_in: "7.1", stats: { occurrences: 4 } },
+          { message: "Older API", status: :warning, removed_in: "6.1" }
+        ]
+      }
+    ]
+    hops = [
+      { version: "7.0", min_ruby: "2.7.0", max_ruby: "3.2.99" },
+      { version: "7.1", min_ruby: "2.7.0", max_ruby: "3.4.99" }
     ]
 
-    path = RailsPreflight::SummaryCalculator.new(results, "7.1", "6.1.7").calculate[:suggested_path]
+    path = RailsPreflight::SummaryCalculator.new(results, "7.1", "6.1.7", hops: hops, app_ruby: "2.7.8").calculate[:suggested_path]
 
     assert_equal [
-      "Ruby Version: 1 blocker, 1 to fix",
-      "Private Gems: 1 couldn't check",
-      "Configuration: 1 to fix",
-      "Upgrade Rails 6.1.7 → 7.1"
+      { title: "Before you start", items: [
+        { section: "Private Gems", message: "1 couldn't check" },
+        { section: "Deprecation Warnings", message: "1 to fix" }
+      ] },
+      { title: "Rails 6.1.7 → 7.0", items: [{ message: "Needs Ruby 2.7.0–3.2: 2.7.8 works" }] },
+      { title: "Rails 7.0 → 7.1", items: [
+        { message: "Needs Ruby 2.7.0–3.4: 2.7.8 works" },
+        { section: "Deprecation Warnings", message: "Old API", occurrences: 4 }
+      ] }
     ], path
   end
 
-  def test_clean_results_only_suggest_the_upgrade
-    results = [{ title: "Ruby Version", status: :passed, checks: [{ message: "Compatible", status: :passed }] }]
+  def test_ruby_note_says_when_to_upgrade_ruby
+    hops = [{ version: "7.2", min_ruby: "3.1.0", max_ruby: "3.4.99" }]
+
+    path = RailsPreflight::SummaryCalculator.new([], "7.2", "7.1.3", hops: hops, app_ruby: "2.7.8").calculate[:suggested_path]
+
+    assert_equal [{ title: "Rails 7.1.3 → 7.2", items: [{ message: "Needs Ruby 3.1.0–3.4: upgrade Ruby from 2.7.8 first" }] }], path
+  end
+
+  def test_clean_results_without_version_data_suggest_just_the_target
+    results = [{ title: "Configuration", status: :passed, checks: [{ message: "Fine", status: :passed }] }]
 
     summary = RailsPreflight::SummaryCalculator.new(results, "7.1").calculate
 
     assert_empty summary[:blockers]
     assert_empty summary[:to_fix]
     assert_empty summary[:unknowns]
-    assert_equal ["Upgrade Rails to 7.1"], summary[:suggested_path]
+    assert_equal [{ title: "Upgrade to Rails 7.1", items: [{ message: "Ruby requirements for Rails 7.1 are unknown" }] }], summary[:suggested_path]
   end
 end

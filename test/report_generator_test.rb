@@ -9,7 +9,7 @@ class ReportGeneratorTest < Minitest::Test
         blockers: [{ section: "Deprecation Warnings", message: "<b>unsafe blocker</b>", occurrences: 1 }],
         to_fix: [],
         unknowns: [],
-        suggested_path: ["Review <script>alert(1)</script>"]
+        suggested_path: [{ title: "Review <script>alert(1)</script>", items: [{ section: "Deprecation Warnings", message: "<b>unsafe step</b>" }] }]
       },
       results: [
         {
@@ -49,6 +49,7 @@ class ReportGeneratorTest < Minitest::Test
     assert_includes html, "&lt;script&gt;alert(1)&lt;/script&gt;"
     assert_includes html, "&lt;b&gt;unsafe blocker&lt;/b&gt;"
     refute_includes html, "<script>alert(1)</script>"
+    refute_includes html, "<b>unsafe step</b>"
     # Summary findings link to their section
     assert_includes html, 'href="#section-deprecation-warnings"'
     assert_includes html, 'id="section-deprecation-warnings"'

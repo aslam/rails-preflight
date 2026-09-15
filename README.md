@@ -117,7 +117,7 @@ The tool generates a self-contained **HTML report** (`rails_preflight_report.htm
     *   **To fix**: will warn or break along the way (deprecations, lagging config).
     *   **Couldn't check**: what the tool could not verify (private gems, missing files), to review by hand.
 
-2.  **Suggested Upgrade Path**: A generated step-by-step guide tailored to your specific findings, helping you sequence the upgrade work.
+2.  **Suggested Upgrade Path**: One step per Rails minor version, since Rails recommends upgrading one at a time. Each step shows the Ruby range it needs and the removed APIs to fix for it; other findings come first under "Before you start".
 
 3.  **Detailed Findings**:
     *   **Deprecations**: Grouped by message to reduce noise. Expandable to show individual file/line occurrences, with a link to the relevant Rails guide.

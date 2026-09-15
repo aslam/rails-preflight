@@ -85,7 +85,7 @@ class UpgradeAnalyzerTest < Minitest::Test
     RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
 
     assert_includes report, "Rails 7.1.3 (Gemfile.lock) → 7.2"
-    assert_includes report, "Upgrade Rails 7.1.3 → 7.2"
+    assert_includes report, "Rails 7.1.3 → 7.2"
   end
 
   def test_flags_target_that_is_not_an_upgrade
@@ -121,6 +121,17 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     assert_includes report, "Legacy utf8mb3 charset detected."
     assert_includes report, "Integer IDs detected."
+  end
+
+  def test_path_steps_through_each_minor_version
+    write_lockfile(rails: "6.1.7")
+    File.write(File.join(@tmp_dir, ".ruby-version"), "2.7.8\n")
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    ["Rails 6.1.7 → 7.0", "Rails 7.0 → 7.1", "Rails 7.1 → 7.2", "Needs Ruby 3.1.0–3.4: upgrade Ruby from 2.7.8 first"].each do |text|
+      assert_includes report, text
+    end
   end
 
   private
