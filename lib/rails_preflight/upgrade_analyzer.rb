@@ -94,12 +94,12 @@ module RailsPreflight
         result[:checks] << { message: "Ruby #{current_ver} (#{source}) is compatible with Rails #{@target_rails}.", status: :passed, fix_effort: :low }
       end
 
-      # EOL Check (Ruby < 3.1 is generally considered EOL for modern standards or soon to be)
-      if current_ver < Gem::Version.new("3.1")
+      eol_below = DockerAnalyzer::RUBY_EOL_BELOW
+      if current_ver < Gem::Version.new(eol_below)
         result[:status] = :warning if result[:status] == :passed
-        result[:checks] << { message: "EOL Ruby: Ruby #{current_ver} is End-of-Life. Upgrade to Ruby 3.1+.", status: :warning, fix_effort: :high }
+        result[:checks] << { message: "EOL Ruby: Ruby #{current_ver} is End-of-Life. Upgrade to Ruby #{eol_below}+.", status: :warning, fix_effort: :high }
       end
-      
+
       result
     end
 
