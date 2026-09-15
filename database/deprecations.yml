@@ -1,7 +1,7 @@
 deprecations:
   - id: update_attributes
     pattern: "\\bupdate_attributes!?\\b"
-    message: "DEPRECATION: 'update_attributes' was removed in Rails 6.1. Use 'update' instead."
+    message: "'update_attributes' was removed in Rails 6.1. Use 'update' instead."
     removed_in: "6.1"
     severity: error
     confidence: "High"

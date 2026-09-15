@@ -27,7 +27,7 @@ class ConfigAnalyzerTest < Minitest::Test
     result = RailsPreflight::ConfigAnalyzer.new(@tmp_dir, "7.1.3").run
 
     assert_equal :warning, result[:status]
-    assert_includes messages(result), "CONFIG: load_defaults 5.2 is behind Rails 7.1: framework defaults added after 5.2 are not enabled."
+    assert_includes messages(result), "load_defaults 5.2 is behind Rails 7.1: framework defaults added after 5.2 are not enabled."
   end
 
   def test_mentions_new_framework_defaults_when_catch_up_is_in_progress
@@ -43,7 +43,7 @@ class ConfigAnalyzerTest < Minitest::Test
     write_application_rb("config.time_zone = 'UTC'")
 
     assert_equal :passed, RailsPreflight::ConfigAnalyzer.new(@tmp_dir, "5.0.7").run[:status]
-    assert_includes messages(RailsPreflight::ConfigAnalyzer.new(@tmp_dir, "6.1.7").run).join, "'config.load_defaults' missing"
+    assert_includes messages(RailsPreflight::ConfigAnalyzer.new(@tmp_dir, "6.1.7").run).join, "config.load_defaults missing"
   end
 
   private

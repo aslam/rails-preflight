@@ -64,13 +64,13 @@ module RailsPreflight
 
     def check_package_manager_pitfalls(content, result)
       if content.include?("bundle install") && !content.match?(/without/i)
-        result[:checks] << { message: "Optimization: 'bundle install' also installs development/test gems. Set BUNDLE_WITHOUT=\"development:test\".", status: :passed, kind: :tip, fix_effort: :low }
+        result[:checks] << { message: "'bundle install' also installs development and test gems. Set BUNDLE_WITHOUT=\"development:test\".", status: :passed, kind: :tip, fix_effort: :low }
       end
     end
 
     def check_alpine_pitfalls(content, result)
       unless content.match?(/build-base|libxml2-dev|postgresql-dev/)
-        result[:checks] << { message: "ALPINE RISK: Found 'alpine' base image. Ensure 'apk add build-base libxml2-dev' is present for native extensions.", status: :warning, fix_effort: :medium }
+        result[:checks] << { message: "Alpine image without build-base: gems with native extensions may fail to install. Add 'apk add build-base'.", status: :warning, fix_effort: :medium }
       end
     end
 
@@ -79,7 +79,7 @@ module RailsPreflight
       if match = content.match(/NODE_VERSION\s*[:=\s]\s*['"]?(\d+)/)
         major_version = match[1].to_i
         if major_version < NODE_EOL_BELOW
-          result[:checks] << { message: "EOL Node: Node #{major_version} is End-of-Life. Upgrade to Node #{NODE_EOL_BELOW}+.", status: :warning, fix_effort: :medium }
+          result[:checks] << { message: "Node #{major_version} is end-of-life. Upgrade to Node #{NODE_EOL_BELOW}+.", status: :warning, fix_effort: :medium }
         end
       end
     end
@@ -89,19 +89,19 @@ module RailsPreflight
       return if ruby_version && @checked_ruby && ruby_version.split(".").first(2) == @checked_ruby.split(".").first(2)
 
       if ruby_version && Gem::Version.new(ruby_version) < Gem::Version.new(RUBY_EOL_BELOW)
-        result[:checks] << { message: "EOL Ruby: Ruby #{ruby_version} is End-of-Life. Upgrade to Ruby #{RUBY_EOL_BELOW}+.", status: :warning, fix_effort: :high }
+        result[:checks] << { message: "Dockerfile Ruby #{ruby_version} is end-of-life. Upgrade to Ruby #{RUBY_EOL_BELOW}+.", status: :warning, fix_effort: :high }
       end
     end
 
     def check_locale(content, result)
       unless content.match?(/^\s*ENV\s+(LANG|LC_ALL)/)
-        result[:checks] << { message: "Locale: Missing 'ENV LANG' or 'ENV LC_ALL'. This can cause encoding issues.", status: :warning, fix_effort: :low }
+        result[:checks] << { message: "No ENV LANG or LC_ALL set, which can cause encoding errors.", status: :warning, fix_effort: :low }
       end
     end
 
     def check_tzdata(content, result)
       unless content.match?(/tzdata/)
-        result[:checks] << { message: "Timezone: 'tzdata' package seems missing. Rails Time.zone requires it.", status: :warning, fix_effort: :low }
+        result[:checks] << { message: "tzdata isn't installed. Time zone lookups need it, or the tzinfo-data gem.", status: :warning, fix_effort: :low }
       end
     end
 
@@ -111,7 +111,7 @@ module RailsPreflight
       return unless ruby_version && alpine_version
 
       if Gem::Version.new(alpine_version) >= Gem::Version.new("3.17") && Gem::Version.new(ruby_version) < Gem::Version.new("3.1")
-        result[:checks] << { message: "OpenSSL Mismatch: Alpine #{alpine_version} ships OpenSSL 3, which Ruby #{ruby_version} (< 3.1) does not support.", status: :warning, fix_effort: :high }
+        result[:checks] << { message: "Alpine #{alpine_version} ships OpenSSL 3, which Ruby #{ruby_version} (< 3.1) does not support.", status: :warning, fix_effort: :high }
       end
     end
 

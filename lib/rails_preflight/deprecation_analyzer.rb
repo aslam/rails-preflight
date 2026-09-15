@@ -66,12 +66,12 @@ module RailsPreflight
       # Rubocop Advisory Check
       if check_rubocop_rails
         result[:checks] << { 
-          message: "✅ Action: `rubocop-rails` detected. Run `bundle exec rubocop -a` to find and fix more issues.",
+          message: "rubocop-rails is installed. Run `bundle exec rubocop -a` to auto-fix more deprecations.",
           status: :passed 
         }
       else
         result[:checks] << { 
-          message: "💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.",
+          message: "Install rubocop-rails. It can auto-fix many deprecations this tool only detects.",
           status: :passed,
           kind: :tip
         }

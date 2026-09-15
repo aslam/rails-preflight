@@ -14,13 +14,13 @@ module RailsPreflight
       if File.exist?(app_config)
         check_load_defaults(File.read(app_config), result[:checks])
       else
-        result[:checks] << { message: "CONFIG: config/application.rb not found.", status: :warning, kind: :unknown }
+        result[:checks] << { message: "config/application.rb not found.", status: :warning, kind: :unknown }
       end
 
       if result[:checks].any?
         result[:status] = :warning
       else
-        result[:checks] << { message: "Configuration looks baseline sane.", status: :passed }
+        result[:checks] << { message: "No configuration issues found.", status: :passed }
       end
 
       result
@@ -34,9 +34,9 @@ module RailsPreflight
       if match.nil?
         # load_defaults arrived in Rails 5.1
         return if @current_rails && @current_rails < Gem::Version.new("5.1")
-        checks << { message: "CONFIG: 'config.load_defaults' missing in application.rb. Without it, the app keeps legacy framework defaults unless each is set by hand.", status: :warning, fix_effort: :medium }
+        checks << { message: "config.load_defaults missing in application.rb. Without it, the app keeps legacy framework defaults unless each is set by hand.", status: :warning, fix_effort: :medium }
       elsif match[1] && @current_rails && Gem::Version.new(match[1]) < @current_rails
-        message = "CONFIG: load_defaults #{match[1]} is behind Rails #{@current_rails}: framework defaults added after #{match[1]} are not enabled."
+        message = "load_defaults #{match[1]} is behind Rails #{@current_rails}: framework defaults added after #{match[1]} are not enabled."
         pending = Dir.glob(File.join(@root_path, 'config', 'initializers', 'new_framework_defaults*.rb')).map { |f| File.basename(f) }
         message += " Found #{pending.join(', ')}, so enabling them looks in progress." if pending.any?
         checks << { message: message, status: :warning, fix_effort: :medium }

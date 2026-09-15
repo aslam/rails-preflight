@@ -106,10 +106,10 @@ module RailsPreflight
 
       if current_ver < min_ver
         result[:status] = :failed
-        result[:checks] << { message: "BLOCKER: Rails #{@target_rails} needs Ruby >= #{min_ver}. You have #{current_ver}.", status: :failed, fix_effort: :high }
+        result[:checks] << { message: "Rails #{@target_rails} needs Ruby >= #{min_ver}. You have #{current_ver}.", status: :failed, fix_effort: :high }
       elsif current_ver > max_ver
         result[:status] = :failed
-        result[:checks] << { message: "BLOCKER: Rails #{@target_rails} is NOT compatible with Ruby #{current_ver}. (Max recommended: #{max_ver}).", status: :failed, fix_effort: :high }
+        result[:checks] << { message: "Rails #{@target_rails} supports Ruby up to #{constraints['max_ruby'].delete_suffix('.99')}. You have #{current_ver}.", status: :failed, fix_effort: :high }
       else
         result[:checks] << { message: "Ruby #{current_ver} (#{source}) is compatible with Rails #{@target_rails}.", status: :passed, fix_effort: :low }
       end
@@ -118,7 +118,7 @@ module RailsPreflight
       eol_below = DockerAnalyzer::RUBY_EOL_BELOW
       if current_ver < Gem::Version.new(eol_below)
         result[:status] = :warning if result[:status] == :passed
-        result[:checks] << { message: "EOL Ruby: Ruby #{current_ver} is End-of-Life. Upgrade to Ruby #{eol_below}+.", status: :warning, fix_effort: :high }
+        result[:checks] << { message: "Ruby #{current_ver} is end-of-life. Upgrade to Ruby #{eol_below}+.", status: :warning, fix_effort: :high }
       end
 
       result
@@ -182,7 +182,7 @@ module RailsPreflight
 
       if inconclusive_gems.any?
         details = inconclusive_gems.map { |g| "#{g[:name]} (#{g[:error]})" }
-        result[:checks] << { message: "Analysis Incomplete: Could not verify #{inconclusive_gems.size} gems", status: :warning, kind: :unknown, details: details, fix_effort: :unknown }
+        result[:checks] << { message: "Could not verify #{inconclusive_gems.size} gems against rubygems.org", status: :warning, kind: :unknown, details: details, fix_effort: :unknown }
         result[:status] = :warning if result[:status] == :passed
       end
       
@@ -210,7 +210,7 @@ module RailsPreflight
         # 404 means it's private (not found on public repo)
         [response.code == '404', nil]
       rescue StandardError => e
-        # Inconclusive: surfaced as "Analysis Incomplete" in the report
+        # Inconclusive: reported under "Couldn't check"
         if e.is_a?(OpenSSL::SSL::SSLError)
            [false, "SSL Error: #{e.message}"]
         else

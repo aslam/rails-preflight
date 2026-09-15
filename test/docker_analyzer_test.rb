@@ -63,7 +63,7 @@ class DockerAnalyzerTest < Minitest::Test
     result = analyzer.run
 
     assert_equal :warning, result[:status]
-    assert result[:checks].any? { |c| c[:message].include?("EOL Ruby") }
+    assert result[:checks].any? { |c| c[:message].include?("end-of-life") }
   end
 
   def test_detects_eol_node
@@ -75,7 +75,7 @@ class DockerAnalyzerTest < Minitest::Test
     analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
-    assert result[:checks].any? { |c| c[:message].include?("EOL Node") }
+    assert result[:checks].any? { |c| c[:message].include?("Node 12 is end-of-life") }
   end
 
   def test_detects_missing_locale_and_tzdata_on_non_ruby_base
@@ -87,7 +87,7 @@ class DockerAnalyzerTest < Minitest::Test
     analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
-    assert result[:checks].any? { |c| c[:message].include?("Locale") }
+    assert result[:checks].any? { |c| c[:message].include?("LANG") }
     assert result[:checks].any? { |c| c[:message].include?("tzdata") }
   end
 
@@ -112,7 +112,7 @@ class DockerAnalyzerTest < Minitest::Test
     analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
-    assert result[:checks].any? { |c| c[:message].include?("OpenSSL Mismatch") }
+    assert result[:checks].any? { |c| c[:message].include?("OpenSSL 3") }
   end
 
   def test_old_alpine_is_not_flagged_for_openssl_3
@@ -130,7 +130,7 @@ class DockerAnalyzerTest < Minitest::Test
     same_minor = RailsPreflight::DockerAnalyzer.new(@tmp_dir, checked_ruby: "2.7.6").run
     different = RailsPreflight::DockerAnalyzer.new(@tmp_dir, checked_ruby: "3.4.1").run
 
-    refute same_minor[:checks].any? { |c| c[:message].include?("EOL Ruby") }
-    assert different[:checks].any? { |c| c[:message].include?("EOL Ruby") }
+    refute same_minor[:checks].any? { |c| c[:message].include?("end-of-life") }
+    assert different[:checks].any? { |c| c[:message].include?("end-of-life") }
   end
 end
