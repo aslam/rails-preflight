@@ -17,11 +17,20 @@ class UpgradeAnalyzerTest < Minitest::Test
   def test_unknown_target_rails_generates_a_report_instead_of_crashing
     write_lockfile
 
-    RailsPreflight::UpgradeAnalyzer.new("8.0", @tmp_dir).run
+    RailsPreflight::UpgradeAnalyzer.new("9.0", @tmp_dir).run
 
     report_path = File.join(@tmp_dir, "rails_preflight_report.html")
     assert File.exist?(report_path)
-    assert_includes File.read(report_path), "Unknown Rails version: 8.0"
+    assert_includes File.read(report_path), "Unknown Rails version: 9.0"
+  end
+
+  def test_rails_8_1_accepts_ruby_4_0
+    write_lockfile
+    File.write(File.join(@tmp_dir, ".ruby-version"), "4.0.1\n")
+
+    RailsPreflight::UpgradeAnalyzer.new("8.1", @tmp_dir).run
+
+    assert_includes File.read(File.join(@tmp_dir, "rails_preflight_report.html")), "Ruby 4.0.1 (.ruby-version) is compatible with Rails 8.1."
   end
 
   def test_missing_lockfile_is_reported_without_crashing
