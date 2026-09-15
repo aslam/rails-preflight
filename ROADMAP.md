@@ -1,97 +1,73 @@
 # Roadmap
 
-_Last synced with code: 2026-07-10 (commit `c820a4b`)_
+_Last updated: 2026-09-15_
 
-**Status legend:** ✅ Done · 🚧 Partial (shipped but narrower than the description below) · 🔜 Planned (not started) · 🧭 Exploring / Considering (not committed)
+rails-preflight answers one question about a Rails app: **what stands between this app and Rails X, and how sure are we?** Everything below makes that answer more correct, easier to read, or broader.
 
-## Project Principles
+## Principles
 
-To ensure `rails-preflight` remains a trusted tool for planning and estimation, we adhere to the following core principles. These rules guide development and prevent scope creep.
+- **Read-only.** Never modifies the app. The only file it writes is the report.
+- **Static and offline.** Reads files. Doesn't run the app, its tests, or call the network.
+- **Deterministic.** Same app, same report.
+- **Honest.** Every number in the report traces back to a finding. When we can't tell, we say so instead of guessing.
 
-The OSS core is and will remain:
+## Shipped
 
-*   **Read-only:** It never modifies your code.
-*   **Deterministic:** Results are reproducible.
-*   **Static-analysis based:** No runtime side effects.
-*   **Clarity over completeness:** It prefers actionable insights over exhaustive noise.
-*   **Deep analysis over automation:** Professional features focus on understanding risk, not auto-fixing it.
+- Ruby compatibility per target Rails (5.0 – 8.1), read from `.ruby-version`, `Gemfile.lock`, or the Dockerfile
+- EOL checks for Ruby and Node
+- Private gem detection (git/path sources, non-rubygems.org remotes)
+- Deprecation scan, grouped by pattern, with app vs test occurrence counts
+- Config checks: `config.load_defaults`, `new_framework_defaults` initializer
+- Docker checks: EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3 mismatch
+- Database schema checks: charset and integer IDs (6.0 target only)
+- Single-file HTML report with a suggested path and per-section confidence
 
-## Roadmap Structure
+## Now: make the report correct and readable
 
-The roadmap is organized into three concurrent tracks rather than sequential versions, reflecting the project's maturity and different user needs.
+1. **Detect the app's current Rails version** from `Gemfile.lock`. Today the tool only knows the target, so it can't tell which changes apply to this jump. Most items below build on this.
 
-*   ✅ **Core (OSS)**
-*   🧠 **Advanced Analysis (Professional / Power users)**
-*   🧰 **Ecosystem & Integrations**
+2. **Replace the summary with numbers that explain themselves.** The summary currently shows three measures, computed independently, that often disagree:
+   - *Risk Score* (`7.0 / 40`): +3 per private gem, +5 for a Ruby blocker, +2 for any Docker warning, +0.2 per deprecation type. The weights are arbitrary and 40 is a cap, not a scale.
+   - *Overall Risk* (High / Medium / Low): High if any single check failed.
+   - *Estimated Effort* (Small / Medium / Large): thresholds on deprecation and private gem counts.
 
-## ✅ Core (OSS)
+   A missing `config/application.rb` alone gives High risk, Small effort, 0 / 40.
 
-Features that benefit every user and reinforce the tool's foundational trust.
+   Proposal: drop all three and lead with `Rails 5.2.0 → 7.2`, followed by three counts that link to their findings:
+   - **Blockers**: must be fixed before the upgrade can work (Ruby too old, removed APIs in use, known-incompatible gems)
+   - **To fix**: will warn or break along the way (deprecations, config lagging behind)
+   - **Couldn't check**: unknowns (private gems, missing files, low-confidence sections)
 
-### Near Term (v1.1)
+   Explain confidence levels in the report legend.
 
-**Report Clarity & Trust**
-*   ✅ **Metric Separation:** Explicitly distinguish between production vs. test code occurrences.
-*   ✅ **Ruby Analysis:** Better differentiation between version compatibility issues and lifecycle (EOL) risks.
-*   ✅ **Refined Summary:** Clearer terminology (e.g., distinguishing "deprecation types" from "total occurrences").
-*   🚧 **Confidence Indicators:** Section-level HIGH/MEDIUM/LOW badges are shipped, but the report footer legend still only explains Severity and Fix Effort — it doesn't explain what the confidence levels mean yet.
+3. **Stop counting noise as risk.**
+   - A missing `new_framework_defaults` initializer is flagged even after a finished upgrade, when the file is meant to be deleted. Flag `load_defaults` lagging behind the current Rails version instead. That's the real signal.
+   - EOL Ruby is reported in both the Ruby and Docker sections.
+   - Tips (install `rubocop-rails`, set `BUNDLE_WITHOUT`) are warnings and raise the risk. Give them their own kind, set as a field instead of inferred from a 💡 in the message text.
 
-**Analysis Depth**
-*   🚧 **Database Checks:** `utf8`/`utf8mb3` and integer-ID (bigint) rules exist, but are only wired up for a target Rails version of `6.0` — auditing any other target gets zero database checks. 191-byte index limits and integer overflow risks are not implemented yet.
-*   ✅ **Config Gaps:** improved detection of missing `config.load_defaults`.
-*   🚧 **Path Suggestions:** A suggested upgrade path is generated, but it does not yet recommend intermediate Rails versions (e.g., 5.2 → 6.1 → 7.1) — only start and target are named.
-*   ✅ **Docker/OpenSSL ABI Mismatch:** Detects Alpine ≥3.17 paired with Ruby <3.1 (OpenSSL 3.0 incompatibility). *(Moved up from Advanced Analysis — this shipped already.)*
+4. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them.
 
-### Medium Term (v1.2)
+5. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
 
-**Static Analysis Improvements**
-*   ✅ **Smarter Grouping:** Deprecation warnings are aggregated by message.
-*   🚧 **False Positive Suppression:** Method-definition lines are skipped; symbol-only references are not yet suppressed.
-*   🔜 **Scope Flags:** Introduction of `--exclude-tests` and `--only-production` flags. No CLI flag parsing exists yet.
+## Next: cover more of the upgrade
 
-**New Analyzers**
-*   🔜 **Routes Analyzer:** Scan `config/routes.rb` for deprecated routing DSL (e.g. `match` without `via:`, unconstrained wildcard routes). Currently the only section of a Rails app never inspected. *(Idea sourced from `jm/rails_upgrade`.)*
-*   🔜 **Known-Incompatible Gems List:** A curated, version-independent list of public gems known to be broken/superseded for a given Rails jump (`paperclip`, `protected_attributes`, `therubyracer`, etc.), distinct from the existing "is this gem private" heuristic. *(Idea sourced from `jm/rails_upgrade`.)*
+- **Step-by-step upgrade path.** Rails recommends moving one minor version at a time. Use current → target to list each hop (5.2 → 6.0 → 6.1 → 7.0 → …) and the Ruby version it needs.
+- **Grow the deprecation rules.** There are two today. Add rules for each hop from the official upgrade guides, and apply only those whose `removed_in` falls within the jump.
+- **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements.
+- **Database rules by version range**, not only when the target is exactly 6.0. Support `structure.sql`.
+- **Go offline for gem checks.** Replace the rubygems.org lookup with lockfile-only heuristics, or put it behind an `--online` flag.
+- **Terminal summary.** Print blockers at the end of the run, for SSH sessions and CI logs.
+- **Point to related tools** in the report and README: `next_rails` / RailsBump for gem compatibility, `brakeman` for security, `rubocop-rails` for autofixes.
 
-**Output**
-*   🔜 **JSON Support:** Machine-readable output for programmatic consumption.
-*   🔜 **Stable Schema:** A guaranteed output format for CI integrations.
+## Later
 
-## 🧠 Advanced Analysis
+- JSON output with a stable schema, so CI can gate on it
+- Scope flags such as `--exclude-tests`
+- Routes analyzer (`match` without `via:`, legacy routing DSL)
+- Cross-check Ruby version sources (`.ruby-version` vs Dockerfile vs CI config)
 
-Deeper, specialized analysis for complex upgrades. These features remain read-only.
+## Not doing
 
-### Upgrade Path Intelligence
-*   🚧 *Exploring:* Suggested phased upgrade plans. (A single-step suggested path already ships — see Core > Path Suggestions — but it isn't phased/multi-hop yet.)
-*   🧭 *Exploring:* Risk deltas per Rails jump.
-*   🧭 *Considering:* "Minimum viable upgrade" vs. "modern Rails" comparison.
-
-### Dependency Risk Profiling
-*   🚧 **Blast Radius:** Occurrence/file/model/controller breakdowns already ship for **deprecation warnings**. The private-gem version of this ("usage counts and critical path analysis" per gem) is not implemented — private gems today are just named, not scored.
-*   🧭 *Under Evaluation:* Native extension risk scoring.
-
-### Test & CI Awareness
-*   🔜 **Framework Compatibility:** Detection of incompatible test framework patterns.
-*   🚧 **Environment Consistency:** Ruby version is read from `.ruby-version`, `Gemfile.lock` (`RUBY VERSION`), or the Dockerfile ruby image — whichever is found first (never the auditor's own Ruby) — but the sources are never cross-checked against each other for disagreement, and CI config (e.g. `.github/workflows`) isn't parsed at all yet.
-
-### Confidence Scoring
-*   ✅ **Granular Confidence:** Every analyzer section reports its own confidence level.
-*   🚧 **Completeness Signal:** An ad hoc "Analysis Incomplete" message exists for gem-scan errors only; there's no general Partial-vs-Complete indicator across all sections yet.
-
-## 🧰 Ecosystem & Integrations (Longer Term)
-
-Optional integrations to fit into broader workflows.
-
-*   🧭 *Considering:* SARIF output for IDE/GitHub code scanning support.
-*   🧭 *Considering:* CI annotations to fail builds on "High Risk" findings.
-*   🧭 *Under Evaluation:* Multi-app comparison mode.
-*   🧭 *Under Evaluation:* Report diffing between runs.
-
-## Non-Goals
-
-To maintain trust and focus, the following are explicitly **NOT** on the roadmap:
-
-*   ❌ **Automatic migrations**
-*   ❌ **AST-based refactoring in core**
-*   ❌ **"One-click upgrade" solutions**
-*   ❌ **Runtime instrumentation**
+- Automatic fixes, migrations, or code rewriting
+- Running the app or its test suite
+- One-click upgrades
