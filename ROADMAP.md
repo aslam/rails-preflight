@@ -17,7 +17,8 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - Ruby compatibility per target Rails (5.0 – 8.1), read from `.ruby-version`, `Gemfile.lock`, or the Dockerfile
 - EOL checks for Ruby and Node
 - Private gem detection (git/path sources, non-rubygems.org remotes)
-- Deprecation scan, grouped by pattern, with app vs test occurrence counts; a blocker when the target Rails removes the API
+- Deprecation scan, grouped by pattern, with app vs test occurrence counts; a blocker when the target Rails removes the API; commented-out code is skipped
+- Stops with a clear message when the directory isn't a Rails app
 - Config checks: `config.load_defaults` missing or behind the current Rails version
 - Docker checks: EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3 mismatch
 - Database schema checks: charset and integer IDs (6.0 target only)
@@ -25,14 +26,9 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 ## Now: make the report correct and readable
 
-1. **Cut noise from the findings.**
-   - EOL Ruby is reported in both the Ruby and Docker sections.
-   - The deprecation scan flags commented-out code. Skip comment lines.
-   - Pointed at a directory that isn't a Rails app, it still produces a full report. Say so and stop.
+1. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them. Prefer stable sources (Rails guides, API docs, commits) over blog posts, which rot.
 
-2. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them. Prefer stable sources (Rails guides, API docs, commits) over blog posts, which rot.
-
-3. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
+2. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
 
 ## Next: cover more of the upgrade
 
