@@ -27,7 +27,7 @@ module RailsPreflight
       results << check_rails_version
       results << check_ruby_version
       results << scan_gems
-      results << DockerAnalyzer.new(@project_path).run
+      results << DockerAnalyzer.new(@project_path, checked_ruby: @eol_checked_ruby).run
       results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails).run
       results << ConfigAnalyzer.new(@project_path, current_rails).run
       results << DatabaseAnalyzer.new(@project_path, database_rules).run
@@ -109,6 +109,7 @@ module RailsPreflight
         result[:checks] << { message: "Ruby #{current_ver} (#{source}) is compatible with Rails #{@target_rails}.", status: :passed, fix_effort: :low }
       end
 
+      @eol_checked_ruby = current_str # Docker skips this version so it isn't reported twice
       eol_below = DockerAnalyzer::RUBY_EOL_BELOW
       if current_ver < Gem::Version.new(eol_below)
         result[:status] = :warning if result[:status] == :passed

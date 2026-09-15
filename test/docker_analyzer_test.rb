@@ -123,4 +123,14 @@ class DockerAnalyzerTest < Minitest::Test
 
     refute result[:checks].any? { |c| c[:message].include?("OpenSSL") }
   end
+
+  def test_skips_eol_ruby_the_ruby_section_already_reported
+    create_dockerfile "FROM ruby:2.7\n"
+
+    same_minor = RailsPreflight::DockerAnalyzer.new(@tmp_dir, checked_ruby: "2.7.6").run
+    different = RailsPreflight::DockerAnalyzer.new(@tmp_dir, checked_ruby: "3.4.1").run
+
+    refute same_minor[:checks].any? { |c| c[:message].include?("EOL Ruby") }
+    assert different[:checks].any? { |c| c[:message].include?("EOL Ruby") }
+  end
 end

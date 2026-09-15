@@ -8,8 +8,10 @@ module RailsPreflight
     # Official image, with or without registry prefix: `ruby:3.3`, `docker.io/library/ruby:$RUBY_VERSION-slim`.
     RUBY_IMAGE = %r{^\s*FROM\s+(?:--platform=\S+\s+)?(?:\S+/)?ruby:(\S+)}i
 
-    def initialize(root_path = Dir.pwd)
+    # checked_ruby: app Ruby the Ruby Version section already checked for EOL
+    def initialize(root_path = Dir.pwd, checked_ruby: nil)
       @dockerfile_path = File.join(root_path, "Dockerfile")
+      @checked_ruby = checked_ruby
     end
 
     # Version from the ruby image tag, resolving ARG defaults as in Rails' generated Dockerfile.
@@ -83,6 +85,9 @@ module RailsPreflight
     end
 
     def check_eol_base_image(ruby_version, result)
+      # EOL is per minor version; same minor as the checked app Ruby was already reported
+      return if ruby_version && @checked_ruby && ruby_version.split(".").first(2) == @checked_ruby.split(".").first(2)
+
       if ruby_version && Gem::Version.new(ruby_version) < Gem::Version.new(RUBY_EOL_BELOW)
         result[:checks] << { message: "EOL Ruby: Ruby #{ruby_version} is End-of-Life. Upgrade to Ruby #{RUBY_EOL_BELOW}+.", status: :warning, fix_effort: :high }
       end
