@@ -47,6 +47,12 @@ Nothing in progress. Pick the next item from below.
 - Scope flags such as `--exclude-tests`
 - Cross-check Ruby version sources (`.ruby-version` vs Dockerfile vs CI config)
 
+## Maybe (to discuss)
+
+- **Changelog database.** Build a database of Rails changelog entries and show the ones relevant to the app in the report. Open question: how much of this the deprecation rules already cover.
+- **Upgrade diagram.** A roadmap.sh-style diagram of the actual steps for each upgrade, including when to run `app:update`, etc.
+- **More report formats.** JSON (also under Later), Markdown, and maybe a format best suited for other AI tools or MCP servers to ingest.
+
 ## Not doing
 
 - Automatic fixes, migrations, or code rewriting
