@@ -1,22 +1,16 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Shim for Bundler/Ruby 3.4 compatibility (taint/untaint removed)
-# Must be defined BEFORE bundler/setup because old Bundler versions use it.
-class Object; def taint; self; end; def untaint; self; end; end
-class String; def taint; self; end; def untaint; self; end; end
-
-require 'bundler/setup'
-
-# Add lib to load path to test without installing
+# No bundler/setup on purpose: it would load the Gemfile in the current directory,
+# which is usually the app being audited, often pinned to an old Ruby.
 lib = File.expand_path("../lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 require 'rails_preflight'
 
 if ARGV.empty?
-  puts "Usage: rails-preflight [TARGET_RAILS_VERSION]"
-  puts "Example: rails-preflight 5.2"
+  puts "Usage: rails-preflight TARGET_RAILS_VERSION [APP_PATH]"
+  puts "Example: rails-preflight 7.2 ~/code/my_app  (APP_PATH defaults to the current directory)"
   exit 1
 end
 

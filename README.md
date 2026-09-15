@@ -63,24 +63,7 @@ This tool is especially useful if you are:
 
 ## Installation
 
-### Option A: Add to your project (Recommended)
-
-Add this line to your application's `Gemfile`:
-
-```ruby
-gem 'rails_preflight', require: false
-```
-
-Then run:
-
-```bash
-bundle install
-bundle exec rails-preflight 6.1
-```
-
-### Option B: Standalone
-
-This tool is designed to be run as a standalone script or cloned into your toolbox.
+Install it globally and point it at your app. It only reads files, so the app can be on any Ruby version, including the old one your servers run. The machine running it needs Ruby 2.7 or newer.
 
 ```bash
 gem install rails_preflight
