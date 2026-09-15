@@ -5,15 +5,15 @@ deprecations:
     removed_in: "6.1"
     severity: error
     confidence: "High"
-    guide_link: "https://guides.rubyonrails.org/upgrading_ruby_on_rails.html#upgrading-from-rails-6-0-to-6-1"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-record-removals"
     recategorization: "Rails 6.0 -> 6.1"
     fix_effort: low
   - id: assert_response_success
     pattern: "assert_response :success"
     message: "INFO: Verify controller tests use kwargs (e.g. get :index, params: { ... })"
-    removed_in: "5.0"
+    removed_in: "5.1"
     severity: info
     confidence: "Medium"
-    guide_link: "https://guides.rubyonrails.org/upgrading_ruby_on_rails.html#upgrading-from-rails-5-0-to-5-1"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#action-pack-removals"
     recategorization: "Rails 5.0 -> 5.1"
     fix_effort: low
