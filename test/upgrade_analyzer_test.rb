@@ -44,9 +44,47 @@ class UpgradeAnalyzerTest < Minitest::Test
     assert_includes File.read(report_path), "No Gemfile.lock found. Skipping gem compatibility checks."
   end
 
+  def test_two_part_ruby_version_does_not_crash
+    File.write(File.join(@tmp_dir, ".ruby-version"), "3.3\n")
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    assert_includes report, "Ruby 3.3 (.ruby-version) is compatible with Rails 7.2."
+  end
+
+  def test_two_part_dockerfile_ruby_tag_does_not_crash
+    File.write(File.join(@tmp_dir, "Dockerfile"), "FROM ruby:3.3-slim\n")
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    assert_includes report, "Ruby 3.3 (Dockerfile) is compatible with Rails 7.2."
+  end
+
+  def test_reads_ruby_version_from_gemfile_lock
+    write_lockfile(ruby: "3.3.5p100")
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    assert_includes report, "Ruby 3.3.5 (Gemfile.lock) is compatible with Rails 7.2."
+  end
+
+  def test_undetectable_app_ruby_is_reported_not_guessed
+    write_lockfile
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    assert_includes report, "Could not determine the Ruby version used by the app"
+    refute_includes report, RUBY_VERSION
+  end
+
   private
 
-  def write_lockfile
+  def report
+    File.read(File.join(@tmp_dir, "rails_preflight_report.html"))
+  end
+
+  def write_lockfile(ruby: nil)
+    ruby_section = ruby ? "RUBY VERSION\n   ruby #{ruby}\n\n" : ""
     File.write(File.join(@tmp_dir, "Gemfile.lock"), <<~LOCKFILE)
       GEM
         remote: https://rubygems.org/
@@ -59,7 +97,7 @@ class UpgradeAnalyzerTest < Minitest::Test
       DEPENDENCIES
         rake
 
-      BUNDLED WITH
+      #{ruby_section}BUNDLED WITH
          2.7.2
     LOCKFILE
   end

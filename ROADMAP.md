@@ -72,7 +72,7 @@ Deeper, specialized analysis for complex upgrades. These features remain read-on
 
 ### Test & CI Awareness
 *   🔜 **Framework Compatibility:** Detection of incompatible test framework patterns.
-*   🚧 **Environment Consistency:** Ruby version is read from `.ruby-version`, Dockerfile, or system Ruby — whichever is found first — but the sources are never cross-checked against each other for disagreement, and CI config (e.g. `.github/workflows`) isn't parsed at all yet.
+*   🚧 **Environment Consistency:** Ruby version is read from `.ruby-version`, `Gemfile.lock` (`RUBY VERSION`), or the Dockerfile ruby image — whichever is found first (never the auditor's own Ruby) — but the sources are never cross-checked against each other for disagreement, and CI config (e.g. `.github/workflows`) isn't parsed at all yet.
 
 ### Confidence Scoring
 *   ✅ **Granular Confidence:** Every analyzer section reports its own confidence level.

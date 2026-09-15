@@ -117,8 +117,8 @@ module RailsPreflight
         if failed
           # Extract required version if possible or generic message
           steps << "Upgrade Ruby (Blocker detected: #{failed[:message]})"
-        elsif ruby_check[:status] == :warning
-          steps << "Plan Ruby Upgrade (Warnings detected)"
+        elsif (warning = ruby_check[:checks].find { |c| c[:status] == :warning })
+          steps << "Resolve Ruby warning: #{warning[:message]}"
         end
       end
       

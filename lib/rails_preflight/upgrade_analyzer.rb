@@ -55,24 +55,6 @@ module RailsPreflight
       result = { title: "Ruby Version", status: :passed, checks: [], confidence: :high }
       puts "\n[1/2] Checking Ruby Version..."
 
-      # 1. Detect Current Ruby
-      ruby_version_file = File.join(@project_path, ".ruby-version")
-      if File.exist?(ruby_version_file)
-        current_raw = File.read(ruby_version_file).strip
-        source = ".ruby-version"
-      elsif docker_version = DockerAnalyzer.new(@project_path).detect_ruby_version
-        current_raw = docker_version
-        source = "Dockerfile"
-      else
-        current_raw = RUBY_VERSION
-        source = "System (RUBY_VERSION)"
-      end
-
-      # Clean the version string (handle 'ruby-2.5.9')
-      current_str = current_raw.match(/(\d+\.\d+\.\d+)/)[1]
-      current_ver = Gem::Version.new(current_str)
-
-      # 2. Check Constraints
       constraints = target_rails_rules
 
       unless constraints
@@ -80,6 +62,20 @@ module RailsPreflight
         result[:checks] << { message: "Unknown Rails version: #{@target_rails}", status: :warning, fix_effort: :unknown }
         return result
       end
+
+      # Handles 'ruby-2.5.9', '3.3', '3.3.5p100'
+      current_raw, source = detect_app_ruby
+      current_str = current_raw.to_s[/\d+\.\d+(?:\.\d+)?/]
+
+      unless current_str
+        result[:status] = :warning
+        result[:confidence] = :low
+        from = source ? " from #{source}" : " (no .ruby-version, Gemfile.lock RUBY VERSION, or ruby Dockerfile image)"
+        result[:checks] << { message: "Could not determine the Ruby version used by the app#{from}. Add a .ruby-version file for an accurate check.", status: :warning, fix_effort: :low }
+        return result
+      end
+
+      current_ver = Gem::Version.new(current_str)
 
       min_ver = Gem::Version.new(constraints['required_ruby'].split.last)
       max_ver = Gem::Version.new(constraints['max_ruby'])
@@ -101,6 +97,18 @@ module RailsPreflight
       end
 
       result
+    end
+
+    # First source found wins. Never falls back to the Ruby running this tool.
+    def detect_app_ruby
+      ruby_version_file = File.join(@project_path, ".ruby-version")
+      return [File.read(ruby_version_file), ".ruby-version"] if File.exist?(ruby_version_file)
+
+      lock_ruby = File.exist?(@lockfile_path) && File.read(@lockfile_path)[/^RUBY VERSION\s+ruby (\S+)/, 1]
+      return [lock_ruby, "Gemfile.lock"] if lock_ruby
+
+      docker_ruby = DockerAnalyzer.new(@project_path).detect_ruby_version
+      [docker_ruby, "Dockerfile"] if docker_ruby
     end
 
     def scan_gems
