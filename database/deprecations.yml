@@ -8,11 +8,12 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-record-removals"
     recategorization: "Rails 6.0 -> 6.1"
     fix_effort: low
-  - id: assert_response_success
-    pattern: "assert_response :success"
-    message: "INFO: Verify controller tests use kwargs (e.g. get :index, params: { ... })"
+  - id: controller_test_positional_params
+    # `get :show, id: 1` or `post :create, :user => {...}`; keyword args such as params: are fine
+    pattern: "^\\s*(get|post|put|patch|delete|head)\\s*\\(?\\s*:\\w+\\s*,\\s*(?:(?!(?:params|session|flash|format|xhr|as|headers|body|method):)\\w+:|:\\w+\\s*=>)"
+    message: "Controller test passes request parameters positionally. Since Rails 5.1 they must be keyword arguments, e.g. get :show, params: { id: 1 }."
     removed_in: "5.1"
-    severity: info
+    severity: error
     confidence: "Medium"
     guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#action-pack-removals"
     recategorization: "Rails 5.0 -> 5.1"

@@ -74,4 +74,20 @@ class DeprecationAnalyzerTest < Minitest::Test
 
     assert_equal :passed, result[:status]
   end
+
+  def test_shipped_rule_flags_positional_controller_test_params
+    FileUtils.mkdir_p(File.join(@tmp_dir, "test"))
+    File.write(File.join(@tmp_dir, "test", "users_controller_test.rb"), <<~RUBY)
+      get :show, id: 1
+      post :create, :user => { name: "x" }
+      get :show, params: { id: 1 }
+      post :create, format: :json
+      get :index
+      get user_url(users(:one))
+    RUBY
+
+    check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks].find { |c| c[:message].include?("positionally") }
+
+    assert_equal 2, check.dig(:stats, :occurrences)
+  end
 end
