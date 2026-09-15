@@ -14,7 +14,7 @@ module RailsPreflight
       if File.exist?(app_config)
         check_load_defaults(File.read(app_config), result[:checks])
       else
-        result[:checks] << { message: "CONFIG: config/application.rb not found.", status: :failed }
+        result[:checks] << { message: "CONFIG: config/application.rb not found.", status: :warning, kind: :unknown }
       end
 
       if result[:checks].any?

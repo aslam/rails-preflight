@@ -3,14 +3,15 @@ module RailsPreflight
   class DeprecationAnalyzer
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
 
-    def initialize(root_path = Dir.pwd, database_path = DATA_PATH)
+    def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil)
       @root_path = root_path
       @rules = YAML.load_file(database_path)
+      @target_rails = target_rails
     end
 
     def run
-      result = { title: "Deprecation Warnings", status: :passed, checks: [], confidence: :high }
-      
+      result = { title: "Deprecation Warnings", status: :passed, checks: [], confidence: :medium }
+
       warnings = []
 
       @rules['deprecations'].each do |rule|
@@ -20,8 +21,6 @@ module RailsPreflight
       end
 
       if warnings.any?
-        result[:status] = :warning
-        
         # Group warnings by message
         grouped_warnings = warnings.group_by { |w| w[:message] }
         
@@ -34,10 +33,14 @@ module RailsPreflight
           # Use the severity of the first occurrence (rule based)
           severity = occurrences.first[:severity] || "Warning"
           fix_effort = occurrences.first[:fix_effort] || "low"
-          
+          info = severity.to_s.downcase == "info"
+          # A removed API breaks the target outright; otherwise it's a warning to fix.
+          status = info ? :passed : (removed_by_target?(occurrences.first[:removed_in]) ? :failed : :warning)
+
           result[:checks] << {
             message: message,
-            status: :warning,
+            status: status,
+            kind: (:tip if info),
             grouped: true,
             stats: {
               occurrences: occurrences.count,
@@ -52,8 +55,11 @@ module RailsPreflight
             details: occurrences # Pass all occurrences for the detail view
           }
         end
+
+        statuses = result[:checks].map { |c| c[:status] }
+        result[:status] = statuses.include?(:failed) ? :failed : (statuses.include?(:warning) ? :warning : :passed)
       else
-        result[:checks] << { message: "No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)", status: :passed }
+        result[:checks] << { message: "No obvious deprecated patterns found (this scan is static; check your deprecation logs too).", status: :passed }
       end
       
       # Rubocop Advisory Check
@@ -65,7 +71,8 @@ module RailsPreflight
       else
         result[:checks] << { 
           message: "💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.",
-          status: :warning 
+          status: :passed,
+          kind: :tip
         }
       end
 
@@ -73,6 +80,10 @@ module RailsPreflight
     end
 
     private
+
+    def removed_by_target?(removed_in)
+      removed_in && @target_rails && Gem::Version.new(removed_in.to_s) <= Gem::Version.new(@target_rails)
+    end
 
     def check_rubocop_rails
       lockfile_path = File.join(@root_path, "Gemfile.lock")
@@ -109,6 +120,7 @@ module RailsPreflight
               confidence: rule['confidence'] || "Unknown",
               guide_link: rule['guide_link'],
               recategorization: rule['recategorization'],
+              removed_in: rule['removed_in'],
               severity: rule['severity'],
               fix_effort: rule['fix_effort']
             }

@@ -27,8 +27,7 @@ module RailsPreflight
       result = { title: "Docker Configuration", status: :passed, checks: [], confidence: :medium }
 
       unless File.exist?(@dockerfile_path)
-        result[:status] = :warning
-        result[:checks] << { message: "No Dockerfile found at #{@dockerfile_path}. Skipping.", status: :warning }
+        result[:checks] << { message: "No Dockerfile found. Docker checks skipped.", status: :passed }
         return result
       end
 
@@ -57,13 +56,13 @@ module RailsPreflight
       if ruby_version
         result[:checks] << { message: "Dockerfile uses Ruby #{ruby_version} base image", status: :passed, fix_effort: :low }
       else
-        result[:checks] << { message: "Could not detect a versioned ruby base image in Dockerfile.", status: :warning, fix_effort: :medium }
+        result[:checks] << { message: "Could not detect a versioned ruby base image in Dockerfile.", status: :warning, kind: :unknown, fix_effort: :medium }
       end
     end
 
     def check_package_manager_pitfalls(content, result)
       if content.include?("bundle install") && !content.match?(/without/i)
-        result[:checks] << { message: "Optimization: 'bundle install' also installs development/test gems. Set BUNDLE_WITHOUT=\"development:test\".", status: :warning, fix_effort: :low }
+        result[:checks] << { message: "Optimization: 'bundle install' also installs development/test gems. Set BUNDLE_WITHOUT=\"development:test\".", status: :passed, kind: :tip, fix_effort: :low }
       end
     end
 

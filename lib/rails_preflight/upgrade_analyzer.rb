@@ -28,7 +28,7 @@ module RailsPreflight
       results << check_ruby_version
       results << scan_gems
       results << DockerAnalyzer.new(@project_path).run
-      results << DeprecationAnalyzer.new(@project_path).run
+      results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails).run
       results << ConfigAnalyzer.new(@project_path, current_rails).run
       results << DatabaseAnalyzer.new(@project_path, database_rules).run
 
@@ -59,10 +59,10 @@ module RailsPreflight
       if current_rails.nil?
         result[:status] = :warning
         result[:confidence] = :low
-        result[:checks] << { message: "Could not read current Rails version from Gemfile.lock.", status: :warning, fix_effort: :low }
+        result[:checks] << { message: "Could not read current Rails version from Gemfile.lock.", status: :warning, kind: :unknown, fix_effort: :low }
       elsif Gem::Version.new(current_rails.segments.first(2).join(".")) >= Gem::Version.new(@target_rails)
         result[:status] = :warning
-        result[:checks] << { message: "Already on Rails #{current_rails}: #{@target_rails} is not an upgrade.", status: :warning, fix_effort: :low }
+        result[:checks] << { message: "Already on Rails #{current_rails}: #{@target_rails} is not an upgrade.", status: :warning, kind: :unknown, fix_effort: :low }
       else
         result[:checks] << { message: "Rails #{current_rails} (Gemfile.lock) → #{@target_rails}", status: :passed, fix_effort: :low }
       end
@@ -78,7 +78,7 @@ module RailsPreflight
 
       unless constraints
         result[:status] = :warning
-        result[:checks] << { message: "Unknown Rails version: #{@target_rails}", status: :warning, fix_effort: :unknown }
+        result[:checks] << { message: "Unknown Rails version: #{@target_rails}", status: :warning, kind: :unknown, fix_effort: :unknown }
         return result
       end
 
@@ -90,7 +90,7 @@ module RailsPreflight
         result[:status] = :warning
         result[:confidence] = :low
         from = source ? " from #{source}" : " (no .ruby-version, Gemfile.lock RUBY VERSION, or ruby Dockerfile image)"
-        result[:checks] << { message: "Could not determine the Ruby version used by the app#{from}. Add a .ruby-version file for an accurate check.", status: :warning, fix_effort: :low }
+        result[:checks] << { message: "Could not determine the Ruby version used by the app#{from}. Add a .ruby-version file for an accurate check.", status: :warning, kind: :unknown, fix_effort: :low }
         return result
       end
 
@@ -140,6 +140,7 @@ module RailsPreflight
         result[:checks] << {
           message: "No Gemfile.lock found. Skipping gem compatibility checks.",
           status: :warning,
+          kind: :unknown,
           fix_effort: :low
         }
         return result
@@ -168,14 +169,14 @@ module RailsPreflight
 
       if private_gems.any?
         result[:status] = :warning
-        result[:checks] << { message: "Private Gems Detected", status: :warning, details: private_gems, fix_effort: :unknown }
+        result[:checks] << { message: "Private gems (#{private_gems.size}): compatibility with Rails #{@target_rails} is unknown", status: :warning, kind: :unknown, details: private_gems, fix_effort: :unknown }
       else
         result[:checks] << { message: "No private gems detected.", status: :passed, fix_effort: :low }
       end
 
       if inconclusive_gems.any?
         details = inconclusive_gems.map { |g| "#{g[:name]} (#{g[:error]})" }
-        result[:checks] << { message: "Analysis Incomplete: Could not verify #{inconclusive_gems.size} gems", status: :warning, details: details, fix_effort: :unknown }
+        result[:checks] << { message: "Analysis Incomplete: Could not verify #{inconclusive_gems.size} gems", status: :warning, kind: :unknown, details: details, fix_effort: :unknown }
         result[:status] = :warning if result[:status] == :passed
       end
       

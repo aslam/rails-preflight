@@ -13,7 +13,7 @@ module RailsPreflight
       
       unless File.exist?(@schema_path)
         result[:status] = :warning
-        result[:checks] << { message: "No db/schema.rb found. Skipping database checks.", status: :warning }
+        result[:checks] << { message: "No db/schema.rb found. Skipping database checks.", status: :warning, kind: :unknown }
         return result
       end
 

@@ -5,6 +5,12 @@ module RailsPreflight
   class ReportGenerator
     include ERB::Util
 
+    SUMMARY_TILES = [
+      [:blockers, "Blockers", "Must be fixed before the upgrade can work"],
+      [:to_fix, "To fix", "Will warn or break along the way"],
+      [:unknowns, "Couldn't check", "Not verified; review by hand"]
+    ].freeze
+
     def initialize(data)
       @data = data
       @generated_at = Time.now
@@ -43,57 +49,49 @@ module RailsPreflight
             .summary-item { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
             .summary-label { font-size: 0.8em; color: #486581; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
             .summary-value { font-size: 1.4em; font-weight: bold; }
-            .risk-high { color: #e53e3e; }
-            .risk-medium { color: #dd6b20; }
-            .risk-low { color: #38a169; }
-            .blockers-list { margin: 0; padding-left: 20px; font-size: 0.9em; color: #e53e3e; }
+            .count-blockers { color: #e53e3e; }
+            .count-to_fix { color: #dd6b20; }
+            .count-unknowns { color: #718096; }
+            .summary-caption { font-size: 0.8em; color: #627d98; }
+            .summary-list { margin-top: 15px; }
+            .summary-list summary { cursor: pointer; font-weight: bold; color: #102a43; }
+            .summary-list ul { margin: 5px 0 0; padding-left: 20px; font-size: 0.9em; }
+            .unknown { background-color: #f7fafc; border-left: 5px solid #a0aec0; }
+            .tip { background-color: #ebf8ff; border-left: 5px solid #63b3ed; }
             .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.9em; }
-            .legend { display: inline-flex; gap: 20px; align-items: center; justify-content: center; margin-top: 10px; }
+            .legend { display: inline-flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center; margin-top: 10px; }
             .legend-item { display: flex; align-items: center; gap: 8px; }
           </style>
         </head>
         <body>
           <h1>RailsPreFlight</h1>
           <div class="meta">
-            Rails: <strong><%= h(rails_jump) %></strong><br>
             Generated at: <%= h(@generated_at) %>
           </div>
 
           <% if @data[:summary] %>
             <div class="summary-card">
-              <div class="summary-title">Upgrade Readiness Summary</div>
+              <div class="summary-title">Rails <%= h(rails_jump) %></div>
               <div class="summary-grid">
-                <div class="summary-item">
-                  <div class="summary-label">Rails</div>
-                  <div class="summary-value"><%= h(rails_jump) %></div>
-                </div>
-                <div class="summary-item">
-                  <div class="summary-label">Risk Score</div>
-                  <div class="summary-value"><%= h(@data[:summary][:upgrade_score]) %></div>
-                </div>
-                <div class="summary-item">
-                  <div class="summary-label">Overall Risk</div>
-                  <div class="summary-value <%= risk_class(@data[:summary][:overall_risk]) %>">
-                    <%= h(@data[:summary][:overall_risk]) %>
+                <% SUMMARY_TILES.each do |key, label, caption| %>
+                  <div class="summary-item">
+                    <div class="summary-label"><%= h(label) %></div>
+                    <div class="summary-value <%= "count-#{key}" if @data[:summary][key].any? %>"><%= @data[:summary][key].size %></div>
+                    <div class="summary-caption"><%= h(caption) %></div>
                   </div>
-                </div>
-                <div class="summary-item">
-                  <div class="summary-label">Estimated Effort</div>
-                  <div class="summary-value"><%= h(@data[:summary][:estimated_effort]) %></div>
-                </div>
-                <div class="summary-item" style="grid-column: span 1 / -1;">
-                  <div class="summary-label">Primary Blockers</div>
-                  <% if @data[:summary][:primary_blockers].any? %>
-                    <ul class="blockers-list">
-                      <% @data[:summary][:primary_blockers].each do |blocker| %>
-                        <li><%= h(blocker) %></li>
-                      <% end %>
-                    </ul>
-                  <% else %>
-                    <div style="color: #38a169; font-weight: bold;">None detected! 🎉</div>
-                  <% end %>
-                </div>
+                <% end %>
               </div>
+              <% SUMMARY_TILES.each do |key, label, _caption| %>
+                <% next if @data[:summary][key].empty? %>
+                <details class="summary-list"<%= " open" unless key == :to_fix %>>
+                  <summary><%= h(label) %> (<%= @data[:summary][key].size %>)</summary>
+                  <ul>
+                    <% @data[:summary][key].each do |finding| %>
+                      <li><a href="#<%= section_id(finding[:section]) %>"><%= h(finding[:section]) %></a>: <%= h(finding[:message]) %><%= occurrences_note(finding[:occurrences]) %></li>
+                    <% end %>
+                  </ul>
+                </details>
+              <% end %>
             </div>
 
             <% if @data[:summary][:suggested_path] && @data[:summary][:suggested_path].any? %>
@@ -111,7 +109,7 @@ module RailsPreflight
           <% end %>
 
           <% @data[:results].each do |section| %>
-            <div class="section">
+            <div class="section" id="<%= section_id(section[:title]) %>">
               <div class="section-header">
                 <div>
                   <span><%= h(section[:title]) %></span>
@@ -128,7 +126,7 @@ module RailsPreflight
                   <div class="item passed">No issues found.</div>
                 <% else %>
                   <% section[:checks].each do |check| %>
-                    <div class="item <%= check[:status] %>">
+                    <div class="item <%= check[:kind] || check[:status] %>">
                       <% if check[:grouped] %>
                         <!-- Grouped Finding Header -->
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
@@ -211,6 +209,10 @@ module RailsPreflight
               <div class="legend-item">
                 <strong>Fix Effort:</strong> Implementation cost
               </div>
+              <span style="color: #cbd5e0;">|</span>
+              <div class="legend-item">
+                <strong>Confidence:</strong> High: read from project files · Medium: pattern-based · Low: key input missing
+              </div>
             </div>
             <p style="margin-top: 10px;">RailsPreFlight</p>
           </div>
@@ -232,8 +234,12 @@ module RailsPreflight
       "badge-confidence-#{confidence.to_s.downcase}"
     end
 
-    def risk_class(risk)
-      "risk-#{risk.to_s.downcase}"
+    def occurrences_note(count)
+      count ? " (#{count.to_i} occurrence#{'s' unless count == 1})" : ""
+    end
+
+    def section_id(title)
+      "section-#{title.to_s.downcase.gsub(/[^a-z0-9]+/, '-')}"
     end
 
     def status_class(status)

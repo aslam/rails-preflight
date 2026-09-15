@@ -57,4 +57,12 @@ class DeprecationAnalyzerTest < Minitest::Test
     assert_equal "app/model.rb", detail[:file]
     assert_equal 2, detail[:line]
   end
+
+  def test_removed_api_blocks_targets_at_or_past_removal
+    File.write(File.join(@app_dir, "model.rb"), "deprecated_method\n")
+    db = File.join(@db_dir, "deprecations.yml")
+
+    assert_equal :failed, RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, db, target_rails: "7.0").run[:checks].first[:status]
+    assert_equal :warning, RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, db, target_rails: "6.1").run[:checks].first[:status]
+  end
 end

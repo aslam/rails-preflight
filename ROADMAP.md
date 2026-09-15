@@ -17,37 +17,22 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - Ruby compatibility per target Rails (5.0 – 8.1), read from `.ruby-version`, `Gemfile.lock`, or the Dockerfile
 - EOL checks for Ruby and Node
 - Private gem detection (git/path sources, non-rubygems.org remotes)
-- Deprecation scan, grouped by pattern, with app vs test occurrence counts
+- Deprecation scan, grouped by pattern, with app vs test occurrence counts; a blocker when the target Rails removes the API
 - Config checks: `config.load_defaults` missing or behind the current Rails version
 - Docker checks: EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3 mismatch
 - Database schema checks: charset and integer IDs (6.0 target only)
-- Single-file HTML report with a suggested path and per-section confidence
+- Single-file HTML report: blockers, items to fix and what couldn't be checked, each linked to its finding; a suggested path; per-section confidence explained in the legend
 
 ## Now: make the report correct and readable
 
-1. **Replace the summary with numbers that explain themselves.** The summary currently shows three measures, computed independently, that often disagree:
-   - *Risk Score* (`7.0 / 40`): +3 per private gem, +5 for a Ruby blocker, +2 for any Docker warning, +0.2 per deprecation type. The weights are arbitrary and 40 is a cap, not a scale.
-   - *Overall Risk* (High / Medium / Low): High if any single check failed.
-   - *Estimated Effort* (Small / Medium / Large): thresholds on deprecation and private gem counts.
-
-   A missing `config/application.rb` alone gives High risk, Small effort, 0 / 40.
-
-   Proposal: drop all three and lead with `Rails 5.2.0 → 7.2`, followed by three counts that link to their findings:
-   - **Blockers**: must be fixed before the upgrade can work (Ruby too old, removed APIs in use, known-incompatible gems)
-   - **To fix**: will warn or break along the way (deprecations, config lagging behind)
-   - **Couldn't check**: unknowns (private gems, missing files, low-confidence sections)
-
-   Explain confidence levels in the report legend.
-
-2. **Stop counting noise as risk.**
+1. **Cut noise from the findings.**
    - EOL Ruby is reported in both the Ruby and Docker sections.
-   - Tips (install `rubocop-rails`, set `BUNDLE_WITHOUT`) are warnings and raise the risk. Give them their own kind, set as a field instead of inferred from a 💡 in the message text.
    - The deprecation scan flags commented-out code. Skip comment lines.
-   - Pointed at a directory that isn't a Rails app, it produces a High-risk report. Say so and stop.
+   - Pointed at a directory that isn't a Rails app, it still produces a full report. Say so and stop.
 
-3. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them. Prefer stable sources (Rails guides, API docs, commits) over blog posts, which rot.
+2. **Show upgrade guide links** next to each deprecation. The rules already carry them; the report drops them. Prefer stable sources (Rails guides, API docs, commits) over blog posts, which rot.
 
-4. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
+3. **Make the test suite run anywhere.** Add a Rakefile, minitest as a dev dependency, and CI on GitHub Actions.
 
 ## Next: cover more of the upgrade
 
