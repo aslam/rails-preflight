@@ -2,6 +2,8 @@ module RailsPreflight
   require 'pathname'
   class DeprecationAnalyzer
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
+    SCAN_DIRS = %w[app config lib test spec].freeze
+    SCAN_EXTS = %w[.rb .erb].freeze
 
     def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil)
       @root_path = root_path
@@ -13,13 +15,7 @@ module RailsPreflight
     def run
       result = { title: "Deprecation Warnings", status: :passed, checks: [], confidence: :medium }
 
-      warnings = []
-
-      @rules['deprecations'].each do |rule|
-        regex = Regexp.new(rule['pattern'])
-        # Pass the whole rule to scan_files
-        warnings.concat(scan_files(regex, rule))
-      end
+      warnings = scan_files(@rules['deprecations'])
 
       if warnings.any?
         # Group warnings by message
@@ -99,27 +95,33 @@ module RailsPreflight
       content.include?("rubocop-rails")
     end
 
-    def scan_files(regex, rule)
+    # One pass over the files, every rule tested per line: a rule costs a regex, not a re-read.
+    def scan_files(rules)
       found = []
-      # Naive generic scan of app/ and lib/
-      target_files = Dir.glob(File.join(@root_path, "{app,lib,test,spec}/**/*"))
-      
-      target_files.each do |file|
+      compiled = rules.map { |rule| [Regexp.new(rule['pattern']), rule] }
+
+      Dir.glob(File.join(@root_path, "{#{SCAN_DIRS.join(',')}}/**/*")).each do |file|
         next if File.directory?(file)
-        next unless file.end_with?('.rb')
+        next unless SCAN_EXTS.include?(File.extname(file))
 
-        content = File.read(file)
-        content.each_line.with_index(1) do |line, line_num|
+        relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path)).to_s
+        top_dir = relative_path.split('/').first
+        is_test = relative_path.start_with?('test/', 'spec/')
+
+        # A rule with `paths:` only applies under those directories.
+        applicable = compiled.reject { |_regex, rule| rule['paths'] && !rule['paths'].include?(top_dir) }
+        next if applicable.empty?
+
+        File.foreach(file).with_index(1) do |line, line_num|
           # Skip comments and method definitions (e.g. "def update_attributes") to avoid false positives
-          next if line.lstrip.start_with?("#", "def ")
+          next if line.lstrip.start_with?("#", "def ", "<%#")
 
-          if line.match?(regex)
-            relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path))
-            is_test = relative_path.to_s.start_with?('test/', 'spec/')
+          applicable.each do |regex, rule|
+            next unless line.match?(regex)
 
             found << {
               message: rule['message'],
-              file: relative_path.to_s,
+              file: relative_path,
               line: line_num,
               is_test: is_test,
               snippet: line.strip,
