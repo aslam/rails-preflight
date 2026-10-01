@@ -1,6 +1,8 @@
 require "minitest/autorun"
 require "yaml"
-require_relative "../lib/rails_upgrade_audit/deprecation_analyzer"
+require "tmpdir"
+require "fileutils"
+require_relative "../lib/rails_preflight/deprecation_analyzer"
 
 class DeprecationAnalyzerTest < Minitest::Test
   def setup
@@ -36,34 +38,69 @@ class DeprecationAnalyzerTest < Minitest::Test
 
   def test_detects_and_structures_deprecation
     File.write(File.join(@app_dir, "model.rb"), "def foo\n  deprecated_method\nend")
-
-    # Mock constant path for test by subclassing or stubbing, 
-    # but since constant is hardcoded in class, we might need to mock YAML.load_file.
-    # However, allow me to use a trick: redefine the constant or just pass rules if analyzer supported it.
-    # Analyzer loads from constants. Let's rely on stubbing YAML.load_file? 
-    # Or better, just integration test with the REAL yaml file, but that might change over time.
-    # Let's simple create a file that matches a REAL rule.
-    # The real rule is `update_attributes!?`.
-    
     File.write(File.join(@app_dir, "user.rb"), "User.update_attributes(name: 'foo')")
-    
-    # Pass the mock database path
-    analyzer = RailsUpgradeAudit::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml"))
-    
+
+    analyzer = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml"))
     result = analyzer.run
-    
+
     assert_equal :warning, result[:status]
     check = result[:checks].first
-    
-    # The mock rule has confidence High
-    assert_match(/High Confidence/, check[:message])
-    # The mock rule has guide link http://example.com
-    assert_match /Guide.*example\.com/, check[:message]
-    
-    detail = check[:details]
+
+    assert_equal "Don't use this", check[:message]
+    assert_equal true, check[:grouped]
+    assert_equal "http://example.com", check[:guide_link]
+    assert_equal 1, check.dig(:stats, :occurrences)
+    assert_equal 1, check.dig(:stats, :occurrences_app)
+    assert_equal 0, check.dig(:stats, :occurrences_test)
+
+    detail = check[:details].first
     assert_equal "High", detail[:confidence]
+    assert_equal "http://example.com", detail[:guide_link]
     assert_equal "Rails 6.0 -> 6.1", detail[:recategorization]
     assert_equal "app/model.rb", detail[:file]
     assert_equal 2, detail[:line]
+  end
+
+  def test_removed_api_blocks_targets_at_or_past_removal
+    File.write(File.join(@app_dir, "model.rb"), "deprecated_method\n")
+    db = File.join(@db_dir, "deprecations.yml")
+
+    assert_equal :failed, RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, db, target_rails: "7.0").run[:checks].first[:status]
+    assert_equal :warning, RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, db, target_rails: "6.1").run[:checks].first[:status]
+  end
+
+  def test_api_already_removed_in_current_version_is_not_a_blocker
+    File.write(File.join(@app_dir, "model.rb"), "deprecated_method\n")
+    db = File.join(@db_dir, "deprecations.yml")
+
+    check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, db, target_rails: "7.1", current_rails: "7.0.4").run[:checks].first
+
+    assert_equal :warning, check[:status]
+    assert_equal "7.0", check[:removed_in]
+    assert_equal :failed, RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, db, target_rails: "7.1", current_rails: "6.1.7").run[:checks].first[:status]
+  end
+
+  def test_skips_commented_out_code
+    File.write(File.join(@app_dir, "model.rb"), "# deprecated_method was replaced\n  # deprecated_method\n")
+
+    result = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml")).run
+
+    assert_equal :passed, result[:status]
+  end
+
+  def test_shipped_rule_flags_positional_controller_test_params
+    FileUtils.mkdir_p(File.join(@tmp_dir, "test"))
+    File.write(File.join(@tmp_dir, "test", "users_controller_test.rb"), <<~RUBY)
+      get :show, id: 1
+      post :create, :user => { name: "x" }
+      get :show, params: { id: 1 }
+      post :create, format: :json
+      get :index
+      get user_url(users(:one))
+    RUBY
+
+    check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks].find { |c| c[:message].include?("positionally") }
+
+    assert_equal 2, check.dig(:stats, :occurrences)
   end
 end

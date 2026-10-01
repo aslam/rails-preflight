@@ -13,15 +13,6 @@ rails_versions:
   "6.0":
     required_ruby: ">= 2.5.0"
     max_ruby: "2.7.99"
-    database_rules:
-      - name: "utf8_charset"
-        message: "Legacy utf8mb3 charset detected. Upgrade to utf8mb4 for Rails 6+."
-        pattern: "utf8mb3"
-        type: "warning"
-      - name: "integer_ids"
-        message: "Integer IDs detected. Rails 5.1+ defaults to bigint."
-        pattern: "id: :integer"
-        type: "warning"
   "6.1":
     required_ruby: ">= 2.5.0"
     max_ruby: "3.0.99"
@@ -31,3 +22,27 @@ rails_versions:
   "7.1":
     required_ruby: ">= 2.7.0"
     max_ruby: "3.4.99"
+  "7.2":
+    required_ruby: ">= 3.1.0"
+    max_ruby: "3.4.99"
+    # Rails CI treats Ruby 3.4+ as allowed-to-fail on 7.x; 3.4 per FastRuby's compatibility table.
+  "8.0":
+    required_ruby: ">= 3.2.0"
+    max_ruby: "4.0.99"
+  "8.1":
+    required_ruby: ">= 3.2.0"
+    max_ruby: "4.0.99"
+    # Rails CI gates 8.x on Ruby 4.0 (rails/buildkite-config).
+
+# Schema checks, applied when the target Rails is at or past `since`.
+database_rules:
+  - name: "utf8_charset"
+    message: "Legacy utf8mb3 charset detected. Upgrade to utf8mb4 for Rails 6+."
+    pattern: "utf8mb3"
+    type: "warning"
+    since: "6.0"
+  - name: "integer_ids"
+    message: "Integer IDs detected. Rails 5.1+ defaults to bigint."
+    pattern: "id: :integer"
+    type: "warning"
+    since: "5.1"

@@ -1,5 +1,7 @@
 require "minitest/autorun"
-require_relative "../lib/rails_upgrade_audit/docker_analyzer"
+require "tmpdir"
+require "fileutils"
+require_relative "../lib/rails_preflight/docker_analyzer"
 
 class DockerAnalyzerTest < Minitest::Test
   def setup
@@ -16,15 +18,42 @@ class DockerAnalyzerTest < Minitest::Test
 
   def test_passes_valid_dockerfile
     create_dockerfile <<~DOCKERFILE
-      FROM ruby:3.2.0-alpine3.17
-      RUN apk add --no-cache build-base libxml2-dev postgresql-dev tzdata tini
-      ENV LANG=C.UTF-8
+      FROM ruby:3.4.0-alpine3.20
+      RUN apk add --no-cache build-base libxml2-dev postgresql-dev tzdata
     DOCKERFILE
-    
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
-    
+
     assert_equal :passed, result[:status], "Should pass valid config: #{result[:checks]}"
+  end
+
+  # Shape of the Dockerfile `rails new` generates (railties Dockerfile.tt).
+  def test_rails_generated_dockerfile_has_no_false_positives
+    create_dockerfile <<~DOCKERFILE
+      ARG RUBY_VERSION=3.4.5
+      FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
+      RUN apt-get update -qq && apt-get install --no-install-recommends -y curl libjemalloc2 libvips
+      ENV RAILS_ENV="production" \\
+          BUNDLE_DEPLOYMENT="1" \\
+          BUNDLE_WITHOUT="development"
+      FROM base AS build
+      RUN bundle install
+      FROM base
+      ENTRYPOINT ["/rails/bin/docker-entrypoint"]
+    DOCKERFILE
+
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
+    result = analyzer.run
+
+    assert_equal "3.4.5", analyzer.detect_ruby_version
+    assert_equal :passed, result[:status], "Unexpected findings: #{result[:checks]}"
+  end
+
+  def test_detects_two_part_ruby_tag
+    create_dockerfile "FROM ruby:3.3-slim\n"
+
+    assert_equal "3.3", RailsPreflight::DockerAnalyzer.new(@tmp_dir).detect_ruby_version
   end
 
   def test_detects_eol_ruby
@@ -32,35 +61,47 @@ class DockerAnalyzerTest < Minitest::Test
       FROM ruby:2.7.6
     DOCKERFILE
 
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
     assert_equal :warning, result[:status]
-    assert result[:checks].any? { |c| c[:message].include?("EOL Ruby") }
+    assert result[:checks].any? { |c| c[:message].include?("end-of-life") }
   end
 
   def test_detects_eol_node
     create_dockerfile <<~DOCKERFILE
-      FROM ruby:3.2.0
+      FROM ruby:3.4.0
       ENV NODE_VERSION 12.0.0
     DOCKERFILE
 
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
-    assert result[:checks].any? { |c| c[:message].include?("EOL Node") }
+    assert result[:checks].any? { |c| c[:message].include?("Node 12 is end-of-life") }
   end
 
-  def test_detects_missing_locale
+  def test_detects_missing_locale_and_tzdata_on_non_ruby_base
     create_dockerfile <<~DOCKERFILE
-      FROM ruby:3.2.0
-      # Missing ENV LANG
+      FROM ubuntu:24.04
+      RUN apt-get install -y ruby-full
     DOCKERFILE
 
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
-    assert result[:checks].any? { |c| c[:message].include?("Locale") }
+    assert result[:checks].any? { |c| c[:message].include?("LANG") }
+    assert result[:checks].any? { |c| c[:message].include?("tzdata") }
+  end
+
+  def test_detects_missing_tzdata_on_alpine
+    create_dockerfile <<~DOCKERFILE
+      FROM ruby:3.4.0-alpine3.20
+      RUN apk add --no-cache build-base
+    DOCKERFILE
+
+    result = RailsPreflight::DockerAnalyzer.new(@tmp_dir).run
+
+    assert result[:checks].any? { |c| c[:message].include?("tzdata") }
   end
 
   def test_detects_openssl_mismatch_alpine
@@ -70,39 +111,28 @@ class DockerAnalyzerTest < Minitest::Test
       RUN apk add tzdata
     DOCKERFILE
 
-    analyzer = RailsUpgradeAudit::DockerAnalyzer.new(@tmp_dir)
+    analyzer = RailsPreflight::DockerAnalyzer.new(@tmp_dir)
     result = analyzer.run
 
-    assert result[:checks].any? { |c| c[:message].include?("OpenSSL Mismatch") }
+    assert result[:checks].any? { |c| c[:message].include?("OpenSSL 3") }
   end
 
-    def test_detects_openssl_mismatch_ubuntu
-    # Ubuntu 22.04 uses OpenSSL 3.0
-    create_dockerfile <<~DOCKERFILE
-      FROM ruby:2.7.6
-      # Implicitly debian based, but if user is doing something custom we warn on recent OS + old ruby
-      # Just strictly checking the rule: Base Ubuntu 22.04 + Ruby < 3.1
-      # Note: Standard ruby images are Debian based.
-      # To test this we might need a custom FROM line if the analyzer regex supports it
-      # Assuming analyzer checks standard ruby images or OS usage
-      # Let's try to simulate a multi-stage or custom base that might be detected as Ubuntu 22
-      # Or just rely on standard ruby:2.7-slim-bullseye (OpenSSL 1.1) vs bookworm (OpenSSL 3)? 
-      # Actually, let's stick to catching explicit "ubuntu:22.04" usage if checking base image, 
-      # or if "ruby:X-slim" is actually based on a newer distro. 
-      # For now, let's assume we scan for FROM ubuntu:22.04 ... install ruby
-      FROM ubuntu:22.04
-      RUN apt-get install ruby-full
-    DOCKERFILE
-    
-    # Wait, the current analyzer only looks for "FROM ruby:..." for version detection. 
-    # If I use "FROM ubuntu", detect_ruby_version might fail or return nil.
-    # I should verify how I implement the check. 
-    # If I implement it to look at "FROM ...", I can test it.
-    
-    # Let's assume for this test I will detect "ubuntu:22.04" in FROM.
-    # And currently detect_ruby_version only checks "FROM ruby:..."
-    # I might need to mock ruby version if it's not in FROM.
-    # Or just test that if I have "FROM ruby:2.7-alpine3.17" it triggers.
-    # The existing test_detects_openssl_mismatch_alpine covers the main case.
+  def test_old_alpine_is_not_flagged_for_openssl_3
+    # Float comparison used to read 3.9 as newer than 3.17
+    create_dockerfile "FROM ruby:2.6-alpine3.9\nRUN apk add tzdata\n"
+
+    result = RailsPreflight::DockerAnalyzer.new(@tmp_dir).run
+
+    refute result[:checks].any? { |c| c[:message].include?("OpenSSL") }
+  end
+
+  def test_skips_eol_ruby_the_ruby_section_already_reported
+    create_dockerfile "FROM ruby:2.7\n"
+
+    same_minor = RailsPreflight::DockerAnalyzer.new(@tmp_dir, checked_ruby: "2.7.6").run
+    different = RailsPreflight::DockerAnalyzer.new(@tmp_dir, checked_ruby: "3.4.1").run
+
+    refute same_minor[:checks].any? { |c| c[:message].include?("end-of-life") }
+    assert different[:checks].any? { |c| c[:message].include?("end-of-life") }
   end
 end

@@ -1,21 +1,30 @@
-# lib/rails_upgrade_audit/report_generator.rb
+# lib/rails_preflight/report_generator.rb
 require 'erb'
 
-module RailsUpgradeAudit
+module RailsPreflight
   class ReportGenerator
+    include ERB::Util
+
+    SUMMARY_TILES = [
+      [:blockers, "Blockers", "Must be fixed before the upgrade can work"],
+      [:to_fix, "To fix", "Will warn or break along the way"],
+      [:unknowns, "Couldn't check", "Not verified; review by hand"]
+    ].freeze
+
     def initialize(data)
       @data = data
       @generated_at = Time.now
     end
 
     def generate
-      template = <<~ERB
+      # Quoted heredoc: #{} inside the template is evaluated by ERB at render time, not here.
+      template = <<~'ERB'
         <!DOCTYPE html>
         <html lang="en">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Rails Upgrade Audit Report</title>
+          <title>RailsPreFlight Report</title>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
             h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -40,57 +49,49 @@ module RailsUpgradeAudit
             .summary-item { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
             .summary-label { font-size: 0.8em; color: #486581; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
             .summary-value { font-size: 1.4em; font-weight: bold; }
-            .risk-high { color: #e53e3e; }
-            .risk-medium { color: #dd6b20; }
-            .risk-low { color: #38a169; }
-            .blockers-list { margin: 0; padding-left: 20px; font-size: 0.9em; color: #e53e3e; }
+            .count-blockers { color: #e53e3e; }
+            .count-to_fix { color: #dd6b20; }
+            .count-unknowns { color: #718096; }
+            .summary-caption { font-size: 0.8em; color: #627d98; }
+            .summary-list { margin-top: 15px; }
+            .summary-list summary { cursor: pointer; font-weight: bold; color: #102a43; }
+            .summary-list ul { margin: 5px 0 0; padding-left: 20px; font-size: 0.9em; }
+            .unknown { background-color: #f7fafc; border-left: 5px solid #a0aec0; }
+            .tip { background-color: #ebf8ff; border-left: 5px solid #63b3ed; }
             .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.9em; }
-            .legend { display: inline-flex; gap: 20px; align-items: center; justify-content: center; margin-top: 10px; }
+            .legend { display: inline-flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center; margin-top: 10px; }
             .legend-item { display: flex; align-items: center; gap: 8px; }
           </style>
         </head>
         <body>
-          <h1>Rails Upgrade Audit</h1>
+          <h1>RailsPreFlight</h1>
           <div class="meta">
-            Target Rails Version: <strong><%= @data[:target_rails] %></strong><br>
-            Generated at: <%= @generated_at %>
+            Generated at: <%= h(@generated_at) %>
           </div>
 
           <% if @data[:summary] %>
             <div class="summary-card">
-              <div class="summary-title">Upgrade Readiness Summary</div>
+              <div class="summary-title">Rails <%= h(rails_jump) %></div>
               <div class="summary-grid">
-                <div class="summary-item">
-                  <div class="summary-label">Target Rails</div>
-                  <div class="summary-value"><%= @data[:target_rails] %></div>
-                </div>
-                <div class="summary-item">
-                  <div class="summary-label">Risk Score</div>
-                  <div class="summary-value"><%= @data[:summary][:upgrade_score] %></div>
-                </div>
-                <div class="summary-item">
-                  <div class="summary-label">Overall Risk</div>
-                  <div class="summary-value risk-<%= @data[:summary][:overall_risk].downcase %>">
-                    <%= @data[:summary][:overall_risk] %>
+                <% SUMMARY_TILES.each do |key, label, caption| %>
+                  <div class="summary-item">
+                    <div class="summary-label"><%= h(label) %></div>
+                    <div class="summary-value <%= "count-#{key}" if @data[:summary][key].any? %>"><%= @data[:summary][key].size %></div>
+                    <div class="summary-caption"><%= h(caption) %></div>
                   </div>
-                </div>
-                <div class="summary-item">
-                  <div class="summary-label">Estimated Effort</div>
-                  <div class="summary-value"><%= @data[:summary][:estimated_effort] %></div>
-                </div>
-                <div class="summary-item" style="grid-column: span 1 / -1;">
-                  <div class="summary-label">Primary Blockers</div>
-                  <% if @data[:summary][:primary_blockers].any? %>
-                    <ul class="blockers-list">
-                      <% @data[:summary][:primary_blockers].each do |blocker| %>
-                        <li><%= blocker %></li>
-                      <% end %>
-                    </ul>
-                  <% else %>
-                    <div style="color: #38a169; font-weight: bold;">None detected! 🎉</div>
-                  <% end %>
-                </div>
+                <% end %>
               </div>
+              <% SUMMARY_TILES.each do |key, label, _caption| %>
+                <% next if @data[:summary][key].empty? %>
+                <details class="summary-list"<%= " open" unless key == :to_fix %>>
+                  <summary><%= h(label) %> (<%= @data[:summary][key].size %>)</summary>
+                  <ul>
+                    <% @data[:summary][key].each do |finding| %>
+                      <li><%= finding_html(finding) %></li>
+                    <% end %>
+                  </ul>
+                </details>
+              <% end %>
             </div>
 
             <% if @data[:summary][:suggested_path] && @data[:summary][:suggested_path].any? %>
@@ -99,7 +100,14 @@ module RailsUpgradeAudit
                 <div style="background: #fff; padding: 15px; border-radius: 4px;">
                   <ol style="margin: 0; padding-left: 20px; font-size: 1.1em;">
                     <% @data[:summary][:suggested_path].each do |step| %>
-                      <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;"><%= step %></li>
+                      <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
+                        <strong><%= h(step[:title]) %></strong>
+                        <ul style="margin: 5px 0 0; padding-left: 18px; font-size: 0.85em;">
+                          <% step[:items].each do |item| %>
+                            <li><%= finding_html(item) %></li>
+                          <% end %>
+                        </ul>
+                      </li>
                     <% end %>
                   </ol>
                 </div>
@@ -108,48 +116,51 @@ module RailsUpgradeAudit
           <% end %>
 
           <% @data[:results].each do |section| %>
-            <div class="section">
+            <div class="section" id="<%= section_id(section[:title]) %>">
               <div class="section-header">
                 <div>
-                  <span><%= section[:title] %></span>
+                  <span><%= h(section[:title]) %></span>
                   <% if section[:confidence] %>
-                    <span class="badge badge-confidence-<%= section[:confidence] %>" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
-                      CONFIDENCE: <%= section[:confidence].upcase %>
+                    <span class="badge <%= confidence_class(section[:confidence]) %>" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
+                      CONFIDENCE: <%= h(section[:confidence].to_s.upcase) %>
                     </span>
                   <% end %>
                 </div>
-                <span class="badge badge-<%= section[:status] %>"><%= section[:status].upcase %></span>
+                <span class="badge <%= status_class(section[:status]) %>"><%= h(section[:status].to_s.upcase) %></span>
               </div>
               <div class="section-body">
                 <% if section[:checks].empty? %>
                   <div class="item passed">No issues found.</div>
                 <% else %>
                   <% section[:checks].each do |check| %>
-                    <div class="item <%= check[:status] %>">
+                    <div class="item <%= check[:kind] || check[:status] %>">
                       <% if check[:grouped] %>
                         <!-- Grouped Finding Header -->
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
                           <div>
-                            <strong><%= check[:message] %></strong>
+                            <strong><%= h(check[:message]) %></strong>
                             <% if check[:stats][:fix_effort] %>
-                              <span class="badge" style="background-color: #4a5568;">Fix: <%= check[:stats][:fix_effort].upcase %></span>
+                              <span class="badge" style="background-color: #4a5568;">Fix: <%= h(check[:stats][:fix_effort].to_s.upcase) %></span>
+                            <% end %>
+                            <% if guide_link?(check[:guide_link]) %>
+                              <a href="<%= h(check[:guide_link]) %>" target="_blank" rel="noopener" style="font-size: 0.85em; margin-left: 8px;">Upgrade guide ↗</a>
                             <% end %>
                           </div>
-                          <span class="badge" style="background-color: #718096;"><%= check[:stats][:severity] %></span>
+                          <span class="badge" style="background-color: #718096;"><%= h(check[:stats][:severity]) %></span>
                         </div>
                         
                         <!-- Stats Row -->
                         <div style="display: flex; gap: 15px; font-size: 0.85em; color: #555; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
-                          <span>Occurrences: <strong><%= check[:stats][:occurrences] %></strong> <span style="font-weight:normal; color:#718096; font-size:0.9em;">(App: <strong><%= check[:stats][:occurrences_app] %></strong> / Test: <%= check[:stats][:occurrences_test] %>)</span></span>
-                          <span>Files: <strong><%= check[:stats][:files] %></strong></span>
-                          <span>Models: <strong><%= check[:stats][:models] %></strong></span>
-                          <span>Controllers: <strong><%= check[:stats][:controllers] %></strong></span>
+                          <span>Occurrences: <strong><%= h(check[:stats][:occurrences]) %></strong> <span style="font-weight:normal; color:#718096; font-size:0.9em;">(App: <strong><%= h(check[:stats][:occurrences_app]) %></strong> / Test: <%= h(check[:stats][:occurrences_test]) %>)</span></span>
+                          <span>Files: <strong><%= h(check[:stats][:files]) %></strong></span>
+                          <span>Models: <strong><%= h(check[:stats][:models]) %></strong></span>
+                          <span>Controllers: <strong><%= h(check[:stats][:controllers]) %></strong></span>
                         </div>
 
                         <!-- Expandable Details -->
                         <details>
                           <summary style="cursor: pointer; color: #3182ce; font-weight: 500; font-size: 0.9em; margin-bottom: 10px;">
-                            Expand to see <%= check[:stats][:occurrences] %> individual instances
+                            Expand to see <%= h(check[:stats][:occurrences]) %> individual instances
                           </summary>
                           
                           <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 300px; overflow-y: auto;">
@@ -164,9 +175,9 @@ module RailsUpgradeAudit
                               <tbody>
                                 <% check[:details].each do |occ| %>
                                   <tr style="border-bottom: 1px solid #edf2f7;">
-                                    <td style="padding: 8px; color: #4a5568;"><%= occ[:file] %></td>
-                                    <td style="padding: 8px; color: #4a5568;"><%= occ[:line] %></td>
-                                    <td style="padding: 8px; font-family: monospace; color: #c53030;"><%= occ[:snippet] %></td>
+                                    <td style="padding: 8px; color: #4a5568;"><%= h(occ[:file]) %></td>
+                                    <td style="padding: 8px; color: #4a5568;"><%= h(occ[:line]) %></td>
+                                    <td style="padding: 8px; font-family: monospace; color: #c53030;"><%= h(occ[:snippet]) %></td>
                                   </tr>
                                 <% end %>
                               </tbody>
@@ -177,19 +188,19 @@ module RailsUpgradeAudit
                       <% else %>
                         <!-- Standard Check -->
                         <div style="display: flex; justify-content: space-between;">
-                          <strong><%= check[:message] %></strong>
+                          <strong><%= h(check[:message]) %></strong>
                           <% if check[:fix_effort] %>
-                             <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: <%= check[:fix_effort].upcase %></span>
+                             <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: <%= h(check[:fix_effort].to_s.upcase) %></span>
                           <% end %>
                         </div>
                         <% if check[:details].is_a?(Array) %>
                           <ul>
                             <% check[:details].each do |detail| %>
-                              <li><%= detail %></li>
+                              <li><%= h(detail) %></li>
                             <% end %>
                           </ul>
                         <% elsif check[:details] %>
-                           <p><%= check[:details] %></p>
+                           <p><%= h(check[:details]) %></p>
                         <% end %>
                       <% end %>
                     </div>
@@ -208,8 +219,12 @@ module RailsUpgradeAudit
               <div class="legend-item">
                 <strong>Fix Effort:</strong> Implementation cost
               </div>
+              <span style="color: #cbd5e0;">|</span>
+              <div class="legend-item">
+                <strong>Confidence:</strong> High: read from project files · Medium: pattern-based · Low: key input missing
+              </div>
             </div>
-            <p style="margin-top: 10px;">Rauls Upgrade Audit Tool</p>
+            <p style="margin-top: 10px;">RailsPreFlight</p>
           </div>
 
         </body>
@@ -217,6 +232,39 @@ module RailsUpgradeAudit
       ERB
 
       ERB.new(template).result(binding)
+    end
+
+    private
+
+    def rails_jump
+      "#{@data[:current_rails] || 'unknown'} → #{@data[:target_rails]}"
+    end
+
+    def confidence_class(confidence)
+      "badge-confidence-#{confidence.to_s.downcase}"
+    end
+
+    # Links come from the rules database; render https only.
+    def guide_link?(url)
+      url.to_s.start_with?("https://")
+    end
+
+    # One finding line, linked to its section when it has one. Escapes everything it renders.
+    def finding_html(finding)
+      prefix = finding[:section] ? %(<a href="##{section_id(finding[:section])}">#{h(finding[:section])}</a>: ) : ""
+      prefix + h(finding[:message]) + occurrences_note(finding[:occurrences])
+    end
+
+    def occurrences_note(count)
+      count ? " (#{count.to_i} occurrence#{'s' unless count == 1})" : ""
+    end
+
+    def section_id(title)
+      "section-#{title.to_s.downcase.gsub(/[^a-z0-9]+/, '-')}"
+    end
+
+    def status_class(status)
+      "badge-#{status}"
     end
   end
 end

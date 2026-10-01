@@ -1,16 +1,18 @@
-module RailsUpgradeAudit
+module RailsPreflight
   require 'pathname'
   class DeprecationAnalyzer
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
 
-    def initialize(root_path = Dir.pwd, database_path = DATA_PATH)
+    def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil)
       @root_path = root_path
       @rules = YAML.load_file(database_path)
+      @target_rails = target_rails
+      @current_rails = current_rails
     end
 
     def run
-      result = { title: "Deprecation Warnings", status: :passed, checks: [], confidence: :high }
-      
+      result = { title: "Deprecation Warnings", status: :passed, checks: [], confidence: :medium }
+
       warnings = []
 
       @rules['deprecations'].each do |rule|
@@ -20,8 +22,6 @@ module RailsUpgradeAudit
       end
 
       if warnings.any?
-        result[:status] = :warning
-        
         # Group warnings by message
         grouped_warnings = warnings.group_by { |w| w[:message] }
         
@@ -34,11 +34,17 @@ module RailsUpgradeAudit
           # Use the severity of the first occurrence (rule based)
           severity = occurrences.first[:severity] || "Warning"
           fix_effort = occurrences.first[:fix_effort] || "low"
-          
+          info = severity.to_s.downcase == "info"
+          # An API this upgrade removes blocks it; otherwise it's a warning to fix.
+          status = info ? :passed : (removed_by_target?(occurrences.first[:removed_in]) ? :failed : :warning)
+
           result[:checks] << {
             message: message,
-            status: :warning,
+            status: status,
+            kind: (:tip if info),
             grouped: true,
+            guide_link: occurrences.first[:guide_link],
+            removed_in: occurrences.first[:removed_in],
             stats: {
               occurrences: occurrences.count,
               occurrences_app: occurrences.count { |w| !w[:is_test] },
@@ -52,20 +58,24 @@ module RailsUpgradeAudit
             details: occurrences # Pass all occurrences for the detail view
           }
         end
+
+        statuses = result[:checks].map { |c| c[:status] }
+        result[:status] = statuses.include?(:failed) ? :failed : (statuses.include?(:warning) ? :warning : :passed)
       else
-        result[:checks] << { message: "No obvious deprecated patterns found (UpgradeAudit is static, check logs too!)", status: :passed }
+        result[:checks] << { message: "No obvious deprecated patterns found (this scan is static; check your deprecation logs too).", status: :passed }
       end
       
       # Rubocop Advisory Check
       if check_rubocop_rails
         result[:checks] << { 
-          message: "✅ Action: `rubocop-rails` detected. Run `bundle exec rubocop -a` to find and fix more issues.",
+          message: "rubocop-rails is installed. Run `bundle exec rubocop -a` to auto-fix more deprecations.",
           status: :passed 
         }
       else
         result[:checks] << { 
-          message: "💡 Recommendation: Install `rubocop-rails` gem. It can auto-fix many deprecations that this tool cannot.",
-          status: :warning 
+          message: "Install rubocop-rails. It can auto-fix many deprecations this tool only detects.",
+          status: :passed,
+          kind: :tip
         }
       end
 
@@ -73,6 +83,13 @@ module RailsUpgradeAudit
     end
 
     private
+
+    # Removed after the current version and by the target: this upgrade breaks it.
+    def removed_by_target?(removed_in)
+      return false unless removed_in && @target_rails
+      removed = Gem::Version.new(removed_in.to_s)
+      removed <= Gem::Version.new(@target_rails) && (@current_rails.nil? || removed > Gem::Version.new(@current_rails))
+    end
 
     def check_rubocop_rails
       lockfile_path = File.join(@root_path, "Gemfile.lock")
@@ -93,8 +110,8 @@ module RailsUpgradeAudit
 
         content = File.read(file)
         content.each_line.with_index(1) do |line, line_num|
-          # Skip method definitions to avoid false positives (e.g. "def update_attributes")
-          next if line.lstrip.start_with?("def ")
+          # Skip comments and method definitions (e.g. "def update_attributes") to avoid false positives
+          next if line.lstrip.start_with?("#", "def ")
 
           if line.match?(regex)
             relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path))
@@ -109,6 +126,7 @@ module RailsUpgradeAudit
               confidence: rule['confidence'] || "Unknown",
               guide_link: rule['guide_link'],
               recategorization: rule['recategorization'],
+              removed_in: rule['removed_in'],
               severity: rule['severity'],
               fix_effort: rule['fix_effort']
             }

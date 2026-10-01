@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# No bundler/setup on purpose: it would load the Gemfile in the current directory,
+# which is usually the app being audited, often pinned to an old Ruby.
+lib = File.expand_path("../lib", __dir__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require 'rails_preflight'
+
+if ARGV.empty?
+  puts "Usage: rails-preflight TARGET_RAILS_VERSION [APP_PATH]"
+  puts "Example: rails-preflight 7.2 ~/code/my_app  (APP_PATH defaults to the current directory)"
+  exit 1
+end
+
+target = ARGV[0]
+abort "Target must be a Rails version such as 7.2 (got #{target.inspect})." unless Gem::Version.correct?(target)
+project_path = ARGV[1] || Dir.pwd
+
+begin
+  RailsPreflight::UpgradeAnalyzer.new(target, project_path).run
+rescue RailsPreflight::Error => e
+  abort e.message
+end

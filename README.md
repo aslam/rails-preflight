@@ -1,8 +1,8 @@
-# Rails Upgrade Audit 🛡️
+# RailsPreFlight 🛡️
 
 **Assess Rails upgrade risk before you touch a single line of code.**
 
-`rails-upgrade-audit` is a static analysis tool that scans legacy Rails applications and produces a **human-readable upgrade risk report**.
+`rails-preflight` is a static analysis tool that scans legacy Rails applications and produces a **human-readable upgrade risk report**.
 
 It helps teams understand:
 
@@ -21,7 +21,7 @@ Rails upgrades fail not because teams can’t write code, but because they under
 - Ruby and OS lifecycle mismatches
 - Docker runtime issues that surface late
 
-`rails-upgrade-audit` makes these risks visible before you start upgrading.
+`rails-preflight` makes these risks visible before you start upgrading.
 
 Think of it as **upgrade reconnaissance**, not a fixer.
 
@@ -33,7 +33,7 @@ The audit analyzes your project for common Rails upgrade risk factors:
 - End-of-life Ruby versions
 - Private / internal gem dependencies
 - Rails deprecations that block upgrades
-- Docker runtime risks (PID 1, locale, tzdata, base image)
+- Docker runtime risks (EOL base image, locale, tzdata, OpenSSL mismatch)
 - Missing Rails configuration required for newer versions
 
 The output is a **single HTML report** designed to be:
@@ -63,34 +63,14 @@ This tool is especially useful if you are:
 
 ## Installation
 
-### Option A: Add to your project (Recommended)
-
-Add this line to your application's `Gemfile`:
-
-```ruby
-gem 'rails_upgrade_audit', require: false
-```
-
-Then run:
+Install it globally and point it at your app. It only reads files, so the app can be on any Ruby version, including the old one your servers run. The machine running it needs Ruby 2.7 or newer.
 
 ```bash
-bundle install
-bundle exec rails-upgrade-audit 6.1
+gem install rails_preflight
+rails-preflight 7.2 /path/to/your/app
 ```
 
-### Option B: Standalone
-
-This tool is designed to be run as a standalone script or cloned into your toolbox.
-
-```bash
-gem install rails-upgrade-audit
-```
-
-Then run:
-
-```bash
-rails-upgrade-audit 6.1 /path/to/your/app
-```
+Leave out the path to audit the current directory.
 
 The tool will analyze:
 
@@ -103,24 +83,24 @@ The tool will analyze:
 And generate:
 
 ```
-upgrade_audit.html
+rails_preflight_report.html
 ```
 
 ## Report Overview
 
-The tool generates a self-contained **HTML report** (`upgrade_audit.html`) that provides a comprehensive view of your upgrade readiness.
+The tool generates a self-contained **HTML report** (`rails_preflight_report.html`) that provides a comprehensive view of your upgrade readiness.
 
 ### Key Sections
 
-1.  **Executive Summary**: A high-level dashboard showing:
-    *   **Risk Score**: A quantitative measure (0-40) of upgrade difficulty.
-    *   **Estimated Effort**: T-shirt sizing (Small, Medium, Large) for the upgrade.
-    *   **Primary Blockers**: The most critical issues stopping you from upgrading immediately.
+1.  **Summary**: The upgrade (`current → target` Rails version) and three counts, each finding linked to its details:
+    *   **Blockers**: must be fixed before the upgrade can work (e.g. Ruby too old, removed APIs still in use).
+    *   **To fix**: will warn or break along the way (deprecations, lagging config).
+    *   **Couldn't check**: what the tool could not verify (private gems, missing files), to review by hand.
 
-2.  **Suggested Upgrade Path**: A generated step-by-step guide tailored to your specific findings, helping you sequence the upgrade work.
+2.  **Suggested Upgrade Path**: One step per Rails minor version, since Rails recommends upgrading one at a time. Each step shows the Ruby range it needs and the removed APIs to fix for it; other findings come first under "Before you start".
 
 3.  **Detailed Findings**:
-    *   **Deprecations**: Grouped by message to reduce noise. Expandable to show individual file/line occurrences.
+    *   **Deprecations**: Grouped by message to reduce noise. Expandable to show individual file/line occurrences, with a link to the relevant Rails guide.
     *   **Gem Compatibility**: Identifies private gems and known public gem incompatibilities.
     *   **Configuration & Infrastructure**: Checks for Docker/OS issues and missing Rails config.
     *   **Database Schema**: Highlights potential data issues (e.g. integer overflows).
@@ -140,6 +120,15 @@ This tool favors:
 - planning support over automation
 
 If it helps you avoid one failed upgrade attempt, it has done its job.
+
+## Development
+
+```bash
+bundle install
+bundle exec rake
+```
+
+CI runs the suite on every Ruby from 2.7 to 4.0.
 
 ## License
 
