@@ -25,8 +25,8 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - Single-file HTML report: blockers, items to fix and what couldn't be checked, each linked to its finding; a suggested path; per-section confidence explained in the legend
 - Upgrade path with one step per Rails minor version, the Ruby range each needs, and the removed APIs to fix at each step
 - Test suite runs with `bundle exec rake`, in GitHub Actions CI on Ruby 2.7 to 4.0
-- Deprecation scan covers `app/`, `lib/`, `config/`, `test/` and `spec/`, Ruby files and ERB templates; rules can scope themselves to certain directories with `paths:`
-- 26 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
+- Deprecation scan covers `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, across `.rb`, `.erb` and `.rake`; rules can scope themselves to certain directories with `paths:`
+- 32 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
 - Every deprecation rule has a sample line in the test suite, and the replacement APIs are checked not to trigger it
 
 ## Now
@@ -36,8 +36,7 @@ Nothing in progress. Pick the next item from below.
 ## Next: cover more of the upgrade
 
 - **Say when to upgrade Ruby** in the upgrade path: name the step whose Rails supports both the current and the required Ruby.
-- **Deepen the deprecation rules.** Every hop has at least one rule, but the guides list dozens of removals per version. Add the ones that are statically detectable and plausible in app code, and keep citing the release notes.
-- **Scan `db/migrate` and `.rake` files.** Some removals only show up there: `:unsigned_float` and `:unsigned_decimal` columns in migrations, `STATS_DIRECTORIES` in a rake task. Neither path is scanned today. Add rules for each hop from the official upgrade guides, and apply only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
+- **Deepen the deprecation rules.** Every hop has at least one rule, but the guides list dozens of removals per version. Add the ones that are statically detectable and plausible in app code, applying only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
 - **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements. Each entry records its source and the Rails versions it applies to, so stale entries expire instead of lingering.
 - **Support `structure.sql`** in the database checks, not only `db/schema.rb`.
 - **Go offline for gem checks.** Replace the rubygems.org lookup with lockfile-only heuristics, or put it behind an `--online` flag.
