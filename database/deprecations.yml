@@ -239,3 +239,57 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-job-removals"
     recategorization: "Rails 8.0 -> 8.1"
     fix_effort: low
+  - id: migrator_schema_migrations_table_name
+    pattern: "\\bschema_migrations_table_name\\b"
+    message: "'ActiveRecord::Migrator.schema_migrations_table_name' was removed in Rails 5.2. Use 'ActiveRecord::SchemaMigration.table_name'."
+    removed_in: "5.2"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 5.1 -> 5.2"
+    fix_effort: low
+  - id: supports_migrations
+    pattern: "\\bsupports_migrations\\?"
+    message: "'supports_migrations?' was removed from connection adapters in Rails 5.2. Every supported adapter supports migrations, so drop the check."
+    removed_in: "5.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 5.1 -> 5.2"
+    fix_effort: low
+  - id: migrator_migrations_path
+    pattern: "ActiveRecord::Migrator\\.migrations_path\\s*="
+    message: "'ActiveRecord::Migrator.migrations_path=' was removed in Rails 6.0. Set 'config.paths[\"db/migrate\"]' instead."
+    removed_in: "6.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 5.2 -> 6.0"
+    fix_effort: low
+  - id: add_foreign_key_deferrable_true
+    pattern: "\\bdeferrable:\\s*true\\b"
+    message: "'deferrable: true' on 'add_foreign_key' was removed in Rails 7.2. Pass 'deferrable: :immediate' or ':deferred'."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+  - id: schema_cache_env
+    pattern: "ENV\\[[\"']SCHEMA_CACHE[\"']\\]"
+    message: "Setting ENV['SCHEMA_CACHE'] was removed in Rails 8.0. Use 'config.active_record.schema_cache_ignored_tables' or the dump file path config."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: unsigned_float_decimal
+    pattern: "\\bunsigned_(?:float|decimal)\\b"
+    message: "The ':unsigned_float' and ':unsigned_decimal' MySQL column methods were removed in Rails 8.1. Use ':float' or ':decimal' with a check constraint."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: medium

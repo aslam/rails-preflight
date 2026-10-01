@@ -176,7 +176,13 @@ class DeprecationAnalyzerTest < Minitest::Test
     "read_encrypted_secrets" => ["config/initializers/encrypted.rb", "config.read_encrypted_secrets = true"],
     "stats_directories" => ["lib/stats.rb", "STATS_DIRECTORIES << ['Services', 'app/services']"],
     "benchmark_ms" => ["lib/profiler.rb", "  elapsed = Benchmark.ms { work }"],
-    "enqueue_after_transaction_commit" => ["config/initializers/jobs.rb", "config.active_job.enqueue_after_transaction_commit = :always"]
+    "enqueue_after_transaction_commit" => ["config/initializers/jobs.rb", "config.active_job.enqueue_after_transaction_commit = :always"],
+    "migrator_schema_migrations_table_name" => ["lib/tasks/schema.rake", "  puts ActiveRecord::Migrator.schema_migrations_table_name"],
+    "supports_migrations" => ["lib/legacy_adapter.rb", "  return unless connection.supports_migrations?"],
+    "migrator_migrations_path" => ["config/initializers/migrations.rb", "ActiveRecord::Migrator.migrations_path = 'db/migrate_old'"],
+    "add_foreign_key_deferrable_true" => ["db/migrate/20200102000000_add_fk.rb", "    add_foreign_key :orders, :users, deferrable: true"],
+    "schema_cache_env" => ["config/initializers/cache.rb", "ENV['SCHEMA_CACHE'] = 'tmp/schema_cache.yml'"],
+    "unsigned_float_decimal" => ["db/migrate/20200101000000_add_rate.rb", "      t.unsigned_decimal :rate, precision: 10"]
   }.freeze
 
   # The replacement APIs. Flagging code that is already fixed is worse than missing it.
@@ -198,7 +204,10 @@ class DeprecationAnalyzerTest < Minitest::Test
     "key = combined_fragment_cache_key(['posts', post])",
     "assert response.successful?",
     "enum :status, { pending: 0, shipped: 1 }",
-    "class Wrapper < BasicObject"
+    "class Wrapper < BasicObject",
+    "add_foreign_key :orders, :users, deferrable: :deferred",
+    "t.decimal :rate, precision: 10, scale: 2",
+    "puts ActiveRecord::SchemaMigration.table_name"
   ].freeze
 
   def test_every_shipped_rule_matches_its_canonical_snippet
