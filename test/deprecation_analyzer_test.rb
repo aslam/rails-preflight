@@ -100,6 +100,18 @@ class DeprecationAnalyzerTest < Minitest::Test
     assert_equal ["app/views/users/index.html.erb", "config/application.rb"], check[:details].map { |d| d[:file] }.sort
   end
 
+  def test_scans_migrations_and_rake_tasks
+    FileUtils.mkdir_p(File.join(@tmp_dir, "db", "migrate"))
+    FileUtils.mkdir_p(File.join(@tmp_dir, "lib", "tasks"))
+    File.write(File.join(@tmp_dir, "db", "migrate", "20200101000000_backfill.rb"), "  deprecated_method\n")
+    File.write(File.join(@tmp_dir, "lib", "tasks", "backfill.rake"), "  deprecated_method\n")
+
+    check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml")).run[:checks].first
+
+    assert_equal ["db/migrate/20200101000000_backfill.rb", "lib/tasks/backfill.rake"],
+                 check[:details].map { |d| d[:file] }.sort
+  end
+
   def test_path_scoped_rule_skips_directories_it_does_not_apply_to
     FileUtils.mkdir_p(File.join(@tmp_dir, "config"))
     File.write(File.join(@tmp_dir, "config", "routes.rb"), "get :show, on: :member\n")
