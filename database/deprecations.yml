@@ -28,3 +28,86 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#railties-removals"
     recategorization: "Rails 7.1 -> 7.2"
     fix_effort: medium
+  - id: controller_force_ssl
+    pattern: "^\\s*force_ssl\\b"
+    message: "'force_ssl' at the controller level was removed in Rails 6.1. Use 'config.force_ssl' to force HTTPS for the whole app."
+    removed_in: "6.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#action-pack-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: medium
+    paths: [app]
+  - id: actionmailer_delivery_job
+    pattern: "\\bActionMailer::(?:Parameterized::)?DeliveryJob\\b"
+    message: "'ActionMailer::DeliveryJob' and 'ActionMailer::Parameterized::DeliveryJob' were removed in Rails 7.0. Mail is delivered by 'ActionMailer::MailDeliveryJob'."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#action-mailer-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: allow_unsafe_raw_sql
+    pattern: "\\ballow_unsafe_raw_sql\\b"
+    message: "'ActiveRecord::Base.allow_unsafe_raw_sql' was removed in Rails 7.0. Wrap raw SQL in 'Arel.sql' where you need it."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: medium
+  - id: legacy_connection_handling
+    pattern: "\\blegacy_connection_handling\\b"
+    message: "'ActiveRecord.legacy_connection_handling' was removed in Rails 7.1. Delete the setting; the new connection handling is the only one left."
+    removed_in: "7.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
+  - id: active_record_partial_writes
+    pattern: "\\bpartial_writes\\b"
+    message: "'config.active_record.partial_writes' was removed in Rails 7.1. Use 'partial_inserts' and 'partial_updates' instead."
+    removed_in: "7.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
+  - id: per_thread_registry
+    pattern: "\\bActiveSupport::PerThreadRegistry\\b"
+    message: "'ActiveSupport::PerThreadRegistry' was removed in Rails 7.1. Use thread-local or fiber-local attributes directly."
+    removed_in: "7.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-support-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: medium
+  - id: clear_connections
+    pattern: "(?<!connection_handler\\.)\\b(?:clear_active_connections!|clear_reloadable_connections!|clear_all_connections!|flush_idle_connections!)"
+    message: "'ActiveRecord::Base.clear_active_connections!', 'clear_reloadable_connections!', 'clear_all_connections!' and 'flush_idle_connections!' were removed in Rails 7.2. Call the same methods on a connection handler, e.g. 'ActiveRecord::Base.connection_handler.clear_active_connections!'."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+  - id: migration_check_pending
+    pattern: "ActiveRecord::Migration\\.check_pending!?\\b"
+    message: "'ActiveRecord::Migration.check_pending' was removed in Rails 7.2. Use 'ActiveRecord::Migration.check_all_pending!'."
+    removed_in: "7.2"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+  - id: fixture_path_assignment
+    pattern: "\\bfixture_path\\s*="
+    message: "'fixture_path' was removed in Rails 7.2. Assign 'fixture_paths' instead, which takes an array."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [test, spec]

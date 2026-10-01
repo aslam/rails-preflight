@@ -135,4 +135,74 @@ class DeprecationAnalyzerTest < Minitest::Test
 
     assert_equal 2, check.dig(:stats, :occurrences)
   end
+
+  # One line per shipped rule. A new rule without a sample here fails the test below,
+  # which is the point: every pattern has to prove it matches something real.
+  SHIPPED_HITS = {
+    "update_attributes" => ["app/models/user.rb", "user.update_attributes(name: 'x')"],
+    "controller_test_positional_params" => ["test/users_controller_test.rb", "get :show, id: 1"],
+    "application_secrets" => ["config/initializers/auth.rb", "KEY = Rails.application.secrets.api_key"],
+    "controller_force_ssl" => ["app/controllers/billing_controller.rb", "  force_ssl if: :production?"],
+    "actionmailer_delivery_job" => ["app/mailers/user_mailer.rb", "self.delivery_job = ActionMailer::DeliveryJob"],
+    "allow_unsafe_raw_sql" => ["config/initializers/sql.rb", "ActiveRecord::Base.allow_unsafe_raw_sql = :disabled"],
+    "legacy_connection_handling" => ["config/application.rb", "config.active_record.legacy_connection_handling = false"],
+    "active_record_partial_writes" => ["config/initializers/writes.rb", "config.active_record.partial_writes = false"],
+    "per_thread_registry" => ["lib/current_tenant.rb", "  extend ActiveSupport::PerThreadRegistry"],
+    "clear_connections" => ["lib/forking_worker.rb", "ActiveRecord::Base.clear_active_connections!"],
+    "migration_check_pending" => ["test/test_helper.rb", "ActiveRecord::Migration.check_pending!"],
+    "fixture_path_assignment" => ["test/fixtures_helper.rb", "self.fixture_path = File.expand_path('fixtures', __dir__)"]
+  }.freeze
+
+  # The replacement APIs. Flagging code that is already fixed is worse than missing it.
+  NEAR_MISSES = [
+    "user.update(name: 'x')",
+    "get :show, params: { id: 1 }",
+    "Rails.application.credentials.api_key",
+    "config.force_ssl = true",
+    "self.delivery_job = ActionMailer::MailDeliveryJob",
+    "config.active_record.partial_inserts = false",
+    "config.active_record.partial_updates = false",
+    "ActiveRecord::Base.connection_handler.clear_active_connections!",
+    "ActiveRecord::Migration.check_all_pending!",
+    "self.fixture_paths = [File.expand_path('fixtures', __dir__)]"
+  ].freeze
+
+  def test_every_shipped_rule_matches_its_canonical_snippet
+    SHIPPED_HITS.each_value { |path, line| write_app_file(path, line) }
+
+    checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "8.0", current_rails: "5.2.0").run[:checks]
+
+    shipped_rules.each do |rule|
+      sample_path, = SHIPPED_HITS.fetch(rule["id"]) { flunk "rule #{rule['id']} has no sample in SHIPPED_HITS" }
+      check = checks.find { |c| c[:message] == rule["message"] }
+
+      refute_nil check, "rule #{rule['id']} did not match its sample line"
+      assert_includes check[:details].map { |d| d[:file] }, sample_path, "rule #{rule['id']} missed #{sample_path}"
+    end
+  end
+
+  def test_replacement_apis_are_not_flagged
+    NEAR_MISSES.each_with_index do |line, i|
+      # Both an app and a test path, so directory-scoped rules get their chance to misfire.
+      write_app_file("app/models/fixed_#{i}.rb", line)
+      write_app_file("test/fixed_#{i}_test.rb", line)
+    end
+
+    checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "8.0", current_rails: "5.2.0").run[:checks]
+    flagged = checks.flat_map { |c| (c[:details] || []).map { |d| "#{d[:file]}: #{d[:snippet]}" } }
+
+    assert_empty flagged
+  end
+
+  private
+
+  def shipped_rules
+    YAML.load_file(File.expand_path("../database/deprecations.yml", __dir__))["deprecations"]
+  end
+
+  def write_app_file(relative_path, line)
+    full = File.join(@tmp_dir, relative_path)
+    FileUtils.mkdir_p(File.dirname(full))
+    File.write(full, "#{line}\n")
+  end
 end
