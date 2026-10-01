@@ -26,6 +26,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - Upgrade path with one step per Rails minor version, the Ruby range each needs, and the removed APIs to fix at each step
 - Test suite runs with `bundle exec rake`, in GitHub Actions CI on Ruby 2.7 to 4.0
 - Deprecation scan covers `app/`, `lib/`, `config/`, `test/` and `spec/`, Ruby files and ERB templates; rules can scope themselves to certain directories with `paths:`
+- Every deprecation rule has a sample line in the test suite, and the replacement APIs are checked not to trigger it
 
 ## Now
 
@@ -34,7 +35,7 @@ Nothing in progress. Pick the next item from below.
 ## Next: cover more of the upgrade
 
 - **Say when to upgrade Ruby** in the upgrade path: name the step whose Rails supports both the current and the required Ruby.
-- **Grow the deprecation rules.** There are three today. Add rules for each hop from the official upgrade guides, and apply only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
+- **Grow the deprecation rules.** Twelve today, covering removals from 5.1, 6.1, 7.0, 7.1 and 7.2. Still missing 5.2, 6.0, 7.3 and 8.x. Add rules for each hop from the official upgrade guides, and apply only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
 - **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements. Each entry records its source and the Rails versions it applies to, so stale entries expire instead of lingering.
 - **Support `structure.sql`** in the database checks, not only `db/schema.rb`.
 - **Go offline for gem checks.** Replace the rubygems.org lookup with lockfile-only heuristics, or put it behind an `--online` flag.
