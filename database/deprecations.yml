@@ -111,3 +111,131 @@ deprecations:
     recategorization: "Rails 7.1 -> 7.2"
     fix_effort: low
     paths: [test, spec]
+  - id: halt_callback_chains_on_return_false
+    pattern: "\\bhalt_callback_chains_on_return_false\\b"
+    message: "'halt_callback_chains_on_return_false' was removed in Rails 5.2. Halt a callback chain with 'throw :abort'."
+    removed_in: "5.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-support-removals"
+    recategorization: "Rails 5.1 -> 5.2"
+    fix_effort: medium
+  - id: string_callback_conditions
+    pattern: "(?:\\b(?:if|unless):|:(?:if|unless)\\s*=>)\\s*[\"']"
+    message: "String conditions for ':if' and ':unless' on callbacks were removed in Rails 5.2. Use a symbol or a lambda, e.g. if: -> { draft? }."
+    removed_in: "5.2"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-support-removals"
+    recategorization: "Rails 5.1 -> 5.2"
+    fix_effort: low
+    paths: [app, lib]
+  - id: params_parser_parse_error
+    pattern: "\\bActionController::ParamsParser\\b"
+    message: "'ActionController::ParamsParser::ParseError' was removed in Rails 5.2. Rescue 'ActionDispatch::Http::Parameters::ParseError' instead."
+    removed_in: "5.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#action-pack-removals"
+    recategorization: "Rails 5.1 -> 5.2"
+    fix_effort: low
+  - id: secret_token
+    pattern: "\\.secret_token\\b"
+    message: "'config.secret_token' was removed in Rails 6.0. Use 'secret_key_base', held in credentials."
+    removed_in: "6.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#railties-removals"
+    recategorization: "Rails 5.2 -> 6.0"
+    fix_effort: medium
+  - id: image_alt_helper
+    pattern: "\\bimage_alt\\b"
+    message: "The 'image_alt' helper was removed in Rails 6.0. Pass the alt text to 'image_tag' yourself."
+    removed_in: "6.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#action-view-removals"
+    recategorization: "Rails 5.2 -> 6.0"
+    fix_effort: low
+  - id: record_tag_helper
+    pattern: "\\b(?:div_for|content_tag_for)\\b"
+    message: "'div_for' and 'content_tag_for' were removed in Rails 6.0 along with RecordTagHelper. Use 'content_tag' with 'dom_id', or the record_tag_helper gem."
+    removed_in: "6.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#action-view-removals"
+    recategorization: "Rails 5.2 -> 6.0"
+    fix_effort: medium
+  - id: fragment_cache_key
+    pattern: "\\bfragment_cache_key\\b"
+    message: "The 'fragment_cache_key' helper was removed in Rails 6.0. Use 'combined_fragment_cache_key'."
+    removed_in: "6.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#action-pack-removals"
+    recategorization: "Rails 5.2 -> 6.0"
+    fix_effort: low
+  - id: test_response_success
+    pattern: "\\bresponse\\.(?:success\\?|missing\\?|error\\?)"
+    message: "'response.success?', '#missing?' and '#error?' were removed from TestResponse in Rails 6.0. Use 'successful?', 'not_found?' and 'server_error?'."
+    removed_in: "6.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#action-pack-removals"
+    recategorization: "Rails 5.2 -> 6.0"
+    fix_effort: low
+    paths: [test, spec]
+  - id: enum_keyword_arguments
+    pattern: "^\\s*enum\\s+[a-z_]+:"
+    message: "Defining 'enum' with keyword arguments was removed in Rails 8.0. Pass the name positionally, e.g. enum :status, { pending: 0 }."
+    removed_in: "8.0"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: proxy_object
+    pattern: "\\bActiveSupport::ProxyObject\\b"
+    message: "'ActiveSupport::ProxyObject' was removed in Rails 8.0. Inherit from 'BasicObject' instead."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#active-support-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: read_encrypted_secrets
+    pattern: "\\bread_encrypted_secrets\\b"
+    message: "'config.read_encrypted_secrets' was removed in Rails 8.0. Encrypted secrets were replaced by credentials."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#railties-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: medium
+  - id: stats_directories
+    pattern: "\\bSTATS_DIRECTORIES\\b"
+    message: "'STATS_DIRECTORIES' and 'bin/rake stats' were removed in Rails 8.1. Use an external tool such as rubocop or a line counter."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#railties-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low
+  - id: benchmark_ms
+    pattern: "\\bBenchmark\\.ms\\b"
+    message: "'Benchmark.ms' was removed in Rails 8.1. Use 'Benchmark.realtime' and convert, or the benchmark gem."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-support-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low
+  - id: enqueue_after_transaction_commit
+    pattern: "\\benqueue_after_transaction_commit\\b"
+    message: "'config.active_job.enqueue_after_transaction_commit' was removed in Rails 8.1. Jobs always enqueue after the transaction commits."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-job-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low

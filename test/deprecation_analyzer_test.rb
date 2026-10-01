@@ -150,7 +150,21 @@ class DeprecationAnalyzerTest < Minitest::Test
     "per_thread_registry" => ["lib/current_tenant.rb", "  extend ActiveSupport::PerThreadRegistry"],
     "clear_connections" => ["lib/forking_worker.rb", "ActiveRecord::Base.clear_active_connections!"],
     "migration_check_pending" => ["test/test_helper.rb", "ActiveRecord::Migration.check_pending!"],
-    "fixture_path_assignment" => ["test/fixtures_helper.rb", "self.fixture_path = File.expand_path('fixtures', __dir__)"]
+    "fixture_path_assignment" => ["test/fixtures_helper.rb", "self.fixture_path = File.expand_path('fixtures', __dir__)"],
+    "halt_callback_chains_on_return_false" => ["config/initializers/callbacks.rb", "ActiveSupport.halt_callback_chains_on_return_false = false"],
+    "string_callback_conditions" => ["app/models/post.rb", '  before_save :normalize, if: "draft?"'],
+    "params_parser_parse_error" => ["app/controllers/api_controller.rb", "  rescue ActionController::ParamsParser::ParseError"],
+    "secret_token" => ["config/initializers/secret_token.rb", "Example::Application.config.secret_token = 'abc'"],
+    "image_alt_helper" => ["app/views/posts/show.html.erb", "<%= image_alt('logo.png') %>"],
+    "record_tag_helper" => ["app/views/posts/index.html.erb", "<%= div_for(post) do %>"],
+    "fragment_cache_key" => ["app/controllers/posts_controller.rb", "  key = fragment_cache_key(['posts', post])"],
+    "test_response_success" => ["test/integration/posts_test.rb", "  assert response.success?"],
+    "enum_keyword_arguments" => ["app/models/order.rb", "  enum status: { pending: 0, shipped: 1 }"],
+    "proxy_object" => ["lib/wrapper.rb", "class Wrapper < ActiveSupport::ProxyObject"],
+    "read_encrypted_secrets" => ["config/initializers/encrypted.rb", "config.read_encrypted_secrets = true"],
+    "stats_directories" => ["lib/stats.rb", "STATS_DIRECTORIES << ['Services', 'app/services']"],
+    "benchmark_ms" => ["lib/profiler.rb", "  elapsed = Benchmark.ms { work }"],
+    "enqueue_after_transaction_commit" => ["config/initializers/jobs.rb", "config.active_job.enqueue_after_transaction_commit = :always"]
   }.freeze
 
   # The replacement APIs. Flagging code that is already fixed is worse than missing it.
@@ -164,7 +178,15 @@ class DeprecationAnalyzerTest < Minitest::Test
     "config.active_record.partial_updates = false",
     "ActiveRecord::Base.connection_handler.clear_active_connections!",
     "ActiveRecord::Migration.check_all_pending!",
-    "self.fixture_paths = [File.expand_path('fixtures', __dir__)]"
+    "self.fixture_paths = [File.expand_path('fixtures', __dir__)]",
+    "before_save :normalize, if: :draft?",
+    "before_save :normalize, if: -> { draft? }",
+    "rescue ActionDispatch::Http::Parameters::ParseError",
+    "config.secret_key_base = ENV['SECRET_KEY_BASE']",
+    "key = combined_fragment_cache_key(['posts', post])",
+    "assert response.successful?",
+    "enum :status, { pending: 0, shipped: 1 }",
+    "class Wrapper < BasicObject"
   ].freeze
 
   def test_every_shipped_rule_matches_its_canonical_snippet
