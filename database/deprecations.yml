@@ -19,3 +19,12 @@ deprecations:
     recategorization: "Rails 5.0 -> 5.1"
     fix_effort: low
     paths: [test, spec]
+  - id: application_secrets
+    pattern: "\\bRails\\.application\\.secrets\\b"
+    message: "'Rails.application.secrets' was removed in Rails 7.2. Use credentials, or Rails.application.config_for for non-secret settings."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#railties-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: medium

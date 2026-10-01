@@ -109,6 +109,17 @@ class DeprecationAnalyzerTest < Minitest::Test
     assert_nil checks.find { |c| c[:message].include?("positionally") }
   end
 
+  def test_shipped_rule_flags_application_secrets_in_config
+    FileUtils.mkdir_p(File.join(@tmp_dir, "config", "initializers"))
+    File.write(File.join(@tmp_dir, "config", "initializers", "auth.rb"), "KEY = Rails.application.secrets.api_key\n")
+
+    check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "7.2", current_rails: "7.1.3").run[:checks]
+                                               .find { |c| c[:message].include?("Rails.application.secrets") }
+
+    assert_equal :failed, check[:status]
+    assert_equal "config/initializers/auth.rb", check[:details].first[:file]
+  end
+
   def test_shipped_rule_flags_positional_controller_test_params
     FileUtils.mkdir_p(File.join(@tmp_dir, "test"))
     File.write(File.join(@tmp_dir, "test", "users_controller_test.rb"), <<~RUBY)
