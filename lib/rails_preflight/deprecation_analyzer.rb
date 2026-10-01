@@ -2,6 +2,8 @@ module RailsPreflight
   require 'pathname'
   class DeprecationAnalyzer
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
+    SCAN_DIRS = %w[app config lib test spec].freeze
+    SCAN_EXTS = %w[.rb .erb].freeze
 
     def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil)
       @root_path = root_path
@@ -98,18 +100,23 @@ module RailsPreflight
       found = []
       compiled = rules.map { |rule| [Regexp.new(rule['pattern']), rule] }
 
-      Dir.glob(File.join(@root_path, "{app,lib,test,spec}/**/*")).each do |file|
+      Dir.glob(File.join(@root_path, "{#{SCAN_DIRS.join(',')}}/**/*")).each do |file|
         next if File.directory?(file)
-        next unless file.end_with?('.rb')
+        next unless SCAN_EXTS.include?(File.extname(file))
 
         relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path)).to_s
+        top_dir = relative_path.split('/').first
         is_test = relative_path.start_with?('test/', 'spec/')
+
+        # A rule with `paths:` only applies under those directories.
+        applicable = compiled.reject { |_regex, rule| rule['paths'] && !rule['paths'].include?(top_dir) }
+        next if applicable.empty?
 
         File.foreach(file).with_index(1) do |line, line_num|
           # Skip comments and method definitions (e.g. "def update_attributes") to avoid false positives
-          next if line.lstrip.start_with?("#", "def ")
+          next if line.lstrip.start_with?("#", "def ", "<%#")
 
-          compiled.each do |regex, rule|
+          applicable.each do |regex, rule|
             next unless line.match?(regex)
 
             found << {

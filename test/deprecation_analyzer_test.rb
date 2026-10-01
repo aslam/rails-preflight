@@ -88,6 +88,27 @@ class DeprecationAnalyzerTest < Minitest::Test
     assert_equal :passed, result[:status]
   end
 
+  def test_scans_config_and_erb_templates
+    FileUtils.mkdir_p(File.join(@tmp_dir, "config"))
+    FileUtils.mkdir_p(File.join(@app_dir, "views", "users"))
+    File.write(File.join(@tmp_dir, "config", "application.rb"), "config.x = deprecated_method\n")
+    File.write(File.join(@app_dir, "views", "users", "index.html.erb"), "<%= deprecated_method %>\n<%# deprecated_method %>\n")
+
+    check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml")).run[:checks].first
+
+    assert_equal 2, check.dig(:stats, :occurrences)
+    assert_equal ["app/views/users/index.html.erb", "config/application.rb"], check[:details].map { |d| d[:file] }.sort
+  end
+
+  def test_path_scoped_rule_skips_directories_it_does_not_apply_to
+    FileUtils.mkdir_p(File.join(@tmp_dir, "config"))
+    File.write(File.join(@tmp_dir, "config", "routes.rb"), "get :show, on: :member\n")
+
+    checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks]
+
+    assert_nil checks.find { |c| c[:message].include?("positionally") }
+  end
+
   def test_shipped_rule_flags_positional_controller_test_params
     FileUtils.mkdir_p(File.join(@tmp_dir, "test"))
     File.write(File.join(@tmp_dir, "test", "users_controller_test.rb"), <<~RUBY)

@@ -18,3 +18,4 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#action-pack-removals"
     recategorization: "Rails 5.0 -> 5.1"
     fix_effort: low
+    paths: [test, spec]
