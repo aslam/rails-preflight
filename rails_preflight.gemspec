@@ -8,8 +8,14 @@ Gem::Specification.new do |spec|
   spec.authors = ["Syed Aslam"]
   spec.email = ["aslam.maqsood@gmail.com"]
 
-  spec.summary = "Pre-upgrade audit and readiness checks for Rails applications."
-  spec.description = "Checks Ruby version compatibility, private gems, and Dockerfile best practices before Rails upgrades."
+  spec.summary = "Static pre-upgrade audit for Rails apps: what stands between this app and Rails X."
+  spec.description = <<~DESC
+    Point rails-preflight at a Rails app and a target version. It reads the lockfile,
+    .ruby-version, Dockerfile, db/schema.rb and config, and scans Ruby and ERB files for
+    deprecated APIs, then writes a single HTML report: blockers, items to fix, what it
+    couldn't check, and a suggested path with one step per Rails minor version. Read-only
+    and static. It never modifies the app, runs it, or runs its tests.
+  DESC
   spec.homepage = "https://github.com/aslam/rails-preflight"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.7.0"
