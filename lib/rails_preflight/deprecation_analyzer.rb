@@ -2,8 +2,8 @@ module RailsPreflight
   require 'pathname'
   class DeprecationAnalyzer
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
-    SCAN_DIRS = %w[app config lib test spec].freeze
-    SCAN_EXTS = %w[.rb .erb].freeze
+    SCAN_DIRS = %w[app config db lib test spec].freeze
+    SCAN_EXTS = %w[.rb .erb .rake].freeze
 
     def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil)
       @root_path = root_path
