@@ -51,6 +51,14 @@ The output is a **single HTML report** designed to be:
 
 If you’re looking for a “one-click upgrade,” this is not that tool.
 
+## Related tools
+
+These cover what `rails-preflight` leaves out, and pair well with it:
+
+- [next_rails](https://github.com/fastruby/next_rails) or [RailsBump](https://railsbump.org): which gem versions work with your target Rails
+- [Brakeman](https://brakemanscanner.org): security issues
+- [rubocop-rails](https://github.com/rubocop/rubocop-rails): autofixes for many deprecations
+
 ## Who this is for
 
 This tool is especially useful if you are:
