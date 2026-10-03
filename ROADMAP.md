@@ -55,6 +55,7 @@ Nothing in progress. Pick the next item from below.
 - **Changelog database.** Build a database of Rails changelog entries and show the ones relevant to the app in the report. Open question: how much of this the deprecation rules already cover.
 - **Upgrade diagram.** A roadmap.sh-style diagram of the actual steps for each upgrade, including when to run `app:update`, etc.
 - **More report formats.** JSON (also under Later), Markdown, and maybe a format best suited for other AI tools or MCP servers to ingest.
+- **MigrationRisk.** Paste migration lines (`add_column :orders, :status, :string, default: "pending", null: false`, `add_index :orders, :external_id, unique: true`) and get the table rewrite / locking risk, uniqueness race considerations, a suggested rollout sequence, and Rails/Postgres version caveats. Open question: whether it belongs in the first release, and whether it scans `db/migrate` or takes pasted input.
 
 ## Not doing
 
