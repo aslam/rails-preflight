@@ -23,6 +23,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - Docker checks: EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3 mismatch
 - Database schema checks: charset and integer IDs, applied by target version
 - Terminal summary: counts plus each blocker, for SSH sessions and CI logs
+- README and report footer point to related tools: next_rails / RailsBump, Brakeman, rubocop-rails
 - Single-file HTML report: blockers, items to fix and what couldn't be checked, each linked to its finding; a suggested path; per-section confidence explained in the legend
 - Upgrade path with one step per Rails minor version, the Ruby range each needs, and the removed APIs to fix at each step
 - Test suite runs with `bundle exec rake`, in GitHub Actions CI on Ruby 2.7 to 4.0
@@ -41,7 +42,6 @@ Nothing in progress. Pick the next item from below.
 - **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements. Each entry records its source and the Rails versions it applies to, so stale entries expire instead of lingering.
 - **Support `structure.sql`** in the database checks, not only `db/schema.rb`.
 - **Go offline for gem checks.** Replace the rubygems.org lookup with lockfile-only heuristics, or put it behind an `--online` flag.
-- **Point to related tools** in the report and README: `next_rails` / RailsBump for gem compatibility, `brakeman` for security, `rubocop-rails` for autofixes.
 
 ## Later
 

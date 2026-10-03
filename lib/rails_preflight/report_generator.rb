@@ -224,6 +224,7 @@ module RailsPreflight
                 <strong>Confidence:</strong> High: read from project files · Medium: pattern-based · Low: key input missing
               </div>
             </div>
+            <p style="margin-top: 10px;">Also worth running: <a href="https://github.com/fastruby/next_rails">next_rails</a> or <a href="https://railsbump.org">RailsBump</a> for gem compatibility, <a href="https://brakemanscanner.org">Brakeman</a> for security, <a href="https://github.com/rubocop/rubocop-rails">rubocop-rails</a> for autofixes.</p>
             <p style="margin-top: 10px;">RailsPreFlight</p>
           </div>
 
