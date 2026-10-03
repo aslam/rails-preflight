@@ -9,8 +9,8 @@ deprecations:
     recategorization: "Rails 6.0 -> 6.1"
     fix_effort: low
   - id: controller_test_positional_params
-    # `get :show, id: 1` or `post :create, :user => {...}`; keyword args such as params: are fine
-    pattern: "^\\s*(get|post|put|patch|delete|head)\\s*\\(?\\s*:\\w+\\s*,\\s*(?:(?!(?:params|session|flash|format|xhr|as|headers|body|method):)\\w+:|:\\w+\\s*=>)"
+    # `get :show, id: 1` or `post :create, :user => {...}`; keyword args such as params: or :format => are fine
+    pattern: "^\\s*(get|post|put|patch|delete|head)\\s*\\(?\\s*:\\w+\\s*,\\s*(?:(?!(?:params|session|flash|format|xhr|as|headers|body|method):)\\w+:|:(?!(?:params|session|flash|format|xhr|as|headers|body|method)\\s*=>)\\w+\\s*=>)"
     message: "Controller test passes request parameters positionally. Since Rails 5.1 they must be keyword arguments, e.g. get :show, params: { id: 1 }."
     removed_in: "5.1"
     severity: error
