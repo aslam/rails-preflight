@@ -47,6 +47,7 @@ module RailsPreflight
       report_data[:summary] = summary_calc.calculate
       summary = report_data[:summary]
       puts "Blockers: #{summary[:blockers].size} · To fix: #{summary[:to_fix].size} · Couldn't check: #{summary[:unknowns].size}"
+      summary[:blockers].each { |b| puts "  ✗ #{b[:section]}: #{b[:message]}" }
 
       html = ReportGenerator.new(report_data).generate
       
