@@ -51,7 +51,8 @@ Not needed for the first release: `structure.sql` and anything under Maybe.
 
 ## Next: cover more of the upgrade
 
-- **Say when to upgrade Ruby** in the upgrade path: name the step whose Rails supports both the current and the required Ruby.
+- **Say when to upgrade Ruby** in the upgrade path: name the step whose Rails supports both the current and the required Ruby. Two symptoms today: every hop's Ruby note compares against the app's *starting* Ruby, and the end-of-life advice ignores the target. For a Rails 5.2 app on Ruby 2.5.9 targeting 6.0, the report says "Upgrade to Ruby 3.3+" while Rails 6.0 supports only up to 2.7. Cap the advice at the target's max Ruby, and point to the later hop where a supported Ruby becomes possible.
+- **Flag removals that predate the current Rails.** An API removed before the app's current version is reported as "to fix", but it is either dead code or already broken in production. On the Rails 5.2 app, `render text:` (removed in 5.1) sat in a live `before_action`, so outdated clients likely get a 500 instead of the intended 426. Give these their own label, e.g. "already broken or dead code", and list them first.
 - **Deepen the deprecation rules.** Every hop has at least one rule, but the guides list dozens of removals per version. Add the ones that are statically detectable and plausible in app code, applying only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
 - **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements. Each entry records its source and the Rails versions it applies to, so stale entries expire instead of lingering.
 - **Support `structure.sql`** in the database checks, not only `db/schema.rb`.
