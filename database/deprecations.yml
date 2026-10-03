@@ -293,3 +293,160 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-record-removals"
     recategorization: "Rails 8.0 -> 8.1"
     fix_effort: medium
+  - id: render_text_nothing
+    pattern: "\\brender\\s*\\(?\\s*(?:(?:text|nothing):|:(?:text|nothing)\\s*=>)"
+    message: "'render :text' and 'render :nothing' were removed in Rails 5.1. Use 'render plain:' or 'head :ok'."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#action-pack-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+    paths: [app, lib]
+  - id: controller_filters
+    pattern: "\\b(?:(?:prepend|append|skip)_)?(?:before|after|around)_filter\\b"
+    message: "The '*_filter' controller callbacks were removed in Rails 5.1. Use the '*_action' equivalents, e.g. before_action."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#action-pack-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+    paths: [app, lib]
+  - id: serve_static_files
+    pattern: "\\b(?:serve_static_files|static_cache_control)\\b"
+    message: "'config.serve_static_files' and 'config.static_cache_control' were removed in Rails 5.1. Use 'config.public_file_server.enabled' and 'config.public_file_server.headers'."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#railties-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+  - id: raise_in_transactional_callbacks
+    pattern: "\\braise_in_transactional_callbacks\\b"
+    message: "'config.active_record.raise_in_transactional_callbacks' was removed in Rails 5.1. Errors in transactional callbacks always raise now; delete the setting."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+  - id: use_transactional_fixtures
+    # RSpec's own config.use_transactional_fixtures in spec/ is still valid, so test/ only
+    pattern: "\\buse_transactional_fixtures\\b"
+    message: "'use_transactional_fixtures' was removed in Rails 5.1. Use 'use_transactional_tests'."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+    paths: [test]
+  - id: module_parent
+    pattern: "\\bparent_name\\b|\\.class\\.parent\\b"
+    message: "'Module#parent', '#parent_name' and '#parents' were removed in Rails 6.1. Use 'module_parent', 'module_parent_name' and 'module_parents'."
+    removed_in: "6.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-support-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+  - id: represent_boolean_as_integer
+    pattern: "\\brepresent_boolean_as_integer\\b"
+    message: "'config.active_record.sqlite3.represent_boolean_as_integer' was removed in Rails 6.1. Booleans are always stored as integers in SQLite; delete the setting."
+    removed_in: "6.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+  - id: active_storage_queue
+    pattern: "\\bactive_storage\\.queue\\s*="
+    message: "'config.active_storage.queue' was removed in Rails 6.1. Set the per-job queues with 'config.active_storage.queues'."
+    removed_in: "6.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-storage-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+  - id: logger_silence_constant
+    pattern: "(?<!::)\\bLoggerSilence\\b"
+    message: "The top-level 'LoggerSilence' constant was removed in Rails 6.1. Use 'ActiveSupport::LoggerSilence'."
+    removed_in: "6.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-support-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+  - id: connection_config
+    pattern: "\\.connection_config\\b"
+    message: "'ActiveRecord::Base.connection_config' was removed in Rails 7.0. Use 'connection_db_config'."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: arel_attribute
+    pattern: "\\barel_attribute\\("
+    message: "'ActiveRecord::Base.arel_attribute' was removed in Rails 7.0. Use 'arel_table[:column]'."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: connected_to_database
+    pattern: "\\bconnected_to\\s*\\(?\\s*database:"
+    message: "The 'database:' argument to 'connected_to' was removed in Rails 7.0. Use 'role:' and 'shard:' with 'connects_to'."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: medium
+  - id: db_structure_tasks
+    pattern: "\\bdb:(?:structure:(?:dump|load|load_if_sql)|schema:load_if_ruby|test:load_structure)\\b"
+    message: "The 'db:structure:*', 'db:schema:load_if_ruby' and 'db:test:load_structure' tasks were removed in Rails 7.0. Use 'db:schema:dump' and 'db:schema:load' with config.active_record.schema_format = :sql."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: use_sha1_digests
+    pattern: "\\buse_sha1_digests\\b"
+    message: "'config.active_support.use_sha1_digests' was removed in Rails 7.0. Use 'config.active_support.hash_digest_class = OpenSSL::Digest::SHA1' if you still need SHA1."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-support-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: uri_parser
+    pattern: "\\bURI\\.parser\\b"
+    message: "'URI.parser' was removed in Rails 7.0. Use 'URI::DEFAULT_PARSER'."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-support-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: action_view_raise_on_missing_translations
+    pattern: "\\baction_view\\.raise_on_missing_translations\\b"
+    message: "'config.action_view.raise_on_missing_translations' was removed in Rails 7.0. Use 'config.i18n.raise_on_missing_translations'."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#action-view-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: hosts_response_app
+    pattern: "\\bhosts_response_app\\b"
+    message: "'config.action_dispatch.hosts_response_app' was removed in Rails 7.0. Use 'config.host_authorization = { response_app: ... }'."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#action-pack-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low

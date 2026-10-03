@@ -182,7 +182,24 @@ class DeprecationAnalyzerTest < Minitest::Test
     "migrator_migrations_path" => ["config/initializers/migrations.rb", "ActiveRecord::Migrator.migrations_path = 'db/migrate_old'"],
     "add_foreign_key_deferrable_true" => ["db/migrate/20200102000000_add_fk.rb", "    add_foreign_key :orders, :users, deferrable: true"],
     "schema_cache_env" => ["config/initializers/cache.rb", "ENV['SCHEMA_CACHE'] = 'tmp/schema_cache.yml'"],
-    "unsigned_float_decimal" => ["db/migrate/20200101000000_add_rate.rb", "      t.unsigned_decimal :rate, precision: 10"]
+    "unsigned_float_decimal" => ["db/migrate/20200101000000_add_rate.rb", "      t.unsigned_decimal :rate, precision: 10"],
+    "render_text_nothing" => ["app/controllers/health_controller.rb", "    render text: 'OK'"],
+    "controller_filters" => ["app/controllers/application_controller.rb", "  before_filter :authenticate_user!"],
+    "serve_static_files" => ["config/environments/staging.rb", "  config.serve_static_files = ENV['RAILS_SERVE_STATIC_FILES'].present?"],
+    "raise_in_transactional_callbacks" => ["config/initializers/transactions.rb", "    config.active_record.raise_in_transactional_callbacks = true"],
+    "use_transactional_fixtures" => ["test/support/transactions.rb", "  self.use_transactional_fixtures = true"],
+    "module_parent" => ["config/initializers/session_store.rb", 'Rails.application.config.session_store :cookie_store, key: "_#{Rails.application.class.parent_name.underscore}_session"'],
+    "represent_boolean_as_integer" => ["config/initializers/sqlite.rb", "    config.active_record.sqlite3.represent_boolean_as_integer = true"],
+    "active_storage_queue" => ["config/environments/production.rb", "  config.active_storage.queue = :low_priority"],
+    "logger_silence_constant" => ["lib/quiet_logger.rb", "  include LoggerSilence"],
+    "connection_config" => ["lib/tasks/backup.rake", "  db = ActiveRecord::Base.connection_config[:database]"],
+    "arel_attribute" => ["app/models/article.rb", "  scope :recent, -> { order(arel_attribute(:created_at).desc) }"],
+    "connected_to_database" => ["app/models/report.rb", "  ActiveRecord::Base.connected_to(database: :reporting) { run }"],
+    "db_structure_tasks" => ["lib/tasks/ci.rake", "  Rake::Task['db:structure:dump'].invoke"],
+    "use_sha1_digests" => ["config/initializers/new_framework_defaults_6_1.rb", "Rails.application.config.active_support.use_sha1_digests = true"],
+    "uri_parser" => ["lib/link_checker.rb", "  uri = URI.parser.parse(url)"],
+    "action_view_raise_on_missing_translations" => ["config/environments/test.rb", "  config.action_view.raise_on_missing_translations = true"],
+    "hosts_response_app" => ["config/initializers/hosts.rb", "    config.action_dispatch.hosts_response_app = ->(env) { [403, {}, ['Blocked']] }"]
   }.freeze
 
   # The replacement APIs. Flagging code that is already fixed is worse than missing it.
@@ -207,7 +224,23 @@ class DeprecationAnalyzerTest < Minitest::Test
     "class Wrapper < BasicObject",
     "add_foreign_key :orders, :users, deferrable: :deferred",
     "t.decimal :rate, precision: 10, scale: 2",
-    "puts ActiveRecord::SchemaMigration.table_name"
+    "puts ActiveRecord::SchemaMigration.table_name",
+    "render plain: 'OK'",
+    "head :no_content",
+    "before_action :authenticate_user!",
+    "skip_before_action :verify_authenticity_token",
+    "config.public_file_server.enabled = true",
+    "self.use_transactional_tests = true",
+    "key = Rails.application.class.module_parent_name.underscore",
+    "config.active_storage.queues.analysis = :low_priority",
+    "include ActiveSupport::LoggerSilence",
+    "db = ActiveRecord::Base.connection_db_config.database",
+    "order(arel_table[:created_at].desc)",
+    "ActiveRecord::Base.connected_to(role: :reading) { run }",
+    "Rake::Task['db:schema:dump'].invoke",
+    "config.active_support.hash_digest_class = OpenSSL::Digest::SHA1",
+    "uri = URI::DEFAULT_PARSER.parse(url)",
+    "config.i18n.raise_on_missing_translations = true"
   ].freeze
 
   def test_every_shipped_rule_matches_its_canonical_snippet
