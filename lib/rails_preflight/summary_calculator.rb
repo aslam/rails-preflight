@@ -7,12 +7,12 @@ module RailsPreflight
     STEP_SECTIONS = ["Rails Version", "Ruby Version"].freeze
 
     # hops: Rails minor versions to pass through, each { version:, min_ruby:, max_ruby: }
-    # (see UpgradeAnalyzer#upgrade_hops). app_ruby: the app's Ruby version, if known.
-    def initialize(results, target_rails = "Unknown", current_rails = nil, hops: [], app_ruby: nil)
+    # (see UpgradeAnalyzer#upgrade_hops); empty when already on the target. app_ruby: the app's Ruby version, if known.
+    def initialize(results, target_rails = "Unknown", current_rails = nil, hops: nil, app_ruby: nil)
       @results = results
       @target_rails = target_rails
       @current_rails = current_rails
-      @hops = hops.empty? ? [{ version: target_rails }] : hops
+      @hops = hops || [{ version: target_rails }]
       @app_ruby = app_ruby
     end
 
