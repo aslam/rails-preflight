@@ -40,12 +40,14 @@ Nothing in progress. Pick the next item from below.
 The bar is a report that holds up on real apps, not an empty roadmap. In order:
 
 1. **Run it on real apps.** Check out old tagged versions of open-source Rails apps (Discourse, Mastodon, Redmine, …), run the report and review every finding. Every rule is tested only against hand-written sample lines, and false positives are what lose trust fastest. The results will likely reorder the rest of this list.
+   - 2026-10-03, two private apps: a Rails 5.2 app (1,923 files; 7 blockers, all real) and a Rails 8.1 app (no findings, even when scanned as if upgrading from 5.0). Found one false positive (hash-rocket keyword args in controller tests) and a bogus upgrade step when already on the target; both fixed in #14.
 2. **Known-incompatible gems** (below). Gems block more upgrades than removed APIs do; without this, the report misses the biggest risk on most apps.
 3. **Say when to upgrade Ruby** (below). The upgrade path's main promise is a sequence of steps; repeating "upgrade Ruby first" on every later hop undercuts it.
 4. **Make the README accurate.** It claims Rails 3 / 4 support (`compatibility.yml` starts at 5.0) and known public gem incompatibilities (not built yet), and has a `DB/schema.rb` typo.
-5. **Release basics.** A CHANGELOG, gemspec metadata, a check that `rails_preflight` is free on rubygems.org, and a 0.x version.
+5. **Go offline for gem checks** (below). On the 5.2 app, whose `Gemfile.lock` lists rubygems.org and a private registry in one `GEM` section, the private-gem check fell back to one rubygems.org request per gem: minutes instead of seconds, 7 gems inconclusive on 2-second timeouts (so the report changes run to run), and a private gem whose name is taken on rubygems.org would be reported as public.
+6. **Release basics.** A CHANGELOG, gemspec metadata, a check that `rails_preflight` is free on rubygems.org, and a 0.x version.
 
-Not needed for the first release: `structure.sql`, going offline for gem checks (unless the real-app runs show the rubygems.org lookup is slow or flaky), and anything under Maybe.
+Not needed for the first release: `structure.sql` and anything under Maybe.
 
 ## Next: cover more of the upgrade
 
