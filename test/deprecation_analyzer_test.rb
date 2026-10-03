@@ -220,6 +220,8 @@ class DeprecationAnalyzerTest < Minitest::Test
   NEAR_MISSES = [
     "user.update(name: 'x')",
     "get :show, params: { id: 1 }",
+    "get :index, :format => \"json\"",
+    "post :create, :params => { name: 'x' }",
     "Rails.application.credentials.api_key",
     "config.force_ssl = true",
     "self.delivery_job = ActionMailer::MailDeliveryJob",

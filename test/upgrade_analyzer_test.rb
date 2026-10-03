@@ -97,6 +97,7 @@ class UpgradeAnalyzerTest < Minitest::Test
     RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
 
     assert_includes report, "Already on Rails 7.2.1: 7.2 is not an upgrade."
+    refute_includes report, "<strong>Rails 7.2.1 → 7.2</strong>" # no upgrade step
   end
 
   def test_unknown_current_rails_is_reported
