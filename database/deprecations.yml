@@ -231,8 +231,9 @@ deprecations:
     recategorization: "Rails 8.0 -> 8.1"
     fix_effort: low
   - id: enqueue_after_transaction_commit
-    pattern: "\\benqueue_after_transaction_commit\\b"
-    message: "'config.active_job.enqueue_after_transaction_commit' was removed in Rails 8.1. Jobs always enqueue after the transaction commits."
+    # Only the app-wide config and the symbol values went; a per-job boolean is still valid
+    pattern: "\\bactive_job\\.enqueue_after_transaction_commit\\b|\\benqueue_after_transaction_commit\\s*=\\s*:(?:never|always|default)\\b"
+    message: "'config.active_job.enqueue_after_transaction_commit' and its :never, :always and :default values were removed in Rails 8.1. Set 'self.enqueue_after_transaction_commit = true' or 'false' on the job class instead."
     removed_in: "8.1"
     severity: error
     confidence: "High"
@@ -450,3 +451,132 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#action-pack-removals"
     recategorization: "Rails 6.1 -> 7.0"
     fix_effort: low
+  - id: to_s_format
+    pattern: "\\.to_s\\(\\s*:\\w+"
+    message: "Passing a format to 'to_s' on dates, times, numbers, arrays and ranges was removed in Rails 7.1. Use 'to_fs', e.g. created_at.to_fs(:db)."
+    removed_in: "7.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-support-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
+  - id: system_test_poltergeist_webkit
+    pattern: "\\bdriven_by\\s*\\(?\\s*:(?:poltergeist|webkit)\\b"
+    message: "Rails stopped registering the :poltergeist and :webkit system test drivers in 7.1. Use :selenium, or register another driver yourself."
+    removed_in: "7.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#action-pack-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: medium
+    paths: [test, spec]
+  - id: active_storage_current_host
+    pattern: "\\bActiveStorage::Current\\.host\\b"
+    message: "'ActiveStorage::Current.host' was removed in Rails 7.1. Use 'ActiveStorage::Current.url_options'."
+    removed_in: "7.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-storage-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
+  - id: configs_for_include_replicas
+    pattern: "\\binclude_replicas:"
+    message: "The ':include_replicas' option to 'configs_for' was removed in Rails 7.1. Use ':include_hidden'."
+    removed_in: "7.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
+  - id: commit_transaction_on_non_local_return
+    pattern: "\\bcommit_transaction_on_non_local_return\\b"
+    message: "'config.active_record.commit_transaction_on_non_local_return' was removed in Rails 8.0. Delete the setting."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: allow_deprecated_singular_associations_name
+    pattern: "\\ballow_deprecated_singular_associations_name\\b"
+    message: "'config.active_record.allow_deprecated_singular_associations_name' was removed in Rails 8.0. Delete the setting and use the exact association name in queries, e.g. where(comments: ...) for has_many :comments."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: warn_on_records_fetched_greater_than
+    pattern: "\\bwarn_on_records_fetched_greater_than\\b"
+    message: "'config.active_record.warn_on_records_fetched_greater_than' was removed in Rails 8.0. Delete the setting."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: sqlite3_deprecated_warning
+    pattern: "\\bsqlite3_deprecated_warning\\b"
+    message: "'config.active_record.sqlite3_deprecated_warning' was removed in Rails 8.0. Delete the setting."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: connection_pool_connection
+    pattern: "\\bconnection_pool\\.connection\\b"
+    message: "'ConnectionPool#connection' was removed in Rails 8.0. Use 'with_connection { |conn| ... }' or 'lease_connection'."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: allow_deprecated_parameters_hash_equality
+    pattern: "\\ballow_deprecated_parameters_hash_equality\\b"
+    message: "'config.action_controller.allow_deprecated_parameters_hash_equality' was removed in Rails 8.0. Compare 'params.to_h' instead of the Parameters object, then delete the setting."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#action-pack-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: use_big_decimal_serializer
+    pattern: "\\buse_big_decimal_serializer\\b"
+    message: "'config.active_job.use_big_decimal_serializer' was removed in Rails 8.0. BigDecimal arguments always use the BigDecimal serializer; delete the setting."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#active-job-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: rails_console_methods
+    pattern: "\\bRails::ConsoleMethods\\b"
+    message: "Extending the console through 'Rails::ConsoleMethods' was removed in Rails 8.0. Use a 'console do' block in config/application.rb or IRB's helper API."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#railties-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: form_with_model_nil
+    pattern: "\\bform_with\\b.*\\bmodel:\\s*nil\\b"
+    message: "Passing 'model: nil' to 'form_with' was removed in Rails 8.0. Leave out 'model:' when the form has no model."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#action-view-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+    paths: [app]
+  - id: route_multiple_paths
+    pattern: "^\\s*(?:get|post|put|patch|delete|match)\\s*\\(?\\s*\\["
+    message: "Mapping one route to several paths, e.g. get ['/a', '/b'], was removed in Rails 8.1. Declare one route per path."
+    removed_in: "8.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#action-pack-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low
+    paths: [config]

@@ -199,7 +199,21 @@ class DeprecationAnalyzerTest < Minitest::Test
     "use_sha1_digests" => ["config/initializers/new_framework_defaults_6_1.rb", "Rails.application.config.active_support.use_sha1_digests = true"],
     "uri_parser" => ["lib/link_checker.rb", "  uri = URI.parser.parse(url)"],
     "action_view_raise_on_missing_translations" => ["config/environments/test.rb", "  config.action_view.raise_on_missing_translations = true"],
-    "hosts_response_app" => ["config/initializers/hosts.rb", "    config.action_dispatch.hosts_response_app = ->(env) { [403, {}, ['Blocked']] }"]
+    "hosts_response_app" => ["config/initializers/hosts.rb", "    config.action_dispatch.hosts_response_app = ->(env) { [403, {}, ['Blocked']] }"],
+    "to_s_format" => ["app/views/orders/show.html.erb", "<%= order.created_at.to_s(:long) %>"],
+    "system_test_poltergeist_webkit" => ["test/application_system_test_case.rb", "  driven_by :poltergeist"],
+    "active_storage_current_host" => ["app/controllers/concerns/storage_host.rb", "    ActiveStorage::Current.host = request.base_url"],
+    "configs_for_include_replicas" => ["lib/tasks/replicas.rake", "  ActiveRecord::Base.configurations.configs_for(env_name: 'production', include_replicas: true)"],
+    "commit_transaction_on_non_local_return" => ["config/initializers/new_framework_defaults_7_1.rb", "Rails.application.config.active_record.commit_transaction_on_non_local_return = true"],
+    "allow_deprecated_singular_associations_name" => ["config/initializers/associations.rb", "Rails.application.config.active_record.allow_deprecated_singular_associations_name = false"],
+    "warn_on_records_fetched_greater_than" => ["config/environments/development.rb", "  config.active_record.warn_on_records_fetched_greater_than = 1000"],
+    "sqlite3_deprecated_warning" => ["config/initializers/sqlite_warning.rb", "Rails.application.config.active_record.sqlite3_deprecated_warning = false"],
+    "connection_pool_connection" => ["lib/health_check.rb", "  ActiveRecord::Base.connection_pool.connection.execute('SELECT 1')"],
+    "allow_deprecated_parameters_hash_equality" => ["config/initializers/new_framework_defaults_7_2.rb", "Rails.application.config.action_controller.allow_deprecated_parameters_hash_equality = false"],
+    "use_big_decimal_serializer" => ["config/initializers/new_framework_defaults_7_0.rb", "Rails.application.config.active_job.use_big_decimal_serializer = true"],
+    "rails_console_methods" => ["lib/console_helpers.rb", "Rails::ConsoleMethods.include(ConsoleHelpers)"],
+    "form_with_model_nil" => ["app/views/searches/new.html.erb", "<%= form_with url: search_path, model: nil do |f| %>"],
+    "route_multiple_paths" => ["config/routes.rb", "  get ['/about', '/about-us'], to: 'pages#about'"]
   }.freeze
 
   # The replacement APIs. Flagging code that is already fixed is worse than missing it.
@@ -240,7 +254,17 @@ class DeprecationAnalyzerTest < Minitest::Test
     "Rake::Task['db:schema:dump'].invoke",
     "config.active_support.hash_digest_class = OpenSSL::Digest::SHA1",
     "uri = URI::DEFAULT_PARSER.parse(url)",
-    "config.i18n.raise_on_missing_translations = true"
+    "config.i18n.raise_on_missing_translations = true",
+    "self.enqueue_after_transaction_commit = false",
+    "<%= order.created_at.to_fs(:long) %>",
+    "id.to_s",
+    "hex = 255.to_s(16)",
+    "driven_by :selenium, using: :headless_chrome",
+    "ActiveStorage::Current.url_options = { host: request.base_url }",
+    "configs_for(env_name: 'production', include_hidden: true)",
+    "ActiveRecord::Base.connection_pool.with_connection { |conn| conn.execute('SELECT 1') }",
+    "<%= form_with url: search_path do |f| %>",
+    "get '/about', to: 'pages#about'"
   ].freeze
 
   def test_every_shipped_rule_matches_its_canonical_snippet
