@@ -1,6 +1,6 @@
 # Roadmap
 
-_Last updated: 2026-10-02_
+_Last updated: 2026-10-03_
 
 rails-preflight answers one question about a Rails app: **what stands between this app and Rails X, and how sure are we?** Everything below makes that answer more correct, easier to read, or broader.
 
@@ -34,6 +34,18 @@ rails-preflight answers one question about a Rails app: **what stands between th
 ## Now
 
 Nothing in progress. Pick the next item from below.
+
+## First public release
+
+The bar is a report that holds up on real apps, not an empty roadmap. In order:
+
+1. **Run it on real apps.** Check out old tagged versions of open-source Rails apps (Discourse, Mastodon, Redmine, …), run the report and review every finding. Every rule is tested only against hand-written sample lines, and false positives are what lose trust fastest. The results will likely reorder the rest of this list.
+2. **Known-incompatible gems** (below). Gems block more upgrades than removed APIs do; without this, the report misses the biggest risk on most apps.
+3. **Say when to upgrade Ruby** (below). The upgrade path's main promise is a sequence of steps; repeating "upgrade Ruby first" on every later hop undercuts it.
+4. **Make the README accurate.** It claims Rails 3 / 4 support (`compatibility.yml` starts at 5.0) and known public gem incompatibilities (not built yet), and has a `DB/schema.rb` typo.
+5. **Release basics.** A CHANGELOG, gemspec metadata, a check that `rails_preflight` is free on rubygems.org, and a 0.x version.
+
+Not needed for the first release: `structure.sql`, going offline for gem checks (unless the real-app runs show the rubygems.org lookup is slow or flaky), and anything under Maybe.
 
 ## Next: cover more of the upgrade
 
