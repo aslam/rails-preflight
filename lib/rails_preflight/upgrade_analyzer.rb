@@ -281,20 +281,21 @@ module RailsPreflight
     end
 
     # Read, never evaluated: the Gemfile is the app's code. Returns [global sources, { gem name => source }]
-    # from `source "…" do` blocks and `gem "…", source: "…"`.
+    # from `source "…" do` blocks and `gem "…", source: "…"`. A source written as code (`ENV.fetch(…)`) is kept
+    # as that code, which never reads as rubygems.org, so its gems count as private.
+    # ponytail: line-based; one-line `do … end` or `{ … }` blocks fall back to the rubygems.org lookup,
+    # and `x = if … end` closes a block early. Parse with Ripper if real Gemfiles hit these.
     def gemfile_sources
       @gemfile_sources ||= begin
         global = []
         scoped = {}
-        blocks = [] # source URL for a `source … do` block, nil for any other block
-        path = File.join(@project_path, "Gemfile")
-        lines = File.exist?(path) ? File.readlines(path) : []
-        lines.each do |line|
-          line = line.sub(/#.*/, "")
-          source = line[/^\s*source\s*\(?\s*["']([^"']+)["']/, 1]
+        blocks = [] # source for a `source … do` block, nil for any other block
+        gemfile_lines(File.join(@project_path, "Gemfile")).each do |line|
+          source = line[/^\s*source\b\s*\(?\s*(.+?)\s*\)?\s*(?:do\b.*)?$/, 1]&.delete_prefix("\"")&.delete_suffix("\"")&.delete("'")
           name = line[/^\s*gem\s*\(?\s*["']([^"']+)["']/, 1]
           if name
-            scoped[name] = line[/source:\s*["']([^"']+)["']/, 1] || blocks.compact.last
+            option = line[/\bsource:\s*(.+?)\s*(?:,|\)|$)/, 1]&.delete("\"'")
+            scoped[name] = option || blocks.compact.last
             scoped.delete(name) unless scoped[name]
           end
           if line =~ /\bdo\s*(\|[^|]*\|)?\s*$/ || line =~ /^\s*(if|unless|case|begin|while|until|def)\b/
@@ -306,6 +307,18 @@ module RailsPreflight
           end
         end
         [global, scoped]
+      end
+    end
+
+    # Comments stripped, `gem "x",` joined with its next line, and quoted `eval_gemfile` paths read in place.
+    def gemfile_lines(path, seen = [])
+      return [] if !File.exist?(path) || seen.include?(path)
+
+      seen << path
+      text = File.read(path).gsub(/#(?!\{).*/, "").gsub(/,\s*\n\s*/, ", ")
+      text.lines.flat_map do |line|
+        included = line[/^\s*eval_gemfile\s*\(?\s*["']([^"']+)["']/, 1]
+        included ? gemfile_lines(File.expand_path(included, File.dirname(path)), seen) : [line]
       end
     end
 
