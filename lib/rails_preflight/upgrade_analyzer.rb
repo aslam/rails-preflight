@@ -1,9 +1,7 @@
 # lib/rails_preflight/upgrade_analyzer.rb
 require 'bundler'
 require 'net/http'
-require 'json'
 require 'yaml'
-require 'uri'
 require_relative 'summary_calculator'
 
 
@@ -12,8 +10,10 @@ module RailsPreflight
     DATA_PATH = File.expand_path('../../database/compatibility.yml', __dir__)
 
     # target_rails nil: the next known minor after the app's current Rails.
-    def initialize(target_rails = nil, project_path = Dir.pwd)
+    # offline: never call the network; gems the lockfile can't place are reported as "couldn't check".
+    def initialize(target_rails = nil, project_path = Dir.pwd, offline: false)
       @target_rails = target_rails
+      @offline = offline
       @project_path = project_path
       @lockfile_path = File.join(project_path, "Gemfile.lock")
       @rules = YAML.load_file(DATA_PATH)
@@ -186,70 +186,139 @@ module RailsPreflight
       end
 
       private_gems = []
-      inconclusive_gems = []
+      mixed_gems = []
+      mixed_remotes = []
 
-      print "Checking gems "
       lockfile_specs.each do |spec|
         next if ['rails', 'rake'].include?(spec.name)
 
-        is_priv, error = is_private?(spec)
-
-        if error
-          inconclusive_gems << { name: spec.name, error: error }
-          print "?"
-        elsif is_priv
-          private_gems << spec.name
-          print "🔒"
-        else
-          print "."
+        case gem_origin(spec)
+        when :private then private_gems << spec.name
+        when :mixed
+          mixed_gems << spec.name
+          mixed_remotes |= spec.source.remotes.map(&:to_s).reject { |r| rubygems_org?(r) }
         end
       end
-      
-      puts "" # Newline after progress dots
+
+      if mixed_gems.any? && @offline
+        message = "#{mixed_gems.size} gems come from one Gemfile.lock section that lists rubygems.org and #{mixed_remotes.join(', ')}; can't tell which are private with --offline"
+        result[:checks] << { message: message, status: :warning, kind: :unknown, details: mixed_gems, fix_effort: :unknown }
+        result[:status] = :warning
+      elsif mixed_gems.any?
+        puts "Looking up #{mixed_gems.size} gems on rubygems.org (--offline skips this)..."
+        found, inconclusive = lookup_on_rubygems(mixed_gems)
+        private_gems.concat(mixed_gems.select { |name| found[name] == false })
+        result[:checks] << { message: "Looked up #{mixed_gems.size} gems on rubygems.org, since Gemfile.lock lists them under both rubygems.org and #{mixed_remotes.join(', ')}. Pass --offline to skip.", status: :passed, fix_effort: :low }
+        if inconclusive.any?
+          details = inconclusive.map { |name, error| "#{name} (#{error})" }
+          result[:checks] << { message: "Could not verify #{inconclusive.size} gems against rubygems.org", status: :warning, kind: :unknown, details: details, fix_effort: :unknown }
+          result[:status] = :warning
+        end
+      end
 
       if private_gems.any?
         result[:status] = :warning
-        result[:checks] << { message: "Private gems (#{private_gems.size}): compatibility with Rails #{@target_rails} is unknown", status: :warning, kind: :unknown, details: private_gems, fix_effort: :unknown }
+        result[:checks].unshift({ message: "Private gems (#{private_gems.size}): compatibility with Rails #{@target_rails} is unknown", status: :warning, kind: :unknown, details: private_gems.sort, fix_effort: :unknown })
       else
-        result[:checks] << { message: "No private gems detected.", status: :passed, fix_effort: :low }
+        result[:checks].unshift({ message: "No private gems detected.", status: :passed, fix_effort: :low })
       end
 
-      if inconclusive_gems.any?
-        details = inconclusive_gems.map { |g| "#{g[:name]} (#{g[:error]})" }
-        result[:checks] << { message: "Could not verify #{inconclusive_gems.size} gems against rubygems.org", status: :warning, kind: :unknown, details: details, fix_effort: :unknown }
-        result[:status] = :warning if result[:status] == :passed
-      end
-      
       result
     end
 
-    def is_private?(spec)
-      # Heuristic 1: If source is not Rubygems (e.g. Git, Path), assume private/custom
-      return [true, nil] unless spec.source.is_a?(Bundler::Source::Rubygems)
+    # 200 on rubygems.org means public, 404 private, anything else unchecked. Returns [{ name => public? }, { name => error }].
+    # Only gem names the lockfile can't place are sent; never git, path or private-registry-only gems.
+    def lookup_on_rubygems(names)
+      queue = Queue.new
+      names.each { |name| queue << name }
+      found = {}
+      inconclusive = {}
+      lock = Mutex.new
 
-      # Heuristic 2: Check remotes. If only rubygems.org, it's public.
+      Array.new([names.size, 8].min) do
+        Thread.new do
+          while (name = (queue.pop(true) rescue nil))
+            begin
+              url = URI("https://rubygems.org/api/v1/gems/#{name}.json")
+              # Certificate errors are reported as inconclusive, never silently trusted.
+              response = Net::HTTP.start(url.host, url.port, use_ssl: true, open_timeout: 5, read_timeout: 5) do |http|
+                http.request(Net::HTTP::Get.new(url))
+              end
+              raise "HTTP #{response.code}" unless %w[200 404].include?(response.code) # e.g. 429 when rate limited
+              lock.synchronize { found[name] = response.code == "200" }
+            rescue StandardError => e
+              lock.synchronize { inconclusive[name] = "#{e.class.name}: #{e.message}" }
+            end
+          end
+        end
+      end.each(&:join)
+
+      [found, inconclusive]
+    end
+
+    # From the lockfile: :public, :private (git, path, or only non-rubygems.org remotes), or, when one GEM
+    # section lists rubygems.org next to another remote (Bundler before 2.2), whatever the Gemfile says; :mixed if it doesn't.
+    def gem_origin(spec)
+      return :private unless spec.source.is_a?(Bundler::Source::Rubygems)
+
       remotes = spec.source.remotes.map(&:to_s)
-      return [false, nil] if remotes.all? { |r| r.include?("rubygems.org") }
+      return :public if remotes.all? { |r| rubygems_org?(r) }
+      return :private if remotes.none? { |r| rubygems_org?(r) }
 
-      # Fallback: Check Rubygems API securely
-      url = URI("https://rubygems.org/api/v1/gems/#{spec.name}.json")
-      
-      begin
-        # Certificate errors are reported as inconclusive below, never silently trusted.
-        http_options = { use_ssl: true, open_timeout: 2, read_timeout: 2 }
+      global, scoped = gemfile_sources
+      if scoped.key?(spec.name)
+        rubygems_org?(scoped[spec.name]) ? :public : :private
+      elsif global.any? && global.all? { |r| rubygems_org?(r) }
+        # ponytail: dependencies of scoped gems count as public; Bundler 1.x could resolve them from the scoped source too.
+        :public
+      else
+        :mixed
+      end
+    end
 
-        response = Net::HTTP.start(url.host, url.port, http_options) do |http|
-          http.request(Net::HTTP::Get.new(url))
+    def rubygems_org?(remote)
+      remote.include?("rubygems.org")
+    end
+
+    # Read, never evaluated: the Gemfile is the app's code. Returns [global sources, { gem name => source }]
+    # from `source "…" do` blocks and `gem "…", source: "…"`. A source written as code (`ENV.fetch(…)`) is kept
+    # as that code, which never reads as rubygems.org, so its gems count as private.
+    # ponytail: line-based; one-line `do … end` or `{ … }` blocks fall back to the rubygems.org lookup,
+    # and `x = if … end` closes a block early. Parse with Ripper if real Gemfiles hit these.
+    def gemfile_sources
+      @gemfile_sources ||= begin
+        global = []
+        scoped = {}
+        blocks = [] # source for a `source … do` block, nil for any other block
+        gemfile_lines(File.join(@project_path, "Gemfile")).each do |line|
+          source = line[/^\s*source\b\s*\(?\s*(.+?)\s*\)?\s*(?:do\b.*)?$/, 1]&.delete_prefix("\"")&.delete_suffix("\"")&.delete("'")
+          name = line[/^\s*gem\s*\(?\s*["']([^"']+)["']/, 1]
+          if name
+            option = line[/\bsource:\s*(.+?)\s*(?:,|\)|$)/, 1]&.delete("\"'")
+            scoped[name] = option || blocks.compact.last
+            scoped.delete(name) unless scoped[name]
+          end
+          if line =~ /\bdo\s*(\|[^|]*\|)?\s*$/ || line =~ /^\s*(if|unless|case|begin|while|until|def)\b/
+            blocks << source
+          elsif source
+            global << source
+          elsif line =~ /^\s*end\b/
+            blocks.pop
+          end
         end
-        # 404 means it's private (not found on public repo)
-        [response.code == '404', nil]
-      rescue StandardError => e
-        # Inconclusive: reported under "Couldn't check"
-        if e.is_a?(OpenSSL::SSL::SSLError)
-           [false, "SSL Error: #{e.message}"]
-        else
-           [false, "#{e.class.name}: #{e.message}"]
-        end
+        [global, scoped]
+      end
+    end
+
+    # Comments stripped, `gem "x",` joined with its next line, and quoted `eval_gemfile` paths read in place.
+    def gemfile_lines(path, seen = [])
+      return [] if !File.exist?(path) || seen.include?(path)
+
+      seen << path
+      text = File.read(path).gsub(/#(?!\{).*/, "").gsub(/,\s*\n\s*/, ", ")
+      text.lines.flat_map do |line|
+        included = line[/^\s*eval_gemfile\s*\(?\s*["']([^"']+)["']/, 1]
+        included ? gemfile_lines(File.expand_path(included, File.dirname(path)), seen) : [line]
       end
     end
 

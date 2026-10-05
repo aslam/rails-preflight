@@ -2,6 +2,7 @@ require "minitest/autorun"
 require "tmpdir"
 require "fileutils"
 require "stringio"
+require "net/http"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 require "rails_preflight"
@@ -176,10 +177,153 @@ class UpgradeAnalyzerTest < Minitest::Test
     refute File.exist?(File.join(@tmp_dir, "rails_preflight_report.html"))
   end
 
+  def test_offline_places_gems_from_the_lockfile_alone
+    write_mixed_lockfile
+
+    stub_rubygems(->(_name) { raise "gem check went online" }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir, offline: true).run
+    end
+
+    assert_includes report, "Private gems (2): compatibility with Rails 7.2 is unknown"
+    assert_includes report, "2 gems come from one Gemfile.lock section that lists rubygems.org and https://gems.example.test/; can&#39;t tell which are private with --offline"
+  end
+
+  def test_online_looks_up_only_gems_the_lockfile_cannot_place
+    write_mixed_lockfile
+    looked_up = []
+
+    stub_rubygems(->(name) { looked_up << name; name == "example_sso" ? "404" : "200" }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+    end
+
+    assert_equal %w[devise example_sso], looked_up.sort
+    assert_includes report, "Private gems (3): compatibility with Rails 7.2 is unknown"
+    assert_includes report, "Looked up 2 gems on rubygems.org"
+  end
+
+  def test_gemfile_source_blocks_place_gems_without_going_online
+    write_mixed_lockfile
+    File.write(File.join(@tmp_dir, "Gemfile"), <<~GEMFILE)
+      source "https://rubygems.org"
+      gem "railties"
+
+      source "https://gems.example.test" do
+        if ENV["CI"]
+          gem "ci_reporter"
+        end
+        group :production do
+          gem "example_sso" # private fork, though the name is on rubygems.org
+        end
+      end
+
+      gem "devise"
+      gem "acme_auth", source: "https://gems.acme.test"
+    GEMFILE
+
+    stub_rubygems(->(_name) { raise "gem check went online" }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+    end
+
+    assert_includes report, "Private gems (3): compatibility with Rails 7.2 is unknown"
+    assert_includes report, "<li>example_sso</li>"
+    refute_includes report, "<li>devise</li>"
+    refute_includes report, "Looked up"
+  end
+
+  def test_gemfile_sources_split_across_lines_set_from_code_or_in_another_file
+    write_mixed_lockfile
+    File.write(File.join(@tmp_dir, "Gemfile"), <<~GEMFILE)
+      source "https://rubygems.org"
+      gem "railties"
+      gem "devise",
+        require: false
+      gem "acme_auth",
+        source: "https://gems.acme.test"
+      eval_gemfile "Gemfile.private"
+    GEMFILE
+    File.write(File.join(@tmp_dir, "Gemfile.private"), <<~GEMFILE)
+      source ENV.fetch("PRIVATE_GEMS") do
+        gem "example_sso"
+      end
+    GEMFILE
+
+    stub_rubygems(->(_name) { raise "gem check went online" }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+    end
+
+    assert_includes report, "Private gems (3): compatibility with Rails 7.2 is unknown"
+    assert_includes report, "<li>example_sso</li>"
+    refute_includes report, "<li>devise</li>"
+  end
+
+  def test_online_lookup_failures_are_reported_as_unchecked
+    write_mixed_lockfile
+
+    stub_rubygems(->(name) { name == "devise" ? raise(Net::OpenTimeout, "timed out") : "429" }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+    end
+
+    assert_includes report, "Could not verify 2 gems against rubygems.org"
+    assert_includes report, "devise (Net::OpenTimeout: timed out)"
+    assert_includes report, "example_sso (RuntimeError: HTTP 429)"
+  end
+
   private
 
   def report
     File.read(File.join(@tmp_dir, "rails_preflight_report.html"))
+  end
+
+  # rubygems.org stand-in: respond.(gem_name) returns a status code or raises.
+  def stub_rubygems(respond)
+    http = Object.new
+    http.define_singleton_method(:request) do |req|
+      Struct.new(:code).new(respond.(req.path[%r{/gems/(.+)\.json}, 1]))
+    end
+    Net::HTTP.singleton_class.alias_method(:real_start, :start)
+    Net::HTTP.define_singleton_method(:start) { |*, &block| block.(http) }
+    yield
+  ensure
+    Net::HTTP.singleton_class.remove_method(:start)
+    Net::HTTP.singleton_class.alias_method(:start, :real_start)
+  end
+
+  # One gem per kind of source: git, rubygems.org, private registry only, and a section mixing both.
+  def write_mixed_lockfile
+    File.write(File.join(@tmp_dir, "Gemfile.lock"), <<~LOCKFILE)
+      GIT
+        remote: https://github.com/acme/billing.git
+        revision: abc123
+        specs:
+          billing (1.0.0)
+
+      GEM
+        remote: https://rubygems.org/
+        specs:
+          railties (7.1.3)
+
+      GEM
+        remote: https://gems.acme.test/
+        specs:
+          acme_auth (2.0.0)
+
+      GEM
+        remote: https://rubygems.org/
+        remote: https://gems.example.test/
+        specs:
+          devise (4.9.0)
+          example_sso (1.2.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        acme_auth!
+        billing!
+        devise!
+        example_sso!
+        railties
+    LOCKFILE
   end
 
   def write_lockfile(ruby: nil, rails: nil)
