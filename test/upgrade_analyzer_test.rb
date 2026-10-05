@@ -177,7 +177,64 @@ class UpgradeAnalyzerTest < Minitest::Test
     refute File.exist?(File.join(@tmp_dir, "rails_preflight_report.html"))
   end
 
-  def test_gem_origins_come_from_the_lockfile_alone
+  def test_offline_places_gems_from_the_lockfile_alone
+    write_mixed_lockfile
+
+    stub_rubygems(->(_name) { raise "gem check went online" }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir, offline: true).run
+    end
+
+    assert_includes report, "Private gems (2): compatibility with Rails 7.2 is unknown"
+    assert_includes report, "2 gems come from one Gemfile.lock section that lists rubygems.org and https://gems.example.test/; can&#39;t tell which are private with --offline"
+  end
+
+  def test_online_looks_up_only_gems_the_lockfile_cannot_place
+    write_mixed_lockfile
+    looked_up = []
+
+    stub_rubygems(->(name) { looked_up << name; name == "example_sso" ? "404" : "200" }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+    end
+
+    assert_equal %w[devise example_sso], looked_up.sort
+    assert_includes report, "Private gems (3): compatibility with Rails 7.2 is unknown"
+    assert_includes report, "Looked up 2 gems on rubygems.org"
+  end
+
+  def test_online_lookup_failures_are_reported_as_unchecked
+    write_mixed_lockfile
+
+    stub_rubygems(->(name) { name == "devise" ? raise(Net::OpenTimeout, "timed out") : "429" }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+    end
+
+    assert_includes report, "Could not verify 2 gems against rubygems.org"
+    assert_includes report, "devise (Net::OpenTimeout: timed out)"
+    assert_includes report, "example_sso (RuntimeError: HTTP 429)"
+  end
+
+  private
+
+  def report
+    File.read(File.join(@tmp_dir, "rails_preflight_report.html"))
+  end
+
+  # rubygems.org stand-in: respond.(gem_name) returns a status code or raises.
+  def stub_rubygems(respond)
+    http = Object.new
+    http.define_singleton_method(:request) do |req|
+      Struct.new(:code).new(respond.(req.path[%r{/gems/(.+)\.json}, 1]))
+    end
+    Net::HTTP.singleton_class.alias_method(:real_start, :start)
+    Net::HTTP.define_singleton_method(:start) { |*, &block| block.(http) }
+    yield
+  ensure
+    Net::HTTP.singleton_class.remove_method(:start)
+    Net::HTTP.singleton_class.alias_method(:start, :real_start)
+  end
+
+  # One gem per kind of source: git, rubygems.org, private registry only, and a section mixing both.
+  def write_mixed_lockfile
     File.write(File.join(@tmp_dir, "Gemfile.lock"), <<~LOCKFILE)
       GIT
         remote: https://github.com/acme/billing.git
@@ -212,23 +269,6 @@ class UpgradeAnalyzerTest < Minitest::Test
         example_sso!
         railties
     LOCKFILE
-    Net::HTTP.singleton_class.alias_method(:real_start, :start)
-    Net::HTTP.define_singleton_method(:start) { |*| raise "gem check went online" }
-    begin
-      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
-    ensure
-      Net::HTTP.singleton_class.remove_method(:start)
-      Net::HTTP.singleton_class.alias_method(:start, :real_start)
-    end
-
-    assert_includes report, "Private gems (2): compatibility with Rails 7.2 is unknown"
-    assert_includes report, "2 gems come from one Gemfile.lock section that lists rubygems.org and https://gems.example.test/"
-  end
-
-  private
-
-  def report
-    File.read(File.join(@tmp_dir, "rails_preflight_report.html"))
   end
 
   def write_lockfile(ruby: nil, rails: nil)

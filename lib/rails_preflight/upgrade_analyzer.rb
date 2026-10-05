@@ -1,5 +1,6 @@
 # lib/rails_preflight/upgrade_analyzer.rb
 require 'bundler'
+require 'net/http'
 require 'yaml'
 require_relative 'summary_calculator'
 
@@ -9,8 +10,10 @@ module RailsPreflight
     DATA_PATH = File.expand_path('../../database/compatibility.yml', __dir__)
 
     # target_rails nil: the next known minor after the app's current Rails.
-    def initialize(target_rails = nil, project_path = Dir.pwd)
+    # offline: never call the network; gems the lockfile can't place are reported as "couldn't check".
+    def initialize(target_rails = nil, project_path = Dir.pwd, offline: false)
       @target_rails = target_rails
+      @offline = offline
       @project_path = project_path
       @lockfile_path = File.join(project_path, "Gemfile.lock")
       @rules = YAML.load_file(DATA_PATH)
@@ -197,23 +200,63 @@ module RailsPreflight
         end
       end
 
-      if private_gems.any?
-        result[:status] = :warning
-        result[:checks] << { message: "Private gems (#{private_gems.size}): compatibility with Rails #{@target_rails} is unknown", status: :warning, kind: :unknown, details: private_gems, fix_effort: :unknown }
-      else
-        result[:checks] << { message: "No private gems detected.", status: :passed, fix_effort: :low }
-      end
-
-      if mixed_gems.any?
-        message = "#{mixed_gems.size} gems come from one Gemfile.lock section that lists rubygems.org and #{mixed_remotes.join(', ')}; can't tell which are private without going online"
+      if mixed_gems.any? && @offline
+        message = "#{mixed_gems.size} gems come from one Gemfile.lock section that lists rubygems.org and #{mixed_remotes.join(', ')}; can't tell which are private with --offline"
         result[:checks] << { message: message, status: :warning, kind: :unknown, details: mixed_gems, fix_effort: :unknown }
         result[:status] = :warning
+      elsif mixed_gems.any?
+        puts "Looking up #{mixed_gems.size} gems on rubygems.org (--offline skips this)..."
+        found, inconclusive = lookup_on_rubygems(mixed_gems)
+        private_gems.concat(mixed_gems.select { |name| found[name] == false })
+        result[:checks] << { message: "Looked up #{mixed_gems.size} gems on rubygems.org, since Gemfile.lock lists them under both rubygems.org and #{mixed_remotes.join(', ')}. Pass --offline to skip.", status: :passed, fix_effort: :low }
+        if inconclusive.any?
+          details = inconclusive.map { |name, error| "#{name} (#{error})" }
+          result[:checks] << { message: "Could not verify #{inconclusive.size} gems against rubygems.org", status: :warning, kind: :unknown, details: details, fix_effort: :unknown }
+          result[:status] = :warning
+        end
+      end
+
+      if private_gems.any?
+        result[:status] = :warning
+        result[:checks].unshift({ message: "Private gems (#{private_gems.size}): compatibility with Rails #{@target_rails} is unknown", status: :warning, kind: :unknown, details: private_gems.sort, fix_effort: :unknown })
+      else
+        result[:checks].unshift({ message: "No private gems detected.", status: :passed, fix_effort: :low })
       end
 
       result
     end
 
-    # Lockfile only, never the network: :public, :private (git, path, or only non-rubygems.org remotes),
+    # 200 on rubygems.org means public, 404 private, anything else unchecked. Returns [{ name => public? }, { name => error }].
+    # Only gem names the lockfile can't place are sent; never git, path or private-registry-only gems.
+    def lookup_on_rubygems(names)
+      queue = Queue.new
+      names.each { |name| queue << name }
+      found = {}
+      inconclusive = {}
+      lock = Mutex.new
+
+      Array.new([names.size, 8].min) do
+        Thread.new do
+          while (name = (queue.pop(true) rescue nil))
+            begin
+              url = URI("https://rubygems.org/api/v1/gems/#{name}.json")
+              # Certificate errors are reported as inconclusive, never silently trusted.
+              response = Net::HTTP.start(url.host, url.port, use_ssl: true, open_timeout: 5, read_timeout: 5) do |http|
+                http.request(Net::HTTP::Get.new(url))
+              end
+              raise "HTTP #{response.code}" unless %w[200 404].include?(response.code) # e.g. 429 when rate limited
+              lock.synchronize { found[name] = response.code == "200" }
+            rescue StandardError => e
+              lock.synchronize { inconclusive[name] = "#{e.class.name}: #{e.message}" }
+            end
+          end
+        end
+      end.each(&:join)
+
+      [found, inconclusive]
+    end
+
+    # From the lockfile: :public, :private (git, path, or only non-rubygems.org remotes),
     # or :mixed when one GEM section lists rubygems.org next to another remote.
     def gem_origin(spec)
       return :private unless spec.source.is_a?(Bundler::Source::Rubygems)
