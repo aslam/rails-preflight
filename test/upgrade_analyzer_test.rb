@@ -2,6 +2,7 @@ require "minitest/autorun"
 require "tmpdir"
 require "fileutils"
 require "stringio"
+require "net/http"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 require "rails_preflight"
@@ -174,6 +175,54 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     assert_includes $stdout.string, "Rails 8.1.3 is already at or past the newest version rails-preflight knows (8.1)."
     refute File.exist?(File.join(@tmp_dir, "rails_preflight_report.html"))
+  end
+
+  def test_gem_origins_come_from_the_lockfile_alone
+    File.write(File.join(@tmp_dir, "Gemfile.lock"), <<~LOCKFILE)
+      GIT
+        remote: https://github.com/acme/billing.git
+        revision: abc123
+        specs:
+          billing (1.0.0)
+
+      GEM
+        remote: https://rubygems.org/
+        specs:
+          railties (7.1.3)
+
+      GEM
+        remote: https://gems.acme.test/
+        specs:
+          acme_auth (2.0.0)
+
+      GEM
+        remote: https://rubygems.org/
+        remote: https://gems.example.test/
+        specs:
+          devise (4.9.0)
+          example_sso (1.2.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        acme_auth!
+        billing!
+        devise!
+        example_sso!
+        railties
+    LOCKFILE
+    Net::HTTP.singleton_class.alias_method(:real_start, :start)
+    Net::HTTP.define_singleton_method(:start) { |*| raise "gem check went online" }
+    begin
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+    ensure
+      Net::HTTP.singleton_class.remove_method(:start)
+      Net::HTTP.singleton_class.alias_method(:start, :real_start)
+    end
+
+    assert_includes report, "Private gems (2): compatibility with Rails 7.2 is unknown"
+    assert_includes report, "2 gems come from one Gemfile.lock section that lists rubygems.org and https://gems.example.test/"
   end
 
   private

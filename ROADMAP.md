@@ -45,7 +45,7 @@ The bar is a report that holds up on real apps, not an empty roadmap. In order:
 3. **Known-incompatible gems** (below). Gems block more upgrades than removed APIs do; without this, the report misses the biggest risk on most apps.
 4. **Say when to upgrade Ruby** (below). The upgrade path's main promise is a sequence of steps; repeating "upgrade Ruby first" on every later hop undercuts it.
 5. **Make the README accurate.** It claims Rails 3 / 4 support (`compatibility.yml` starts at 5.0) and known public gem incompatibilities (not built yet), and has a `DB/schema.rb` typo.
-6. **Go offline for gem checks** (below). On the 5.2 app, whose `Gemfile.lock` lists rubygems.org and a private registry in one `GEM` section, the private-gem check fell back to one rubygems.org request per gem: minutes instead of seconds, 7 gems inconclusive on 2-second timeouts (so the report changes run to run), and a private gem whose name is taken on rubygems.org would be reported as public.
+6. **Go offline for gem checks.** Done: private gems come from the lockfile alone. A `GEM` section that lists rubygems.org next to a private registry (as on the 5.2 app) is reported as "couldn't check" instead of costing one rubygems.org request per gem, which took minutes, drifted run to run on timeouts, and sent private gem names to a public server. Next is the `--online` flag (below).
 7. **Release basics.** A CHANGELOG, gemspec metadata, a check that `rails_preflight` is free on rubygems.org, and a 0.x version.
 
 Not needed for the first release: `structure.sql` and anything under Maybe.
@@ -57,7 +57,8 @@ Not needed for the first release: `structure.sql` and anything under Maybe.
 - **Deepen the deprecation rules.** Every hop has at least one rule, but the guides list dozens of removals per version. Add the ones that are statically detectable and plausible in app code, applying only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
 - **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements. Each entry records its source and the Rails versions it applies to, so stale entries expire instead of lingering. Each entry also carries an optional code pattern, so the report can say how much code depends on the gem, not just that it's there. Before the target, report it under "to fix" with the deadline ("supports Rails up to 6.1; plan the move before 7.0"); at or past it, make it a blocker on the hop where support ends. First entry: `protected_attributes_continued`, which its README says supports Rails 5.0 – 6.1 only, with a pattern for `attr_accessible` / `attr_protected`. On the Rails 5.2 app from the real-app run that's 139 files, likely the biggest single piece of its upgrade, and the report said nothing about it.
 - **Support `structure.sql`** in the database checks, not only `db/schema.rb`.
-- **Go offline for gem checks.** Replace the rubygems.org lookup with lockfile-only heuristics, or put it behind an `--online` flag.
+- **`--online` gem checks.** Opt-in network access: for each gem from rubygems.org, read the Rails dependency its released versions declare, and report "devise 4.7 caps Rails below 6.1; 4.9 allows 7.2, bump it first". Never query gems from a non-rubygems.org source, and say in the report which mode ran. Overlaps next_rails' `bundle_report compatibility`; the value is one report. Missing upper bounds read as compatible, so the curated list below still matters.
+- **Rename "known-incompatible gems"** to "Gems with a Rails support ceiling".
 
 ## Later
 

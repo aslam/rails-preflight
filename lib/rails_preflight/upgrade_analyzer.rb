@@ -1,9 +1,6 @@
 # lib/rails_preflight/upgrade_analyzer.rb
 require 'bundler'
-require 'net/http'
-require 'json'
 require 'yaml'
-require 'uri'
 require_relative 'summary_calculator'
 
 
@@ -186,26 +183,19 @@ module RailsPreflight
       end
 
       private_gems = []
-      inconclusive_gems = []
+      mixed_gems = []
+      mixed_remotes = []
 
-      print "Checking gems "
       lockfile_specs.each do |spec|
         next if ['rails', 'rake'].include?(spec.name)
 
-        is_priv, error = is_private?(spec)
-
-        if error
-          inconclusive_gems << { name: spec.name, error: error }
-          print "?"
-        elsif is_priv
-          private_gems << spec.name
-          print "🔒"
-        else
-          print "."
+        case gem_origin(spec)
+        when :private then private_gems << spec.name
+        when :mixed
+          mixed_gems << spec.name
+          mixed_remotes |= spec.source.remotes.map(&:to_s).reject { |r| r.include?("rubygems.org") }
         end
       end
-      
-      puts "" # Newline after progress dots
 
       if private_gems.any?
         result[:status] = :warning
@@ -214,43 +204,23 @@ module RailsPreflight
         result[:checks] << { message: "No private gems detected.", status: :passed, fix_effort: :low }
       end
 
-      if inconclusive_gems.any?
-        details = inconclusive_gems.map { |g| "#{g[:name]} (#{g[:error]})" }
-        result[:checks] << { message: "Could not verify #{inconclusive_gems.size} gems against rubygems.org", status: :warning, kind: :unknown, details: details, fix_effort: :unknown }
-        result[:status] = :warning if result[:status] == :passed
+      if mixed_gems.any?
+        message = "#{mixed_gems.size} gems come from one Gemfile.lock section that lists rubygems.org and #{mixed_remotes.join(', ')}; can't tell which are private without going online"
+        result[:checks] << { message: message, status: :warning, kind: :unknown, details: mixed_gems, fix_effort: :unknown }
+        result[:status] = :warning
       end
-      
+
       result
     end
 
-    def is_private?(spec)
-      # Heuristic 1: If source is not Rubygems (e.g. Git, Path), assume private/custom
-      return [true, nil] unless spec.source.is_a?(Bundler::Source::Rubygems)
+    # Lockfile only, never the network: :public, :private (git, path, or only non-rubygems.org remotes),
+    # or :mixed when one GEM section lists rubygems.org next to another remote.
+    def gem_origin(spec)
+      return :private unless spec.source.is_a?(Bundler::Source::Rubygems)
 
-      # Heuristic 2: Check remotes. If only rubygems.org, it's public.
       remotes = spec.source.remotes.map(&:to_s)
-      return [false, nil] if remotes.all? { |r| r.include?("rubygems.org") }
-
-      # Fallback: Check Rubygems API securely
-      url = URI("https://rubygems.org/api/v1/gems/#{spec.name}.json")
-      
-      begin
-        # Certificate errors are reported as inconclusive below, never silently trusted.
-        http_options = { use_ssl: true, open_timeout: 2, read_timeout: 2 }
-
-        response = Net::HTTP.start(url.host, url.port, http_options) do |http|
-          http.request(Net::HTTP::Get.new(url))
-        end
-        # 404 means it's private (not found on public repo)
-        [response.code == '404', nil]
-      rescue StandardError => e
-        # Inconclusive: reported under "Couldn't check"
-        if e.is_a?(OpenSSL::SSL::SSLError)
-           [false, "SSL Error: #{e.message}"]
-        else
-           [false, "#{e.class.name}: #{e.message}"]
-        end
-      end
+      return :public if remotes.all? { |r| r.include?("rubygems.org") }
+      remotes.none? { |r| r.include?("rubygems.org") } ? :private : :mixed
     end
 
     # railties is in every Rails app's lockfile, even without the rails meta-gem.
