@@ -201,6 +201,35 @@ class UpgradeAnalyzerTest < Minitest::Test
     assert_includes report, "Looked up 2 gems on rubygems.org"
   end
 
+  def test_gemfile_source_blocks_place_gems_without_going_online
+    write_mixed_lockfile
+    File.write(File.join(@tmp_dir, "Gemfile"), <<~GEMFILE)
+      source "https://rubygems.org"
+      gem "railties"
+
+      source "https://gems.example.test" do
+        if ENV["CI"]
+          gem "ci_reporter"
+        end
+        group :production do
+          gem "example_sso" # private fork, though the name is on rubygems.org
+        end
+      end
+
+      gem "devise"
+      gem "acme_auth", source: "https://gems.acme.test"
+    GEMFILE
+
+    stub_rubygems(->(_name) { raise "gem check went online" }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+    end
+
+    assert_includes report, "Private gems (3): compatibility with Rails 7.2 is unknown"
+    assert_includes report, "<li>example_sso</li>"
+    refute_includes report, "<li>devise</li>"
+    refute_includes report, "Looked up"
+  end
+
   def test_online_lookup_failures_are_reported_as_unchecked
     write_mixed_lockfile
 

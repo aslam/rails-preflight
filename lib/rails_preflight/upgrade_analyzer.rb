@@ -196,7 +196,7 @@ module RailsPreflight
         when :private then private_gems << spec.name
         when :mixed
           mixed_gems << spec.name
-          mixed_remotes |= spec.source.remotes.map(&:to_s).reject { |r| r.include?("rubygems.org") }
+          mixed_remotes |= spec.source.remotes.map(&:to_s).reject { |r| rubygems_org?(r) }
         end
       end
 
@@ -256,14 +256,57 @@ module RailsPreflight
       [found, inconclusive]
     end
 
-    # From the lockfile: :public, :private (git, path, or only non-rubygems.org remotes),
-    # or :mixed when one GEM section lists rubygems.org next to another remote.
+    # From the lockfile: :public, :private (git, path, or only non-rubygems.org remotes), or, when one GEM
+    # section lists rubygems.org next to another remote (Bundler before 2.2), whatever the Gemfile says; :mixed if it doesn't.
     def gem_origin(spec)
       return :private unless spec.source.is_a?(Bundler::Source::Rubygems)
 
       remotes = spec.source.remotes.map(&:to_s)
-      return :public if remotes.all? { |r| r.include?("rubygems.org") }
-      remotes.none? { |r| r.include?("rubygems.org") } ? :private : :mixed
+      return :public if remotes.all? { |r| rubygems_org?(r) }
+      return :private if remotes.none? { |r| rubygems_org?(r) }
+
+      global, scoped = gemfile_sources
+      if scoped.key?(spec.name)
+        rubygems_org?(scoped[spec.name]) ? :public : :private
+      elsif global.any? && global.all? { |r| rubygems_org?(r) }
+        # ponytail: dependencies of scoped gems count as public; Bundler 1.x could resolve them from the scoped source too.
+        :public
+      else
+        :mixed
+      end
+    end
+
+    def rubygems_org?(remote)
+      remote.include?("rubygems.org")
+    end
+
+    # Read, never evaluated: the Gemfile is the app's code. Returns [global sources, { gem name => source }]
+    # from `source "…" do` blocks and `gem "…", source: "…"`.
+    def gemfile_sources
+      @gemfile_sources ||= begin
+        global = []
+        scoped = {}
+        blocks = [] # source URL for a `source … do` block, nil for any other block
+        path = File.join(@project_path, "Gemfile")
+        lines = File.exist?(path) ? File.readlines(path) : []
+        lines.each do |line|
+          line = line.sub(/#.*/, "")
+          source = line[/^\s*source\s*\(?\s*["']([^"']+)["']/, 1]
+          name = line[/^\s*gem\s*\(?\s*["']([^"']+)["']/, 1]
+          if name
+            scoped[name] = line[/source:\s*["']([^"']+)["']/, 1] || blocks.compact.last
+            scoped.delete(name) unless scoped[name]
+          end
+          if line =~ /\bdo\s*(\|[^|]*\|)?\s*$/ || line =~ /^\s*(if|unless|case|begin|while|until|def)\b/
+            blocks << source
+          elsif source
+            global << source
+          elsif line =~ /^\s*end\b/
+            blocks.pop
+          end
+        end
+        [global, scoped]
+      end
     end
 
     # railties is in every Rails app's lockfile, even without the rails meta-gem.
