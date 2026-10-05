@@ -1,6 +1,6 @@
 # Roadmap
 
-_Last updated: 2026-10-03_
+_Last updated: 2026-10-05_
 
 rails-preflight answers one question about a Rails app: **what stands between this app and Rails X, and how sure are we?** Everything below makes that answer more correct, easier to read, or broader.
 
@@ -14,9 +14,10 @@ rails-preflight answers one question about a Rails app: **what stands between th
 ## Shipped
 
 - Current Rails version from `Gemfile.lock`, shown as `current → target` in the report and upgrade path
+- Target defaults to the next Rails minor after the app's, with a hint pointing to the full path; stops when the current Rails is unknown, exits when already on the newest known
 - Ruby compatibility per target Rails (5.0 – 8.1), read from `.ruby-version`, `Gemfile.lock`, or the Dockerfile
 - EOL checks for Ruby and Node
-- Private gem detection (git/path sources, non-rubygems.org remotes)
+- Private gem detection from `Gemfile.lock` and the Gemfile's `source` blocks, `source:` options and `eval_gemfile` files, read but never evaluated; a rubygems.org lookup only for gems neither file places, skipped with `--offline`
 - Deprecation scan, grouped by pattern, with app vs test occurrence counts; a blocker when this upgrade removes the API; commented-out code is skipped; each links to its Rails guide
 - Stops with a clear message when the directory isn't a Rails app
 - Config checks: `config.load_defaults` missing or behind the current Rails version
@@ -41,12 +42,12 @@ The bar is a report that holds up on real apps, not an empty roadmap. In order:
 
 1. **Run it on real apps.** Check out old tagged versions of open-source Rails apps (Discourse, Mastodon, Redmine, …), run the report and review every finding. Every rule is tested only against hand-written sample lines, and false positives are what lose trust fastest. The results will likely reorder the rest of this list.
    - 2026-10-03, two private apps: a Rails 5.2 app (1,923 files; 7 blockers, all real) and a Rails 8.1 app (no findings, even when scanned as if upgrading from 5.0). Found one false positive (hash-rocket keyword args in controller tests) and a bogus upgrade step when already on the target; both fixed in #14.
-2. **Default to the next Rails version.** Make the target optional: with no argument, read the current Rails from `Gemfile.lock` and target the next minor in `compatibility.yml` (5.2 → 6.0, 7.1.3 → 7.2, 7.2 → 8.0). Rails recommends one minor at a time, and that's the report a team acts on: the 5.2 app had 2 blockers targeting 6.0 against 7 targeting 8.1. An explicit target keeps working for planning the whole jump, and the default run ends with a one-line hint ("Latest known is 8.1: run `rails-preflight 8.1` for the full path"). With no `Gemfile.lock` or no Rails in it, stop and ask for a target instead of guessing; when already on the newest known version, say so and exit. The default is only as current as `compatibility.yml`, so the README states which Rails versions the tool knows. It changes the CLI, so it goes in before the first release, not after.
-3. **Known-incompatible gems** (below). Gems block more upgrades than removed APIs do; without this, the report misses the biggest risk on most apps.
-4. **Say when to upgrade Ruby** (below). The upgrade path's main promise is a sequence of steps; repeating "upgrade Ruby first" on every later hop undercuts it.
+   - 2026-10-05, same 5.2 app: its Bundler 1.17 lockfile mixes rubygems.org and a private registry in one section. The rubygems.org lookup took minutes and missed 5 of its 11 private gems (private forks under public names); reading the Gemfile's source blocks finds all 11 in about a second (#17).
+2. **Gems with a Rails support ceiling** (below). Gems block more upgrades than removed APIs do; without this, the report misses the biggest risk on most apps.
+3. **Say when to upgrade Ruby** (below). The upgrade path's main promise is a sequence of steps; repeating "upgrade Ruby first" on every later hop undercuts it.
+4. **Decide the network default.** The rubygems.org lookup for private gems runs by default, which the "static and offline" principle doesn't allow yet. Since the Gemfile now places almost every gem (all 11 private gems on the 5.2 app, with no lookups), flipping to offline with an `--online` flag costs little. It changes the CLI, so it goes in before the first release.
 5. **Make the README accurate.** It claims Rails 3 / 4 support (`compatibility.yml` starts at 5.0) and known public gem incompatibilities (not built yet), and has a `DB/schema.rb` typo.
-6. **Fix the slow gem check.** Done: the lockfile places git, path and private-registry-only gems. When one `GEM` section lists rubygems.org next to another registry (Bundler before 2.2, as on the 5.2 app), the Gemfile's `source "…" do` blocks, `source:` options and quoted `eval_gemfile` paths decide, read line by line but never evaluated; a source written as code (`ENV.fetch(…)`) counts as private. Only gems neither file places are looked up on rubygems.org, where only a 200 counts as public; `--offline` skips that and reports them as "couldn't check". On the 5.2 app: all 11 private gems found in about a second with no network. Asking rubygems.org had missed 5 of them, private forks whose names are also on rubygems.org. Open question: the lookup still runs by default, which the "static and offline" principle above doesn't allow yet. Now that it's a rare fallback, flipping the default to offline (with `--online`) costs little.
-7. **Release basics.** A CHANGELOG, gemspec metadata, a check that `rails_preflight` is free on rubygems.org, and a 0.x version.
+6. **Release basics.** A CHANGELOG, gemspec metadata, a check that `rails_preflight` is free on rubygems.org, and a 0.x version.
 
 Not needed for the first release: `structure.sql` and anything under Maybe.
 
@@ -55,14 +56,15 @@ Not needed for the first release: `structure.sql` and anything under Maybe.
 - **Say when to upgrade Ruby** in the upgrade path: name the step whose Rails supports both the current and the required Ruby. Two symptoms today: every hop's Ruby note compares against the app's *starting* Ruby, and the end-of-life advice ignores the target. For a Rails 5.2 app on Ruby 2.5.9 targeting 6.0, the report says "Upgrade to Ruby 3.3+" while Rails 6.0 supports only up to 2.7. Cap the advice at the target's max Ruby, and point to the later hop where a supported Ruby becomes possible.
 - **Flag removals that predate the current Rails.** An API removed before the app's current version is reported as "to fix", but it is either dead code or already broken in production. On the Rails 5.2 app, `render text:` (removed in 5.1) sat in a live `before_action`, so outdated clients likely get a 500 instead of the intended 426. Give these their own label, e.g. "already broken or dead code", and list them first.
 - **Deepen the deprecation rules.** Every hop has at least one rule, but the guides list dozens of removals per version. Add the ones that are statically detectable and plausible in app code, applying only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
-- **Known-incompatible gems.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements. Each entry records its source and the Rails versions it applies to, so stale entries expire instead of lingering. Each entry also carries an optional code pattern, so the report can say how much code depends on the gem, not just that it's there. Before the target, report it under "to fix" with the deadline ("supports Rails up to 6.1; plan the move before 7.0"); at or past it, make it a blocker on the hop where support ends. First entry: `protected_attributes_continued`, which its README says supports Rails 5.0 – 6.1 only, with a pattern for `attr_accessible` / `attr_protected`. On the Rails 5.2 app from the real-app run that's 139 files, likely the biggest single piece of its upgrade, and the report said nothing about it.
+- **Gems with a Rails support ceiling.** A curated list of public gems that break or are superseded across a jump (`paperclip`, `protected_attributes`, `therubyracer`, `webpacker`, …), with replacements. Each entry records its source and the Rails versions it applies to, so stale entries expire instead of lingering. Each entry also carries an optional code pattern, so the report can say how much code depends on the gem, not just that it's there. Before the target, report it under "to fix" with the deadline ("supports Rails up to 6.1; plan the move before 7.0"); at or past it, make it a blocker on the hop where support ends. First entry: `protected_attributes_continued`, which its README says supports Rails 5.0 – 6.1 only, with a pattern for `attr_accessible` / `attr_protected`. On the Rails 5.2 app from the real-app run that's 139 files, likely the biggest single piece of its upgrade, and the report said nothing about it.
 - **Support `structure.sql`** in the database checks, not only `db/schema.rb`.
-- **Check each gem's declared Rails support** on rubygems.org (skipped with `--offline`): read the Rails dependency its released versions declare, and report "devise 4.7 caps Rails below 6.1; 4.9 allows 7.2, bump it first". Never query gems from a non-rubygems.org source. Overlaps next_rails' `bundle_report compatibility`; the value is one report. Missing upper bounds read as compatible, so the curated list below still matters.
-- **Rename "known-incompatible gems"** to "Gems with a Rails support ceiling".
+- **Check each gem's declared Rails support** on rubygems.org (skipped with `--offline`): read the Rails dependency its released versions declare, and report "devise 4.7 caps Rails below 6.1; 4.9 allows 7.2, bump it first". Never query gems from a non-rubygems.org source. Overlaps next_rails' `bundle_report compatibility`; the value is one report. Missing upper bounds read as compatible, so the curated list above still matters.
 - **Parse the Gemfile with Ripper** instead of line by line, if real Gemfiles hit what the line reader misses: one-line `do … end` and `{ … }` source blocks (these fall back to the rubygems.org lookup) and `x = if … end` inside a source block (closes it early, so its later gems count as public).
 
 ## Later
 
+- Report styling: a design pass over the HTML report, which is mostly inline `style` attributes today
+- Print stylesheet, so the report prints or saves to PDF cleanly; an `@media print` block inside the report, since it's a single self-contained file
 - JSON output with a stable schema, so CI can gate on it
 - Scope flags such as `--exclude-tests`
 - Cross-check Ruby version sources (`.ruby-version` vs Dockerfile vs CI config)
