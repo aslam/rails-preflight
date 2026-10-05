@@ -11,7 +11,8 @@ module RailsPreflight
   class UpgradeAnalyzer
     DATA_PATH = File.expand_path('../../database/compatibility.yml', __dir__)
 
-    def initialize(target_rails, project_path = Dir.pwd)
+    # target_rails nil: the next known minor after the app's current Rails.
+    def initialize(target_rails = nil, project_path = Dir.pwd)
       @target_rails = target_rails
       @project_path = project_path
       @lockfile_path = File.join(project_path, "Gemfile.lock")
@@ -21,6 +22,15 @@ module RailsPreflight
     def run
       unless File.exist?(File.join(@project_path, "config", "environment.rb"))
         raise Error, "#{@project_path} doesn't look like a Rails app (no config/environment.rb)."
+      end
+
+      defaulted = @target_rails.nil?
+      if defaulted
+        @target_rails = next_rails
+        unless @target_rails
+          puts "Rails #{current_rails} is already at or past the newest version rails-preflight knows (#{latest_known_rails}). Nothing to upgrade to."
+          return
+        end
       end
 
       puts "🔍 Starting Audit: Rails #{current_rails || 'unknown'} → #{@target_rails}..."
@@ -56,6 +66,9 @@ module RailsPreflight
       
       puts "\n✅ Report generated at: #{output_path}"
       puts "   Open it in your browser to see the results."
+      if defaulted && @target_rails != latest_known_rails
+        puts "\nLatest known is #{latest_known_rails}: run `rails-preflight #{latest_known_rails}` for the full path."
+      end
     end
 
     private
@@ -248,6 +261,24 @@ module RailsPreflight
     # Bypass Bundler IO to avoid version mismatch errors
     def lockfile_specs
       @lockfile_specs ||= File.exist?(@lockfile_path) ? Bundler::LockfileParser.new(File.read(@lockfile_path)).specs : []
+    end
+
+    def known_rails_versions
+      @rules.fetch('rails_versions', {}).keys.sort_by { |v| Gem::Version.new(v) }
+    end
+
+    def latest_known_rails
+      known_rails_versions.last
+    end
+
+    # Next known minor after the current Rails (7.1.3 → 7.2), or nil when already on the newest.
+    def next_rails
+      unless current_rails
+        reason = File.exist?(@lockfile_path) ? "No Rails in #{@lockfile_path}" : "No Gemfile.lock in #{@project_path}"
+        raise Error, "#{reason}, so the current Rails version is unknown. Pass a target, e.g. `rails-preflight #{latest_known_rails}`."
+      end
+      current_minor = Gem::Version.new(current_rails.segments.first(2).join("."))
+      known_rails_versions.find { |v| Gem::Version.new(v) > current_minor }
     end
 
     def target_rails_rules

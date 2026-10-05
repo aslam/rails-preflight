@@ -138,6 +138,44 @@ class UpgradeAnalyzerTest < Minitest::Test
     end
   end
 
+  def test_defaults_to_the_next_known_minor
+    { "5.2.8.1" => "6.0", "7.1.3" => "7.2", "7.2.0" => "8.0" }.each do |current, expected|
+      write_lockfile(rails: current)
+
+      RailsPreflight::UpgradeAnalyzer.new(nil, @tmp_dir).run
+
+      assert_includes report, "Rails #{current} (Gemfile.lock) → #{expected}"
+      assert_includes $stdout.string, "Latest known is 8.1: run `rails-preflight 8.1` for the full path."
+    end
+  end
+
+  def test_explicit_target_has_no_latest_hint
+    write_lockfile(rails: "7.1.3")
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+
+    refute_includes $stdout.string, "Latest known"
+  end
+
+  def test_default_stops_without_a_current_rails
+    error = assert_raises(RailsPreflight::Error) { RailsPreflight::UpgradeAnalyzer.new(nil, @tmp_dir).run }
+    assert_includes error.message, "No Gemfile.lock in #{@tmp_dir}"
+
+    write_lockfile
+    error = assert_raises(RailsPreflight::Error) { RailsPreflight::UpgradeAnalyzer.new(nil, @tmp_dir).run }
+    assert_includes error.message, "No Rails in"
+    refute File.exist?(File.join(@tmp_dir, "rails_preflight_report.html"))
+  end
+
+  def test_default_exits_when_on_the_newest_known_rails
+    write_lockfile(rails: "8.1.3")
+
+    RailsPreflight::UpgradeAnalyzer.new(nil, @tmp_dir).run
+
+    assert_includes $stdout.string, "Rails 8.1.3 is already at or past the newest version rails-preflight knows (8.1)."
+    refute File.exist?(File.join(@tmp_dir, "rails_preflight_report.html"))
+  end
+
   private
 
   def report

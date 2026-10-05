@@ -8,15 +8,17 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 require 'rails_preflight'
 
-if ARGV.empty?
-  puts "Usage: rails-preflight TARGET_RAILS_VERSION [APP_PATH]"
-  puts "Example: rails-preflight 7.2 ~/code/my_app  (APP_PATH defaults to the current directory)"
-  exit 1
+if %w[-h --help].include?(ARGV[0])
+  puts "Usage: rails-preflight [TARGET_RAILS_VERSION] [APP_PATH]"
+  puts "Example: rails-preflight 7.2 ~/code/my_app"
+  puts "TARGET defaults to the next Rails minor after the app's; APP_PATH to the current directory."
+  exit
 end
 
-target = ARGV[0]
-abort "Target must be a Rails version such as 7.2 (got #{target.inspect})." unless Gem::Version.correct?(target)
-project_path = ARGV[1] || Dir.pwd
+# The target is optional, so a lone argument that isn't a version is the app path.
+target = ARGV.shift if ARGV[0] && (Gem::Version.correct?(ARGV[0]) || !File.directory?(ARGV[0]))
+abort "Target must be a Rails version such as 7.2 (got #{target.inspect})." if target && !Gem::Version.correct?(target)
+project_path = ARGV[0] || Dir.pwd
 
 begin
   RailsPreflight::UpgradeAnalyzer.new(target, project_path).run
