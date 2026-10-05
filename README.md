@@ -75,10 +75,12 @@ Install it globally and point it at your app. It only reads files, so the app ca
 
 ```bash
 gem install rails_preflight
-rails-preflight 7.2 /path/to/your/app
+rails-preflight /path/to/your/app
 ```
 
-Leave out the path to audit the current directory.
+With no target, it reports on the next Rails minor after the app's (5.2 → 6.0, 7.1 → 7.2), the step Rails recommends taking next. Pass a target to plan a bigger jump: `rails-preflight 8.1 /path/to/your/app`. Leave out the path to audit the current directory.
+
+It knows Rails 5.0 to 8.1 (`database/compatibility.yml`); the default target is only as current as that list.
 
 The tool will analyze:
 
