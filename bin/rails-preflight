@@ -12,7 +12,7 @@ if %w[-h --help].include?(ARGV[0])
   puts "Usage: rails-preflight [--offline] [TARGET_RAILS_VERSION] [APP_PATH]"
   puts "Example: rails-preflight 7.2 ~/code/my_app"
   puts "TARGET defaults to the next Rails minor after the app's; APP_PATH to the current directory."
-  puts "--offline: don't look up gems on rubygems.org; gems the lockfile can't place are reported as unchecked."
+  puts "--offline: don't call rubygems.org; gems the lockfile can't place are reported as unchecked, and gem release dates are skipped."
   exit
 end
 

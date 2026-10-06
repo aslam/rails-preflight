@@ -1,35 +1,46 @@
 # database/compatibility.yml
+# released: the X.Y.0 release date on rubygems.org.
 rails_versions:
   "5.0":
+    released: "2016-06-30"
     required_ruby: ">= 2.2.2"
     max_ruby: "2.4.99"
   "5.1":
+    released: "2017-04-27"
     required_ruby: ">= 2.2.2"
     max_ruby: "2.5.99"
   "5.2":
+    released: "2018-04-09"
     required_ruby: ">= 2.2.2"
     max_ruby: "2.6.99"
     # Note: Rails 5.2.8.1 supports up to 2.7, but 3.0 is a hard break.
   "6.0":
+    released: "2019-08-16"
     required_ruby: ">= 2.5.0"
     max_ruby: "2.7.99"
   "6.1":
+    released: "2020-12-09"
     required_ruby: ">= 2.5.0"
     max_ruby: "3.0.99"
   "7.0":
+    released: "2021-12-15"
     required_ruby: ">= 2.7.0"
     max_ruby: "3.2.99"
   "7.1":
+    released: "2023-10-05"
     required_ruby: ">= 2.7.0"
     max_ruby: "3.4.99"
   "7.2":
+    released: "2024-08-09"
     required_ruby: ">= 3.1.0"
     max_ruby: "3.4.99"
     # Rails CI treats Ruby 3.4+ as allowed-to-fail on 7.x; 3.4 per FastRuby's compatibility table.
   "8.0":
+    released: "2024-11-07"
     required_ruby: ">= 3.2.0"
     max_ruby: "4.0.99"
   "8.1":
+    released: "2025-10-22"
     required_ruby: ">= 3.2.0"
     max_ruby: "4.0.99"
     # Rails CI gates 8.x on Ruby 4.0 (rails/buildkite-config).

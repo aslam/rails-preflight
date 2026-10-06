@@ -8,11 +8,15 @@ module RailsPreflight
 
     # specs: Gemfile.lock specs. hops: the Rails minors the upgrade passes through, after the current one, ending at the target.
     # direct: gem names the Gemfile lists (Gemfile.lock DEPENDENCIES).
-    def initialize(project_path, specs, hops:, direct: [], database_path: DATA_PATH)
+    # last_releases: { gem name => latest release time (ISO 8601) } from rubygems.org; nil when not looked up (--offline).
+    # target_released: the target Rails release date (YYYY-MM-DD), nil when unknown.
+    def initialize(project_path, specs, hops:, direct: [], last_releases: {}, target_released: nil, database_path: DATA_PATH)
       @project_path = project_path
       @specs = specs
       @hops = hops
       @direct = direct
+      @last_releases = last_releases
+      @target_released = target_released
       data = YAML.load_file(database_path)
       @entries = data.fetch('gems', [])
       @adapter_requirements = data.fetch('adapter_requirements', {})
@@ -23,6 +27,7 @@ module RailsPreflight
       result = { title: "Gem Compatibility", status: :passed, checks: [], confidence: :medium }
       return result if @hops.empty? # already on the target
       result[:checks].concat(locked_limits, adapter_limits, dropped_by_rails, curated)
+      result[:checks].concat(stale(result[:checks].filter_map { |check| check[:gem] }))
 
       if result[:checks].empty?
         result[:checks] << { message: "No locked gem limits Rails below #{@hops.last}, and none is on the list of retired gems.", status: :passed }
@@ -46,7 +51,7 @@ module RailsPreflight
 
         requires = limits.map { |dep| "#{dep.name} #{dep.requirement}" }.join(", ")
         { message: "#{spec.name} #{spec.version} requires #{requires}, so it doesn't install on Rails #{breaks_in}. Upgrade it to a release that allows #{breaks_in}, or replace it.",
-          status: :failed, removed_in: breaks_in, fix_effort: :medium }
+          status: :failed, removed_in: breaks_in, fix_effort: :medium, gem: spec.name }
       end
     end
 
@@ -76,6 +81,23 @@ module RailsPreflight
             status: :failed, removed_in: hop, fix_effort: :low }
         end
       end
+    end
+
+    # Gems with no release since before the target Rails shipped: nothing says they break, but nobody may have tried.
+    # One grouped "couldn't check", oldest first. Gems already reported, or on the curated list, are left out.
+    def stale(reported)
+      if @last_releases.nil?
+        return [{ message: "Skipped the gem release-date check (--offline): gems not updated since before Rails #{@hops.last} aren't flagged.", status: :passed, kind: :tip }]
+      end
+      return [] unless @target_released
+
+      skip = reported + @entries.map { |entry| entry['name'] }
+      old = @last_releases.select { |name, at| at[0, 10] < @target_released && !skip.include?(name) }.sort_by { |_, at| at }
+      return [] if old.empty?
+
+      [{ message: "#{old.size} #{old.size == 1 ? 'gem' : 'gems'} that depend on Rails had no release since before Rails #{@hops.last} shipped (#{@target_released}). Check they work on #{@hops.last}, or find replacements.",
+         status: :warning, kind: :unknown, fix_effort: :unknown,
+         details: old.map { |name, at| "#{name} (last release #{at[0, 10]})" } }]
     end
 
     # Any patch release of the minor counts: `>= 7.0.1` allows 7.0.

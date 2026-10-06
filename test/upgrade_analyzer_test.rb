@@ -281,6 +281,40 @@ class UpgradeAnalyzerTest < Minitest::Test
     refute_includes report, "<li>devise</li>"
   end
 
+  def test_online_looks_up_release_dates_for_public_rails_gems_only
+    File.write(File.join(@tmp_dir, "Gemfile.lock"), <<~LOCKFILE)
+      GEM
+        remote: https://rubygems.org/
+        specs:
+          acts_as_list (0.9.19)
+            activerecord (>= 4.2)
+          rack (2.2.8)
+          railties (6.1.7)
+
+      GEM
+        remote: https://gems.acme.test/
+        specs:
+          acme_auth (2.0.0)
+            railties (>= 5.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        acme_auth!
+        acts_as_list
+        railties
+    LOCKFILE
+    looked_up = []
+
+    stub_rubygems(->(name) { looked_up << name; ["200", %({"version_created_at": "2019-03-01T10:00:00.000Z"})] }) do
+      RailsPreflight::UpgradeAnalyzer.new("7.0", @tmp_dir).run
+    end
+
+    assert_equal %w[acts_as_list], looked_up
+    assert_includes report, "acts_as_list (last release 2019-03-01)"
+  end
+
   def test_online_lookup_failures_are_reported_as_unchecked
     write_mixed_lockfile
 
@@ -303,7 +337,8 @@ class UpgradeAnalyzerTest < Minitest::Test
   def stub_rubygems(respond)
     http = Object.new
     http.define_singleton_method(:request) do |req|
-      Struct.new(:code).new(respond.(req.path[%r{/gems/(.+)\.json}, 1]))
+      code, body = respond.(req.path[%r{/gems/(.+)\.json}, 1])
+      Struct.new(:code, :body).new(code, body || "{}")
     end
     Net::HTTP.singleton_class.alias_method(:real_start, :start)
     Net::HTTP.define_singleton_method(:start) { |*, &block| block.(http) }

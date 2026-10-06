@@ -96,6 +96,28 @@ class GemAnalyzerTest < Minitest::Test
     assert_includes check[:message], "which this app is already on"
   end
 
+  def test_gems_not_released_since_before_the_target_are_grouped_oldest_first
+    specs = lockfile_specs("devise (4.7.1)\n      railties (>= 4.1.0, < 6.1)")
+    releases = { "acts_as_list" => "2019-03-01T10:00:00Z", "paperclip" => "2018-07-27T19:55:32Z", "kaminari" => "2023-12-01T00:00:00Z",
+                 "rails_admin_tag" => "2017-05-02T00:00:00Z", "devise" => "2020-01-01T00:00:00Z" }
+
+    check = RailsPreflight::GemAnalyzer.new(@tmp_dir, specs, hops: %w[6.1 7.0], last_releases: releases, target_released: "2021-12-15").run[:checks].last
+
+    assert_equal :unknown, check[:kind]
+    assert_includes check[:message], "2 gems that depend on Rails had no release since before Rails 7.0 shipped (2021-12-15)"
+    # devise is already a blocker and paperclip is on the curated list, so neither is repeated
+    assert_equal ["rails_admin_tag (last release 2017-05-02)", "acts_as_list (last release 2019-03-01)"], check[:details]
+  end
+
+  def test_release_date_check_says_when_it_was_skipped
+    checks = RailsPreflight::GemAnalyzer.new(@tmp_dir, [], hops: %w[7.0], last_releases: nil, target_released: "2021-12-15").run[:checks]
+    unknown_target = RailsPreflight::GemAnalyzer.new(@tmp_dir, [], hops: %w[9.0], last_releases: { "old" => "2010-01-01T00:00:00Z" }).run[:checks]
+
+    assert_equal :tip, checks.last[:kind]
+    assert_includes checks.last[:message], "--offline"
+    assert_equal [], unknown_target.map { |c| c[:message] }.grep(/no release since/)
+  end
+
   def test_retired_gem_is_to_fix_without_a_hop
     specs = lockfile_specs("therubyracer (0.12.3)")
 

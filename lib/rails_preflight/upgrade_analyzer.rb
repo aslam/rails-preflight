@@ -1,5 +1,6 @@
 # lib/rails_preflight/upgrade_analyzer.rb
 require 'bundler'
+require 'json'
 require 'net/http'
 require 'yaml'
 require_relative 'summary_calculator'
@@ -10,7 +11,8 @@ module RailsPreflight
     DATA_PATH = File.expand_path('../../database/compatibility.yml', __dir__)
 
     # target_rails nil: the next known minor after the app's current Rails.
-    # offline: never call the network; gems the lockfile can't place are reported as "couldn't check".
+    # offline: never call the network; gems the lockfile can't place are reported as "couldn't check",
+    # and gem release dates aren't looked up.
     def initialize(target_rails = nil, project_path = Dir.pwd, offline: false)
       @target_rails = target_rails
       @offline = offline
@@ -42,7 +44,8 @@ module RailsPreflight
       results << check_ruby_version
       results << scan_gems
       results << DockerAnalyzer.new(@project_path, checked_ruby: @eol_checked_ruby).run
-      results << GemAnalyzer.new(@project_path, lockfile_specs, hops: upgrade_hops.map { |hop| hop[:version] }, direct: lockfile&.dependencies&.keys || []).run
+      results << GemAnalyzer.new(@project_path, lockfile_specs, hops: upgrade_hops.map { |hop| hop[:version] }, direct: lockfile&.dependencies&.keys || [],
+                                 last_releases: (@last_releases || {} unless @offline), target_released: target_rails_rules&.dig('released')).run
       results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails, current_rails: current_rails&.to_s).run
       results << ConfigAnalyzer.new(@project_path, current_rails).run
       results << DatabaseAnalyzer.new(@project_path, database_rules).run
@@ -190,27 +193,36 @@ module RailsPreflight
       private_gems = []
       mixed_gems = []
       mixed_remotes = []
+      dated_gems = [] # public gems that depend on Rails: their last release date is looked up
 
       lockfile_specs.each do |spec|
         next if ['rails', 'rake'].include?(spec.name)
 
-        case gem_origin(spec)
+        origin = gem_origin(spec)
+        case origin
         when :private then private_gems << spec.name
         when :mixed
           mixed_gems << spec.name
           mixed_remotes |= spec.source.remotes.map(&:to_s).reject { |r| rubygems_org?(r) }
         end
+        dated_gems << spec.name if origin != :private && depends_on_rails?(spec)
       end
 
       if mixed_gems.any? && @offline
         message = "#{mixed_gems.size} gems come from one Gemfile.lock section that lists rubygems.org and #{mixed_remotes.join(', ')}; can't tell which are private with --offline"
         result[:checks] << { message: message, status: :warning, kind: :unknown, details: mixed_gems, fix_effort: :unknown }
         result[:status] = :warning
-      elsif mixed_gems.any?
-        puts "Looking up #{mixed_gems.size} gems on rubygems.org (--offline skips this)..."
-        found, inconclusive = lookup_on_rubygems(mixed_gems)
+      end
+
+      unless @offline || (mixed_gems | dated_gems).empty?
+        names = mixed_gems | dated_gems
+        puts "Looking up #{names.size} gems on rubygems.org (--offline skips this)..."
+        found, inconclusive = lookup_on_rubygems(names)
         private_gems.concat(mixed_gems.select { |name| found[name] == false })
-        result[:checks] << { message: "Looked up #{mixed_gems.size} gems on rubygems.org, since Gemfile.lock lists them under both rubygems.org and #{mixed_remotes.join(', ')}. Pass --offline to skip.", status: :passed, fix_effort: :low }
+        @last_releases = dated_gems.filter_map { |name| [name, found[name]['version_created_at']] if found[name].is_a?(Hash) && found[name]['version_created_at'] }.to_h
+        if mixed_gems.any?
+          result[:checks] << { message: "Looked up #{mixed_gems.size} gems on rubygems.org, since Gemfile.lock lists them under both rubygems.org and #{mixed_remotes.join(', ')}. Pass --offline to skip.", status: :passed, fix_effort: :low }
+        end
         if inconclusive.any?
           details = inconclusive.map { |name, error| "#{name} (#{error})" }
           result[:checks] << { message: "Could not verify #{inconclusive.size} gems against rubygems.org", status: :warning, kind: :unknown, details: details, fix_effort: :unknown }
@@ -228,8 +240,9 @@ module RailsPreflight
       result
     end
 
-    # 200 on rubygems.org means public, 404 private, anything else unchecked. Returns [{ name => public? }, { name => error }].
-    # Only gem names the lockfile can't place are sent; never git, path or private-registry-only gems.
+    # 200 on rubygems.org means public, 404 private, anything else unchecked.
+    # Returns [{ name => gem info Hash (public) or false (private) }, { name => error }].
+    # Only public gems and gem names the lockfile can't place are sent; never git, path or private-registry-only gems.
     def lookup_on_rubygems(names)
       queue = Queue.new
       names.each { |name| queue << name }
@@ -247,7 +260,8 @@ module RailsPreflight
                 http.request(Net::HTTP::Get.new(url))
               end
               raise "HTTP #{response.code}" unless %w[200 404].include?(response.code) # e.g. 429 when rate limited
-              lock.synchronize { found[name] = response.code == "200" }
+              info = response.code == "200" && (JSON.parse(response.body.to_s) rescue {})
+              lock.synchronize { found[name] = info }
             rescue StandardError => e
               lock.synchronize { inconclusive[name] = "#{e.class.name}: #{e.message}" }
             end
@@ -276,6 +290,10 @@ module RailsPreflight
       else
         :mixed
       end
+    end
+
+    def depends_on_rails?(spec)
+      !GemAnalyzer::RAILS_GEMS.include?(spec.name) && spec.dependencies.any? { |dep| GemAnalyzer::RAILS_GEMS.include?(dep.name) }
     end
 
     def rubygems_org?(remote)
