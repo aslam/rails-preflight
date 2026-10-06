@@ -266,6 +266,9 @@ class DeprecationAnalyzerTest < Minitest::Test
     "rails_update_tasks" => ["script/upgrade.sh", "bundle exec rake rails:update"],
     "rake_routes_notes_tasks" => [".github/workflows/ci.yml", "      - run: bundle exec rake routes"],
     "rake_stats" => ["Makefile", "\tbin/rake stats"],
+    "cable_evented_redis" => ["config/cable.yml", "  adapter: evented_redis"],
+    "sqlite3_retries" => ["config/database.yml", "  retries: 1000"],
+    "azure_storage_service" => ["config/storage.yml", "  service: AzureStorage"],
     "variant_combine_options" => ["app/views/users/_avatar.html.erb", "<%= image_tag user.avatar.variant(combine_options: { resize: '100x100' }) %>"]
   }.freeze
 
@@ -404,6 +407,18 @@ class DeprecationAnalyzerTest < Minitest::Test
 
     assert_equal %w[Procfile bin/setup], flagged.sort
     assert_equal 1, checks.count { |c| c[:details].is_a?(Array) }
+  end
+
+  def test_yaml_rules_run_only_on_their_config_files
+    write_app_file("config/cable.yml", "production:\n  adapter: redis\n  url: <%= ENV['REDIS_URL'] %>")
+    write_app_file("config/database.yml", "default: &default\n  adapter: sqlite3\n  timeout: 5000")
+    write_app_file("config/storage.yml", "amazon:\n  service: S3\n  # service: AzureStorage")
+    write_app_file("config/sidekiq.yml", ":retries: 3\nretries: 3")
+    write_app_file("app/models/socket_config.rb", "ADAPTER = { adapter: evented_redis }")
+
+    checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "8.1", current_rails: "5.1.7").run[:checks]
+
+    assert_equal [], checks.flat_map { |c| (c[:details] || []).map { |d| "#{d[:file]}: #{d[:snippet]}" } }
   end
 
   def test_replacement_apis_are_not_flagged

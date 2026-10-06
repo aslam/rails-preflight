@@ -424,7 +424,7 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
     recategorization: "Rails 6.1 -> 7.0"
     fix_effort: low
-    scripts: true
+    files: [code, scripts]
   - id: use_sha1_digests
     pattern: "\\buse_sha1_digests\\b"
     message: "'config.active_support.use_sha1_digests' was removed in Rails 7.0. Use 'config.active_support.hash_digest_class = OpenSSL::Digest::SHA1' if you still need SHA1."
@@ -1046,7 +1046,7 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#railties-removals"
     recategorization: "Rails 5.0 -> 5.1"
     fix_effort: low
-    scripts: true
+    files: [code, scripts]
   - id: rake_routes_notes_tasks
     pattern: "\\brake\\s+(?:routes|notes(?::\\w+)?|initializers|dev:cache)\\b"
     message: "'rake routes', 'rake notes', 'rake initializers' and 'rake dev:cache' were removed in Rails 6.1. Use the Rails commands: 'bin/rails routes', 'bin/rails notes', and so on."
@@ -1056,7 +1056,7 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#railties-removals"
     recategorization: "Rails 6.0 -> 6.1"
     fix_effort: low
-    scripts: true
+    files: [code, scripts]
   - id: rake_stats
     pattern: "\\brake\\s+stats\\b"
     message: "'bin/rake stats' was removed in Rails 8.1. Use 'bin/rails stats'."
@@ -1066,4 +1066,37 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#railties-removals"
     recategorization: "Rails 8.0 -> 8.1"
     fix_effort: low
-    scripts: true
+    files: [code, scripts]
+  - id: cable_evented_redis
+    pattern: "^\\s*adapter:\\s*[\"']?evented_redis\\b"
+    message: "Action Cable's 'evented_redis' adapter was removed in Rails 5.2. Use adapter: redis."
+    removed_in: "5.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#action-cable-removals"
+    recategorization: "Rails 5.1 -> 5.2"
+    fix_effort: low
+    files: [yaml]
+    paths: [config/cable.yml]
+  - id: sqlite3_retries
+    pattern: "^\\s*retries:\\s*\\S"
+    message: "The SQLite3 adapter's 'retries' option was removed in Rails 8.1. Use timeout: (milliseconds) instead."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low
+    files: [yaml]
+    paths: [config/database.yml]
+  - id: azure_storage_service
+    pattern: "^\\s*service:\\s*[\"']?AzureStorage\\b"
+    message: "Active Storage's Azure service (service: AzureStorage) was removed in Rails 8.1. Move to the azure-blob gem, which provides a replacement service (it isn't maintained by the Rails team)."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-storage-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low
+    files: [yaml]
+    paths: [config/storage.yml]

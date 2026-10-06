@@ -31,8 +31,8 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - "Already broken": APIs removed before the current Rails, and gems past their last supported Rails, listed first in the summary, the terminal and "Before you start"
 - Stale gems (online): public gems that depend on Rails and have had no release since before the target Rails shipped, grouped under "couldn't check"; the same rubygems.org lookup as private gem placement, skipped with `--offline`
 - Test suite runs with `bundle exec rake`, in GitHub Actions CI on Ruby 2.7 to 4.0
-- Deprecation scan covers `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, across `.rb`, `.erb` and `.rake`; rules can scope themselves to certain directories with `paths:`. Rules for removed rake tasks also scan `bin/`, `script/`, CI config, Procfiles, Makefiles, Dockerfiles and shell scripts
-- 115 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
+- Deprecation scan covers `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, across `.rb`, `.erb` and `.rake`; rules can scope themselves to directories or single files with `paths:`, and opt into other kinds of files with `files:`: `scripts` (`bin/`, `script/`, CI config, Procfiles, Makefiles, Dockerfiles, shell scripts) for removed rake tasks, `yaml` (`config/**/*.yml`) for `cable.yml`, `database.yml` and `storage.yml` settings
+- 118 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
 - Every deprecation rule has a sample line in the test suite, and the replacement APIs are checked not to trigger it
 
 ## Now
