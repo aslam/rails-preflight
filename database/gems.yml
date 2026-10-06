@@ -1,0 +1,26 @@
+# Public gems whose gemspec doesn't state their Rails limit, so Bundler won't warn before the upgrade breaks.
+# Each entry cites where its limit comes from. Constraints a gemspec does declare are read from Gemfile.lock instead.
+#   breaks_in: first Rails minor the gem doesn't work on; a blocker on that hop. Omitted for gems that are
+#              retired or deprecated but still run: fix them when convenient.
+#   pattern:   optional; counts the files that use the gem, so the report shows how big the move is.
+gems:
+  - name: protected_attributes_continued
+    breaks_in: "7.0"
+    message: "supports Rails 5.0 to 6.1 only and won't be updated for 7.0. Move to strong parameters."
+    source: "https://github.com/westonganger/protected_attributes_continued#readme"
+    pattern: "^\\s*attr_(?:accessible|protected)\\b"
+    fix_effort: high
+  - name: paperclip
+    message: "is deprecated and archived. Move to Active Storage, or to the maintained kt-paperclip fork."
+    source: "https://github.com/thoughtbot/paperclip#deprecated"
+    pattern: "^\\s*(?:has_attached_file|validates_attachment\\w*)\\b"
+    fix_effort: high
+  - name: webpacker
+    message: "was retired after Rails 7.0. Move to jsbundling-rails or import maps, or to shakapacker to keep webpack."
+    source: "https://github.com/rails/webpacker#readme"
+    pattern: "\\b(?:javascript|stylesheet)_pack_tag\\b"
+    fix_effort: medium
+  - name: therubyracer
+    message: "is unmaintained and stuck on V8 3.16. Move to mini_racer, or drop it if Node.js is available to ExecJS."
+    source: "https://github.com/rubyjs/therubyracer#readme"
+    fix_effort: low
