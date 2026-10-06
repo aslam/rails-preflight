@@ -214,7 +214,8 @@ class DeprecationAnalyzerTest < Minitest::Test
     "use_big_decimal_serializer" => ["config/initializers/new_framework_defaults_7_0.rb", "Rails.application.config.active_job.use_big_decimal_serializer = true"],
     "rails_console_methods" => ["lib/console_helpers.rb", "Rails::ConsoleMethods.include(ConsoleHelpers)"],
     "form_with_model_nil" => ["app/views/searches/new.html.erb", "<%= form_with url: search_path, model: nil do |f| %>"],
-    "route_multiple_paths" => ["config/routes.rb", "  get ['/about', '/about-us'], to: 'pages#about'"]
+    "route_multiple_paths" => ["config/routes.rb", "  get ['/about', '/about-us'], to: 'pages#about'"],
+    "qu_queue_adapter" => ["config/initializers/active_job.rb", "config.active_job.queue_adapter = :qu"]
   }.freeze
 
   # The replacement APIs. Flagging code that is already fixed is worse than missing it.
@@ -265,6 +266,7 @@ class DeprecationAnalyzerTest < Minitest::Test
     "driven_by :selenium, using: :headless_chrome",
     "ActiveStorage::Current.url_options = { host: request.base_url }",
     "configs_for(env_name: 'production', include_hidden: true)",
+    "config.active_job.queue_adapter = :queue_classic",
     "ActiveRecord::Base.connection_pool.with_connection { |conn| conn.execute('SELECT 1') }",
     "<%= form_with url: search_path do |f| %>",
     "get '/about', to: 'pages#about'",

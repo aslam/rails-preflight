@@ -11,13 +11,15 @@ module RailsPreflight
       @project_path = project_path
       @specs = specs
       @hops = hops
-      @entries = YAML.load_file(database_path).fetch('gems', [])
+      data = YAML.load_file(database_path)
+      @entries = data.fetch('gems', [])
+      @adapter_requirements = data.fetch('adapter_requirements', {})
     end
 
     def run
       result = { title: "Gem Compatibility", status: :passed, checks: [], confidence: :medium }
       return result if @hops.empty? # already on the target
-      result[:checks].concat(locked_limits, curated)
+      result[:checks].concat(locked_limits, adapter_limits, curated)
 
       if result[:checks].empty?
         result[:checks] << { message: "No locked gem limits Rails below #{@hops.last}, and none is on the list of retired gems.", status: :passed }
@@ -42,6 +44,21 @@ module RailsPreflight
         requires = limits.map { |dep| "#{dep.name} #{dep.requirement}" }.join(", ")
         { message: "#{spec.name} #{spec.version} requires #{requires}, so it doesn't install on Rails #{breaks_in}. Upgrade it to a release that allows #{breaks_in}, or replace it.",
           status: :failed, removed_in: breaks_in, fix_effort: :medium }
+      end
+    end
+
+    # sqlite3 1.3 still installs next to Rails 6.0, but Rails refuses to load it as the adapter.
+    def adapter_limits
+      @specs.filter_map do |spec|
+        breaks_in = @hops.find do |hop|
+          requirement = @adapter_requirements.dig(hop, spec.name)
+          requirement && !Gem::Requirement.new(*requirement).satisfied_by?(spec.version)
+        end
+        next unless breaks_in
+
+        requirement = @adapter_requirements[breaks_in][spec.name].join(", ")
+        { message: "#{spec.name} #{spec.version} doesn't load on Rails #{breaks_in}, which requires #{spec.name} #{requirement}. Upgrade it in the same step.",
+          status: :failed, removed_in: breaks_in, fix_effort: :low }
       end
     end
 
