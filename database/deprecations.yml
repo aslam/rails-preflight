@@ -117,7 +117,7 @@ deprecations:
     removed_in: "5.2"
     severity: error
     confidence: "High"
-    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-support-removals"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-support"
     recategorization: "Rails 5.1 -> 5.2"
     fix_effort: medium
   - id: string_callback_conditions
@@ -126,7 +126,7 @@ deprecations:
     removed_in: "5.2"
     severity: error
     confidence: "Medium"
-    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-support-removals"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-support"
     recategorization: "Rails 5.1 -> 5.2"
     fix_effort: low
     paths: [app, lib]
@@ -688,4 +688,188 @@ deprecations:
     confidence: "High"
     guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-record-removals"
     recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
+  - id: static_cache_control
+    pattern: "\\bstatic_cache_control\\b"
+    message: "'config.static_cache_control' was removed in Rails 5.1. Set headers with config.public_file_server.headers = { 'Cache-Control' => 'public, max-age=3600' }."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#railties-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+  - id: length_validator_tokenizer
+    pattern: "\\btokenizer:"
+    message: "The ':tokenizer' option of the length validator was removed in Rails 5.1. Count tokens in a custom validator instead."
+    removed_in: "5.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#active-model-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: medium
+    paths: [app, lib]
+  - id: original_exception
+    pattern: "\\.original_exception\\b"
+    message: "'#original_exception' on ActionView::Template::Error and ActiveJob::DeserializationError was removed in Rails 5.1. Use '#cause'."
+    removed_in: "5.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#action-view-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+  - id: delete_destroy_all_conditions
+    pattern: "\\b(?:delete|destroy)_all\\s*\\(\\s*(?!\\)|:(?:delete_all|nullify|destroy)\\b)\\S"
+    message: "Passing conditions to 'delete_all' or 'destroy_all' was removed in Rails 5.1. Use where(...).delete_all or where(...).destroy_all."
+    removed_in: "5.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+    paths: [app, lib]
+  - id: errors_get_set
+    pattern: "(?<!@)\\berrors\\.(?:get|set|add_on_empty|add_on_blank)\\b|(?<!@)\\berrors\\[\\s*[:\"'][^\\]]*\\]\\s*=(?![=>\\x7e])"
+    message: "'errors.get', 'errors.set', 'errors[]=', 'add_on_empty' and 'add_on_blank' were removed in Rails 5.1. Use errors[:attr] to read and errors.add to add."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#active-model-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+  - id: dispatch_callbacks_to_prepare
+    pattern: "\\bActionDispatch::Callbacks\\.to_(?:prepare|cleanup)\\b"
+    message: "'ActionDispatch::Callbacks.to_prepare' and '.to_cleanup' were removed in Rails 5.1. Use ActiveSupport::Reloader.to_prepare and .to_complete."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#action-pack-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+  - id: concurrency_latch
+    pattern: "\\bActiveSupport::Concurrency::Latch\\b"
+    message: "'ActiveSupport::Concurrency::Latch' was removed in Rails 5.1. Use Concurrent::CountDownLatch from concurrent-ruby."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#active-support"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+  - id: error_on_ignored_order_or_limit
+    pattern: "\\berror_on_ignored_order_or_limit\\b"
+    message: "'error_on_ignored_order_or_limit' was removed in Rails 5.2. Use 'error_on_ignored_order'."
+    removed_in: "5.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 5.1 -> 5.2"
+    fix_effort: low
+  - id: association_class_name_constant
+    pattern: "(?:\\bclass_name:|:class_name\\s*=>)\\s*(?:::)?[A-Z]\\w*(?:::[A-Z]\\w*)*\\s*(?:,|\\)|$)"
+    message: "Passing a class to ':class_name' on an association was removed in Rails 5.2. Pass the class name as a string, e.g. class_name: \"User\"."
+    removed_in: "5.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 5.1 -> 5.2"
+    fix_effort: low
+    paths: [app, lib]
+  - id: cache_key_timestamp_name
+    pattern: "\\bcache_key\\(\\s*:\\w+"
+    message: "Passing a timestamp name to '#cache_key' was removed in Rails 6.0. Call cache_key without arguments; cache_version carries the timestamp."
+    removed_in: "6.0"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 5.2 -> 6.0"
+    fix_effort: low
+  - id: removed_core_ext_files_6_1
+    pattern: "\\brequire\\s*\\(?\\s*[\"']active_support/core_ext/(?:array/prepend_and_append|hash/compact|hash/transform_values|module/reachable|numeric/inquiry|range/include_range)[\"']"
+    message: "These active_support/core_ext files were removed in Rails 6.1 (Ruby has the methods): array/prepend_and_append, hash/compact, hash/transform_values, module/reachable, numeric/inquiry, range/include_range. Drop the require."
+    removed_in: "6.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-support-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+  - id: render_file_relative_path
+    pattern: "\\brender\\s*\\(?\\s*(?:file:|:file\\s*=>)\\s*[\"'](?!/|#\\{Rails\\.root)"
+    message: "Passing a relative path to 'render file:' was removed in Rails 6.1. Pass an absolute path, e.g. Rails.root.join(\"public/404.html\"), or use render template:."
+    removed_in: "6.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#action-view-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+    paths: [app, lib]
+  - id: mb_chars_normalize
+    pattern: "\\bmb_chars\\.normalize\\b"
+    message: "'ActiveSupport::Multibyte::Chars#normalize' was removed in Rails 6.1. Use String#unicode_normalize."
+    removed_in: "6.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-support-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+  - id: errors_hash_methods
+    pattern: "(?<!@)\\berrors\\.(?:keys|values|to_h|slice!|to_xml)\\b"
+    message: "'ActiveModel::Errors#keys', '#values', '#to_h', '#slice!' and '#to_xml' were removed in Rails 7.0. Use errors.attribute_names, errors.to_hash or the ActiveModel::Error objects errors.each yields."
+    removed_in: "7.0"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-model-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: errors_messages_mutation
+    pattern: "(?<!@)\\berrors(?:\\.messages)?\\[[^\\]]+\\]\\s*<<|(?<!@)\\berrors\\.messages(?:\\[[^\\]]+\\]\\s*=(?![=>\\x7e])|\\.(?:delete|clear)\\b)"
+    message: "Changing error messages in place (errors[:attr] << msg, errors.messages[:attr] = ..., errors.messages.delete/clear) was removed in Rails 7.0: it now changes a copy, so the error is silently lost. Use errors.add, errors.delete and errors.clear."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-model-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: errors_each_two_args
+    pattern: "(?<!@)\\berrors\\.each\\s*(?:do|\\{)\\s*\\|\\s*\\w+\\s*,\\s*\\w+\\s*\\|"
+    message: "Enumerating 'ActiveModel::Errors' as a hash (errors.each { |attribute, message| }) was removed in Rails 7.0: each now yields ActiveModel::Error objects, so the second argument is nil. Use errors.each { |error| error.attribute; error.message }."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-model-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: configurations_to_h
+    pattern: "\\bconfigurations\\.(?:to_h|default_hash)\\b"
+    message: "'ActiveRecord::Base.configurations.to_h' and '.default_hash' were removed in Rails 7.0. Use configurations.configs_for(env_name: ...)."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: db_config_spec_name
+    pattern: "\\bspec_name\\b"
+    message: "'spec_name' on database configs (and configs_for(spec_name:)) was removed in Rails 7.0. Use 'name'."
+    removed_in: "7.0"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: database_tasks_removed_methods
+    pattern: "\\bDatabaseTasks\\.(?:current_config|dump_filename|schema_file|spec)\\b"
+    message: "'DatabaseTasks.current_config', '.dump_filename', '.schema_file' and '.spec' were removed in Rails 7.0. Use schema_dump_path for the schema file, and configs_for for configs."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: mailgun_api_key
+    pattern: "\\bMAILGUN_INGRESS_API_KEY\\b|\\baction_mailbox\\.mailgun_api_key\\b"
+    message: "Action Mailbox's Mailgun API key setting (MAILGUN_INGRESS_API_KEY, credentials action_mailbox.mailgun_api_key) was removed in Rails 7.0. Use the signing key: MAILGUN_INGRESS_SIGNING_KEY or action_mailbox.mailgun_signing_key."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#action-mailbox-removals"
+    recategorization: "Rails 6.1 -> 7.0"
     fix_effort: low
