@@ -223,7 +223,7 @@ deprecations:
     fix_effort: medium
   - id: stats_directories
     pattern: "\\bSTATS_DIRECTORIES\\b"
-    message: "'STATS_DIRECTORIES' and 'bin/rake stats' were removed in Rails 8.1. Use an external tool such as rubocop or a line counter."
+    message: "'STATS_DIRECTORIES' was removed in Rails 8.1. Register extra directories with Rails::CodeStatistics.register_directory('Services', 'app/services')."
     removed_in: "8.1"
     severity: error
     confidence: "High"
@@ -424,6 +424,7 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-record-removals"
     recategorization: "Rails 6.1 -> 7.0"
     fix_effort: low
+    scripts: true
   - id: use_sha1_digests
     pattern: "\\buse_sha1_digests\\b"
     message: "'config.active_support.use_sha1_digests' was removed in Rails 7.0. Use 'config.active_support.hash_digest_class = OpenSSL::Digest::SHA1' if you still need SHA1."
@@ -1036,3 +1037,33 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-support-removals"
     recategorization: "Rails 8.0 -> 8.1"
     fix_effort: low
+  - id: rails_update_tasks
+    pattern: "\\brails:(?:update(?::configs|:bin)?|template(?::copy)?)\\b"
+    message: "The 'rails:update' and 'rails:template' tasks were removed in Rails 5.1. Use 'bin/rails app:update' and 'bin/rails app:template'."
+    removed_in: "5.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_1_release_notes.html#railties-removals"
+    recategorization: "Rails 5.0 -> 5.1"
+    fix_effort: low
+    scripts: true
+  - id: rake_routes_notes_tasks
+    pattern: "\\brake\\s+(?:routes|notes(?::\\w+)?|initializers|dev:cache)\\b"
+    message: "'rake routes', 'rake notes', 'rake initializers' and 'rake dev:cache' were removed in Rails 6.1. Use the Rails commands: 'bin/rails routes', 'bin/rails notes', and so on."
+    removed_in: "6.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#railties-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+    scripts: true
+  - id: rake_stats
+    pattern: "\\brake\\s+stats\\b"
+    message: "'bin/rake stats' was removed in Rails 8.1. Use 'bin/rails stats'."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#railties-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low
+    scripts: true
