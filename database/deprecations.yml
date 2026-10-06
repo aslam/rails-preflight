@@ -873,3 +873,130 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#action-mailbox-removals"
     recategorization: "Rails 6.1 -> 7.0"
     fix_effort: low
+  - id: retry_on_exponentially_longer
+    pattern: ":exponentially_longer\\b"
+    message: "The ':exponentially_longer' wait for retry_on was removed in Rails 7.2. Use ':polynomially_longer', which is the same algorithm under its correct name."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-job-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+  - id: cache_store_pool_size
+    pattern: "\\bcache_store\\b.*\\bpool_(?:size|timeout):"
+    message: "The ':pool_size' and ':pool_timeout' cache store options were removed in Rails 7.2. Pass pool: { size: 5, timeout: 5 }."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-support-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [config]
+  - id: mem_cache_store_dalli_client
+    pattern: "\\bmem_cache_store\\b.*\\bDalli::Client\\.new\\b"
+    message: "Passing a Dalli::Client instance to MemCacheStore was removed in Rails 7.2. Pass the server addresses and options instead, e.g. :mem_cache_store, \"cache-1.example.com\", { pool: { size: 5 } }."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-support-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [config]
+  - id: to_default_s
+    pattern: "\\.to_default_s\\b"
+    message: "'#to_default_s' on Array, Date, DateTime and Time was removed in Rails 7.2. Use 'to_s'."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-support-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+  - id: mailer_preview_path
+    pattern: "\\bpreview_path\\s*="
+    message: "'config.action_mailer.preview_path' was removed in Rails 7.2. Use config.action_mailer.preview_paths << Rails.root.join(\"lib/mailer_previews\").to_s."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#action-mailer-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [config]
+  - id: removed_7_2_framework_settings
+    pattern: "\\b(?:replace_on_assign_to_many|silence_invalid_content_types_warning|disable_to_s_conversion|remove_deprecated_time_with_zone_name|use_rfc4122_namespaced_uuids|return_only_request_media_type_on_content_type|suppress_multiple_database_warning|enable_dependency_loading)\\s*="
+    message: "This setting was removed in Rails 7.2 (replace_on_assign_to_many, silence_invalid_content_types_warning, disable_to_s_conversion, remove_deprecated_time_with_zone_name, use_rfc4122_namespaced_uuids, return_only_request_media_type_on_content_type, suppress_multiple_database_warning or enable_dependency_loading). Delete the line."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#railties-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [config]
+  - id: cache_format_version_6_1
+    pattern: "\\bcache_format_version\\s*=\\s*6\\.1\\b"
+    message: "'config.active_support.cache_format_version = 6.1' was removed in Rails 7.2. Use 7.0 or 7.1; entries written in the 6.1 format are read either way."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-support-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [config]
+  - id: show_exceptions_boolean
+    pattern: "\\bshow_exceptions\\s*=\\s*(?:true|false)\\b"
+    message: "Setting 'config.action_dispatch.show_exceptions' to true or false was removed in Rails 7.2. Use :all (was true), :rescuable, or :none (was false)."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#action-pack-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [config]
+  - id: serialize_class_argument
+    pattern: "^\\s*serialize\\s*\\(?\\s*:\\w+\\s*,\\s*(?!coder:|type:)(?:::)?[A-Z]"
+    message: "Passing a coder or class as the second argument to 'serialize' was removed in Rails 7.2. Use a keyword: serialize :data, coder: JSON or serialize :prefs, type: Hash."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [app, lib]
+  - id: deprecation_singleton
+    pattern: "\\bActiveSupport::Deprecation\\.(?!new\\b)\\w+"
+    message: "Calling methods on 'ActiveSupport::Deprecation' itself (e.g. ActiveSupport::Deprecation.warn) was removed in Rails 7.2. Use a deprecator: ActiveSupport::Deprecation.new(\"2.0\", \"MyApp\"), registered with Rails.application.deprecators."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-support-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+  - id: merge_rewhere
+    pattern: "\\.merge\\(.*\\brewhere:\\s*true"
+    message: "Passing 'rewhere: true' to Relation#merge was removed in Rails 7.2. Drop it; merge now always replaces conditions on the same column."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [app, lib]
+  - id: assert_enqueued_email_with_args
+    pattern: "\\bassert_enqueued_email_with\\b.*\\bargs:\\s*\\{"
+    message: "Passing mailer params as a hash via ':args' to 'assert_enqueued_email_with' was removed in Rails 7.2. Pass them with 'params:'; 'args:' now takes only the mailer method's arguments."
+    removed_in: "7.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#action-mailer-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [test, spec]
+  - id: permissions_policy_removed_directives
+    pattern: "^\\s*\\w+\\.(?:speaker|vibrate|vr)\\b"
+    message: "The 'speaker', 'vibrate' and 'vr' permissions policy directives were removed in Rails 7.2. Delete them from the policy."
+    removed_in: "7.2"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/7_2_release_notes.html#action-pack-removals"
+    recategorization: "Rails 7.1 -> 7.2"
+    fix_effort: low
+    paths: [config]
