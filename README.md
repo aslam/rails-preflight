@@ -80,7 +80,7 @@ rails-preflight /path/to/your/app
 
 With no target, it reports on the next Rails minor after the app's (5.2 → 6.0, 7.1 → 7.2), the step Rails recommends taking next. Pass a target to plan a bigger jump: `rails-preflight 8.1 /path/to/your/app`. Leave out the path to audit the current directory.
 
-Private gems come from `Gemfile.lock` and the Gemfile's `source` blocks, which are read, never run. Only when neither says where a gem comes from does the tool ask rubygems.org. Pass `--offline` to skip that; those gems are then reported as unchecked.
+Private gems come from `Gemfile.lock` and the Gemfile's `source` blocks, which are read, never run. Only when neither says where a gem comes from does the tool ask rubygems.org. It also asks rubygems.org when each public gem that depends on Rails last had a release, and lists the ones with nothing newer than the target Rails: nothing says they break, but nobody may have tried. Private gem names are never sent. Pass `--offline` for a fully static run; unplaced gems are then reported as unchecked, and release dates are skipped.
 
 It knows Rails 5.0 to 8.1 (`database/compatibility.yml`); the default target is only as current as that list.
 
