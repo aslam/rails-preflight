@@ -151,6 +151,7 @@ class DeprecationAnalyzerTest < Minitest::Test
   # One line per shipped rule. A new rule without a sample here fails the test below,
   # which is the point: every pattern has to prove it matches something real.
   SHIPPED_HITS = {
+    "erubis_handler" => ["config/initializers/erb.rb", "class Haml::Erubis < ActionView::Template::Handlers::Erubis"],
     "update_attributes" => ["app/models/user.rb", "user.update_attributes(name: 'x')"],
     "controller_test_positional_params" => ["test/users_controller_test.rb", "get :show, id: 1"],
     "application_secrets" => ["config/initializers/auth.rb", "KEY = Rails.application.secrets.api_key"],
@@ -266,7 +267,8 @@ class DeprecationAnalyzerTest < Minitest::Test
     "configs_for(env_name: 'production', include_hidden: true)",
     "ActiveRecord::Base.connection_pool.with_connection { |conn| conn.execute('SELECT 1') }",
     "<%= form_with url: search_path do |f| %>",
-    "get '/about', to: 'pages#about'"
+    "get '/about', to: 'pages#about'",
+    "class MyErb < ActionView::Template::Handlers::ERB::Erubi"
   ].freeze
 
   def test_every_shipped_rule_matches_its_canonical_snippet

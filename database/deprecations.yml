@@ -139,6 +139,15 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#action-pack-removals"
     recategorization: "Rails 5.1 -> 5.2"
     fix_effort: low
+  - id: erubis_handler
+    pattern: "\\bTemplate::Handlers::Erubis\\b"
+    message: "The Erubis ERB handler (ActionView::Template::Handlers::Erubis) was removed in Rails 5.2. Rails renders ERB with Erubi; subclass ActionView::Template::Handlers::ERB::Erubi instead."
+    removed_in: "5.2"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/5_2_release_notes.html#action-view-removals"
+    recategorization: "Rails 5.1 -> 5.2"
+    fix_effort: medium
   - id: secret_token
     pattern: "\\.secret_token\\b"
     message: "'config.secret_token' was removed in Rails 6.0. Use 'secret_key_base', held in credentials."
