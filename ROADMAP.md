@@ -30,7 +30,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - Upgrade path with one step per Rails minor version, the Ruby range each needs, and the removed APIs to fix at each step
 - Test suite runs with `bundle exec rake`, in GitHub Actions CI on Ruby 2.7 to 4.0
 - Deprecation scan covers `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, across `.rb`, `.erb` and `.rake`; rules can scope themselves to certain directories with `paths:`
-- 63 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
+- 64 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
 - Every deprecation rule has a sample line in the test suite, and the replacement APIs are checked not to trigger it
 
 ## Now
