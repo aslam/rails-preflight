@@ -258,6 +258,10 @@ class DeprecationAnalyzerTest < Minitest::Test
     "merge_rewhere" => ["app/models/scopes/visible.rb", "    relation.merge(Post.where(status: 'live'), rewhere: true)"],
     "assert_enqueued_email_with_args" => ["test/mailers/welcome_test.rb", "    assert_enqueued_email_with UserMailer, :welcome, args: { user: user }"],
     "permissions_policy_removed_directives" => ["config/initializers/permissions_policy.rb", "  policy.vibrate :none"],
+    "rails_console_requires_8_0" => ["lib/console_tools.rb", "require 'rails/console/helpers'"],
+    "rails_console_methods_require" => ["lib/console_extensions.rb", "require \"rails/console/methods\""],
+    "sucker_punch_queue_adapter" => ["config/initializers/sucker_punch.rb", "Rails.application.config.active_job.queue_adapter = :sucker_punch"],
+    "to_time_preserves_timezone_false" => ["config/initializers/time_compat.rb", "ActiveSupport.to_time_preserves_timezone = false"],
     "variant_combine_options" => ["app/views/users/_avatar.html.erb", "<%= image_tag user.avatar.variant(combine_options: { resize: '100x100' }) %>"]
   }.freeze
 
@@ -310,6 +314,8 @@ class DeprecationAnalyzerTest < Minitest::Test
     "ActiveStorage::Current.url_options = { host: request.base_url }",
     "configs_for(env_name: 'production', include_hidden: true)",
     "config.active_job.queue_adapter = :queue_classic",
+    "config.active_job.queue_adapter = :async",
+    "config.active_support.to_time_preserves_timezone = :zone",
     "retry_on Timeout::Error, wait: :polynomially_longer, attempts: 5",
     "config.cache_store = :redis_cache_store, { url: ENV['REDIS_URL'], pool: { size: 5, timeout: 5 } }",
     "config.cache_store = :mem_cache_store, 'localhost:11211'",

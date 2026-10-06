@@ -1000,3 +1000,39 @@ deprecations:
     recategorization: "Rails 7.1 -> 7.2"
     fix_effort: low
     paths: [config]
+  - id: rails_console_requires_8_0
+    pattern: "\\brequire\\s*\\(?\\s*[\"']rails/console/(?:app|helpers)[\"']"
+    message: "'rails/console/app' and 'rails/console/helpers' were removed in Rails 8.0. Drop the require; Rails loads the console helpers itself."
+    removed_in: "8.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_0_release_notes.html#railties-removals"
+    recategorization: "Rails 7.2 -> 8.0"
+    fix_effort: low
+  - id: rails_console_methods_require
+    pattern: "\\brequire\\s*\\(?\\s*[\"']rails/console/methods[\"']"
+    message: "'rails/console/methods' was removed in Rails 8.1. Drop the require."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#railties-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low
+  - id: sucker_punch_queue_adapter
+    pattern: "\\bqueue_adapter\\s*=\\s*:sucker_punch\\b"
+    message: "Active Job's SuckerPunch adapter was removed in Rails 8.1, and no released sucker_punch (3.3.0 is the latest) ships its own. Use :async, which also runs jobs in-process, or a persisted backend."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-job-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low
+  - id: to_time_preserves_timezone_false
+    pattern: "\\bto_time_preserves_timezone\\s*=\\s*false\\b"
+    message: "'to_time_preserves_timezone = false' stopped working in Rails 8.1: to_time now always preserves the receiver's timezone instead of the system local time. Check code that relies on local time, then delete the setting (it's deprecated)."
+    removed_in: "8.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-support-removals"
+    recategorization: "Rails 8.0 -> 8.1"
+    fix_effort: low
