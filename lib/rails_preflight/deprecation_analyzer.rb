@@ -31,13 +31,15 @@ module RailsPreflight
           severity = occurrences.first[:severity] || "Warning"
           fix_effort = occurrences.first[:fix_effort] || "low"
           info = severity.to_s.downcase == "info"
-          # An API this upgrade removes blocks it; otherwise it's a warning to fix.
-          status = info ? :passed : (removed_by_target?(occurrences.first[:removed_in]) ? :failed : :warning)
+          # An API this upgrade removes blocks it; one removed before the current Rails is already broken
+          # (or dead code); otherwise it's a warning to fix.
+          removed_in = occurrences.first[:removed_in]
+          status = info ? :passed : (removed_by_target?(removed_in) || already_removed?(removed_in) ? :failed : :warning)
 
           result[:checks] << {
             message: message,
             status: status,
-            kind: (:tip if info),
+            kind: (:tip if info) || (:broken if already_removed?(removed_in)),
             grouped: true,
             guide_link: occurrences.first[:guide_link],
             removed_in: occurrences.first[:removed_in],
@@ -122,6 +124,11 @@ module RailsPreflight
     end
 
     private
+
+    # Removed at or before the current version: the app already runs without it.
+    def already_removed?(removed_in)
+      removed_in && @current_rails && Gem::Version.new(removed_in.to_s) <= Gem::Version.new(@current_rails)
+    end
 
     # Removed after the current version and by the target: this upgrade breaks it.
     def removed_by_target?(removed_in)

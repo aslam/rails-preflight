@@ -105,6 +105,7 @@ The tool generates a self-contained **HTML report** (`rails_preflight_report.htm
 ### Key Sections
 
 1.  **Summary**: The upgrade (`current → target` Rails version) and three counts, each finding linked to its details:
+    *   **Already broken**: APIs removed before your current Rails, or gems past their last supported Rails. That code fails when it runs, or never runs. Listed first.
     *   **Blockers**: must be fixed before the upgrade can work (e.g. Ruby too old, removed APIs still in use).
     *   **To fix**: will warn or break along the way (deprecations, lagging config).
     *   **Couldn't check**: what the tool could not verify (private gems, missing files), to review by hand.

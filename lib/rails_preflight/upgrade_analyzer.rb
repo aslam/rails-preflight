@@ -57,7 +57,8 @@ module RailsPreflight
       summary_calc = SummaryCalculator.new(results, @target_rails, current_rails&.to_s, hops: upgrade_hops, app_ruby: app_ruby.first)
       report_data[:summary] = summary_calc.calculate
       summary = report_data[:summary]
-      puts "Blockers: #{summary[:blockers].size} · To fix: #{summary[:to_fix].size} · Couldn't check: #{summary[:unknowns].size}"
+      puts "#{"Already broken: #{summary[:broken].size} · " if summary[:broken].any?}Blockers: #{summary[:blockers].size} · To fix: #{summary[:to_fix].size} · Couldn't check: #{summary[:unknowns].size}"
+      summary[:broken].each { |b| puts "  ‼ #{b[:section]}: #{b[:message]}" }
       summary[:blockers].each { |b| puts "  ✗ #{b[:section]}: #{b[:message]}" }
 
       html = ReportGenerator.new(report_data).generate
