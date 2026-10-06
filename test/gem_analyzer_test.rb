@@ -30,6 +30,16 @@ class GemAnalyzerTest < Minitest::Test
     assert_equal [], run_checks(specs, hops: %w[7.0 7.1]).map { |c| c[:message] }.grep(/requires/)
   end
 
+  def test_adapter_outside_rails_range_blocks_the_first_hop_that_rejects_it
+    specs = lockfile_specs("sqlite3 (1.3.13)", "pg (1.0.0)", "mysql2 (0.5.6)")
+
+    checks = run_checks(specs, hops: %w[6.0 6.1 7.0])
+
+    assert_equal [["6.0", "sqlite3 1.3.13 doesn't load on Rails 6.0, which requires sqlite3 ~> 1.4. Upgrade it in the same step."],
+                  ["6.1", "pg 1.0.0 doesn't load on Rails 6.1, which requires pg ~> 1.1. Upgrade it in the same step."]],
+                 checks.map { |c| [c[:removed_in], c[:message]] }.sort
+  end
+
   def test_curated_gem_blocks_the_hop_where_it_stops_working
     write_app_file("app/models/user.rb", "  attr_accessible :name\n  attr_accessor :token\n")
     write_app_file("app/models/post.rb", "  attr_protected :id\n")

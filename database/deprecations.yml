@@ -580,3 +580,12 @@ deprecations:
     recategorization: "Rails 8.0 -> 8.1"
     fix_effort: low
     paths: [config]
+  - id: qu_queue_adapter
+    pattern: "\\bqueue_adapter\\s*=\\s*:qu\\b"
+    message: "Active Job's Qu adapter was removed in Rails 6.0. Move the jobs to another backend, e.g. Sidekiq or Solid Queue."
+    removed_in: "6.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#active-job-removals"
+    recategorization: "Rails 5.2 -> 6.0"
+    fix_effort: medium
