@@ -4,9 +4,13 @@ module RailsPreflight
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
     SCAN_DIRS = %w[app config db lib test spec].freeze
     SCAN_EXTS = %w[.rb .erb .rake].freeze
-    # Where rake tasks get called from outside Ruby code. Only rules marked `scripts: true` run on these.
-    SCRIPT_GLOBS = %w[bin/* script/**/* Procfile* Makefile Dockerfile* *.sh .github/workflows/*.{yml,yaml}
-                      .circleci/config.yml .gitlab-ci.yml .travis.yml].freeze
+    # A rule runs on the kinds of files its `files:` lists, code by default.
+    # scripts: where rake tasks get called from outside Ruby code. yaml: the app's own config files.
+    FILE_GLOBS = {
+      'scripts' => %w[bin/* script/**/* Procfile* Makefile Dockerfile* *.sh .github/workflows/*.{yml,yaml}
+                      .circleci/config.yml .gitlab-ci.yml .travis.yml],
+      'yaml' => %w[config/**/*.yml config/**/*.yml.erb]
+    }.freeze
 
     def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil)
       @root_path = root_path
@@ -88,18 +92,22 @@ module RailsPreflight
       found = []
       compiled = rules.map { |rule| [Regexp.new(rule['pattern']), rule] }
 
-      code = Dir.glob(File.join(@root_path, "{#{SCAN_DIRS.join(',')}}/**/*")).select { |file| SCAN_EXTS.include?(File.extname(file)) }
-      scripts = Dir.glob(SCRIPT_GLOBS.map { |glob| File.join(@root_path, glob) }) - code
+      files = Dir.glob(File.join(@root_path, "{#{SCAN_DIRS.join(',')}}/**/*")).select { |file| SCAN_EXTS.include?(File.extname(file)) }.to_h { |file| [file, 'code'] }
+      FILE_GLOBS.each do |kind, globs|
+        Dir.glob(globs.map { |glob| File.join(@root_path, glob) }).each { |file| files[file] ||= kind }
+      end
 
-      code.map { |file| [file, false] }.concat(scripts.map { |file| [file, true] }).each do |file, script|
+      files.each do |file, kind|
         next if File.directory?(file)
 
         relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path)).to_s
-        top_dir = relative_path.split('/').first
         is_test = relative_path.start_with?('test/', 'spec/')
 
-        # A rule with `paths:` only applies under those directories; scripts get only `scripts: true` rules.
-        applicable = compiled.reject { |_regex, rule| (script && !rule['scripts']) || (rule['paths'] && !rule['paths'].include?(top_dir)) }
+        # A rule with `paths:` only applies under those directories or to those files.
+        applicable = compiled.select do |_regex, rule|
+          rule.fetch('files', ['code']).include?(kind) &&
+            (rule['paths'].nil? || rule['paths'].any? { |path| relative_path == path || relative_path.start_with?("#{path}/") })
+        end
         next if applicable.empty?
 
         File.foreach(file).with_index(1) do |line, line_num|

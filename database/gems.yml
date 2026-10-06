@@ -46,11 +46,6 @@ gems:
     source: "https://github.com/que-rb/que/blob/master/CHANGELOG.md#230-2023-10-16"
     pattern: "\\bqueue_adapter\\s*=\\s*:que\\b"
     fix_effort: low
-  - name: azure-storage-blob
-    breaks_in: "8.1"
-    message: "backs Active Storage's :azure service, which Rails 8.1 removed. If config/storage.yml uses service: AzureStorage, move to the azure-blob gem (not maintained by the Rails team)."
-    source: "https://github.com/rails/rails/blob/8-0-stable/activestorage/lib/active_storage/service/azure_storage_service.rb"
-    fix_effort: medium
 
 # Database adapter gems Rails checks itself when it loads the adapter (`gem "pg", "~> 1.1"`), so no gemspec
 # declares the limit. Read from activerecord/lib/active_record/connection_adapters/*_adapter.rb on each
