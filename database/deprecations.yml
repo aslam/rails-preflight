@@ -598,3 +598,40 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#active-job-removals"
     recategorization: "Rails 5.2 -> 6.0"
     fix_effort: medium
+  - id: http_parameter_filter
+    pattern: "\\bActionDispatch::Http::ParameterFilter\\b"
+    message: "'ActionDispatch::Http::ParameterFilter' was removed in Rails 6.1. Use 'ActiveSupport::ParameterFilter'."
+    removed_in: "6.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#action-pack-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+  - id: mailer_receive
+    pattern: "\\b\\w*Mailer\\.receive\\b"
+    message: "'ActionMailer::Base.receive' was removed in Rails 6.1. Process incoming mail with Action Mailbox."
+    removed_in: "6.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#action-mailer-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: high
+  - id: active_storage_downloading
+    pattern: "\\bActiveStorage::Downloading\\b"
+    message: "'ActiveStorage::Downloading' was removed in Rails 6.1. Use 'ActiveStorage::Blob#open' to work with a blob as a local file."
+    removed_in: "6.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-storage-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+  - id: variant_combine_options
+    pattern: "\\bcombine_options(?::|\\s*=>)"
+    message: "Passing ':combine_options' to an Active Storage variant was removed in Rails 6.1. Pass the operations directly, e.g. variant(resize_to_limit: [100, 100])."
+    removed_in: "6.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/6_1_release_notes.html#active-storage-removals"
+    recategorization: "Rails 6.0 -> 6.1"
+    fix_effort: low
+    paths: [app, lib]
