@@ -263,6 +263,9 @@ class DeprecationAnalyzerTest < Minitest::Test
     "rails_console_methods_require" => ["lib/console_extensions.rb", "require \"rails/console/methods\""],
     "sucker_punch_queue_adapter" => ["config/initializers/sucker_punch.rb", "Rails.application.config.active_job.queue_adapter = :sucker_punch"],
     "to_time_preserves_timezone_false" => ["config/initializers/time_compat.rb", "ActiveSupport.to_time_preserves_timezone = false"],
+    "rails_update_tasks" => ["script/upgrade.sh", "bundle exec rake rails:update"],
+    "rake_routes_notes_tasks" => [".github/workflows/ci.yml", "      - run: bundle exec rake routes"],
+    "rake_stats" => ["Makefile", "\tbin/rake stats"],
     "variant_combine_options" => ["app/views/users/_avatar.html.erb", "<%= image_tag user.avatar.variant(combine_options: { resize: '100x100' }) %>"]
   }.freeze
 
@@ -315,6 +318,10 @@ class DeprecationAnalyzerTest < Minitest::Test
     "ActiveStorage::Current.url_options = { host: request.base_url }",
     "configs_for(env_name: 'production', include_hidden: true)",
     "config.active_job.queue_adapter = :queue_classic",
+    "system('bin/rails routes')",
+    "system('bin/rails app:update')",
+    "system('bin/rails stats')",
+    "system('bundle exec rake db:schema:load')",
     "config.active_job.queue_adapter = :async",
     "config.active_support.to_time_preserves_timezone = :zone",
     "retry_on Timeout::Error, wait: :polynomially_longer, attempts: 5",
@@ -386,6 +393,17 @@ class DeprecationAnalyzerTest < Minitest::Test
       refute_nil check, "rule #{rule['id']} did not match its sample line"
       assert_includes check[:details].map { |d| d[:file] }, sample_path, "rule #{rule['id']} missed #{sample_path}"
     end
+  end
+
+  def test_scripts_and_ci_config_get_only_task_rules
+    write_app_file("bin/setup", "user.update_attributes(name: 'x')\nsystem! 'bin/rake db:structure:load'")
+    write_app_file("Procfile", "release: bundle exec rake db:structure:load")
+
+    checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "7.0", current_rails: "6.1.7").run[:checks]
+    flagged = checks.flat_map { |c| (c[:details] || []).map { |d| d[:file] } }
+
+    assert_equal %w[Procfile bin/setup], flagged.sort
+    assert_equal 1, checks.count { |c| c[:details].is_a?(Array) }
   end
 
   def test_replacement_apis_are_not_flagged

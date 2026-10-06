@@ -31,8 +31,8 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - "Already broken": APIs removed before the current Rails, and gems past their last supported Rails, listed first in the summary, the terminal and "Before you start"
 - Stale gems (online): public gems that depend on Rails and have had no release since before the target Rails shipped, grouped under "couldn't check"; the same rubygems.org lookup as private gem placement, skipped with `--offline`
 - Test suite runs with `bundle exec rake`, in GitHub Actions CI on Ruby 2.7 to 4.0
-- Deprecation scan covers `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, across `.rb`, `.erb` and `.rake`; rules can scope themselves to certain directories with `paths:`
-- 112 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
+- Deprecation scan covers `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, across `.rb`, `.erb` and `.rake`; rules can scope themselves to certain directories with `paths:`. Rules for removed rake tasks also scan `bin/`, `script/`, CI config, Procfiles, Makefiles, Dockerfiles and shell scripts
+- 115 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
 - Every deprecation rule has a sample line in the test suite, and the replacement APIs are checked not to trigger it
 
 ## Now
@@ -65,6 +65,7 @@ Not needed for the first release: `structure.sql` and anything under Maybe.
 
 ## Later
 
+- **`rails-ujs` after 8.1.** The 7.2 notes list "Remove deprecated @rails/ujs", but that was the JS source and build tooling (rails/rails#50535): `rails-ujs.js` still ships in actionview through `8-1-stable`, so `//= require rails-ujs` works. It is gone on `main`; when that Rails ships, add a rule, which needs `.js` scanning under `app/assets` and `app/javascript`.
 - Report styling: a design pass over the HTML report, which is mostly inline `style` attributes today
 - Print stylesheet, so the report prints or saves to PDF cleanly; an `@media print` block inside the report, since it's a single self-contained file
 - JSON output with a stable schema, so CI can gate on it

@@ -4,6 +4,9 @@ module RailsPreflight
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
     SCAN_DIRS = %w[app config db lib test spec].freeze
     SCAN_EXTS = %w[.rb .erb .rake].freeze
+    # Where rake tasks get called from outside Ruby code. Only rules marked `scripts: true` run on these.
+    SCRIPT_GLOBS = %w[bin/* script/**/* Procfile* Makefile Dockerfile* *.sh .github/workflows/*.{yml,yaml}
+                      .circleci/config.yml .gitlab-ci.yml .travis.yml].freeze
 
     def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil)
       @root_path = root_path
@@ -85,16 +88,18 @@ module RailsPreflight
       found = []
       compiled = rules.map { |rule| [Regexp.new(rule['pattern']), rule] }
 
-      Dir.glob(File.join(@root_path, "{#{SCAN_DIRS.join(',')}}/**/*")).each do |file|
+      code = Dir.glob(File.join(@root_path, "{#{SCAN_DIRS.join(',')}}/**/*")).select { |file| SCAN_EXTS.include?(File.extname(file)) }
+      scripts = Dir.glob(SCRIPT_GLOBS.map { |glob| File.join(@root_path, glob) }) - code
+
+      code.map { |file| [file, false] }.concat(scripts.map { |file| [file, true] }).each do |file, script|
         next if File.directory?(file)
-        next unless SCAN_EXTS.include?(File.extname(file))
 
         relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path)).to_s
         top_dir = relative_path.split('/').first
         is_test = relative_path.start_with?('test/', 'spec/')
 
-        # A rule with `paths:` only applies under those directories.
-        applicable = compiled.reject { |_regex, rule| rule['paths'] && !rule['paths'].include?(top_dir) }
+        # A rule with `paths:` only applies under those directories; scripts get only `scripts: true` rules.
+        applicable = compiled.reject { |_regex, rule| (script && !rule['scripts']) || (rule['paths'] && !rule['paths'].include?(top_dir)) }
         next if applicable.empty?
 
         File.foreach(file).with_index(1) do |line, line_num|
