@@ -215,7 +215,11 @@ class DeprecationAnalyzerTest < Minitest::Test
     "rails_console_methods" => ["lib/console_helpers.rb", "Rails::ConsoleMethods.include(ConsoleHelpers)"],
     "form_with_model_nil" => ["app/views/searches/new.html.erb", "<%= form_with url: search_path, model: nil do |f| %>"],
     "route_multiple_paths" => ["config/routes.rb", "  get ['/about', '/about-us'], to: 'pages#about'"],
-    "qu_queue_adapter" => ["config/initializers/active_job.rb", "config.active_job.queue_adapter = :qu"]
+    "qu_queue_adapter" => ["config/initializers/active_job.rb", "config.active_job.queue_adapter = :qu"],
+    "http_parameter_filter" => ["app/controllers/concerns/log_params.rb", "filter = ActionDispatch::Http::ParameterFilter.new([:password])"],
+    "mailer_receive" => ["lib/tasks/inbox.rake", "  InboxMailer.receive(STDIN.read)"],
+    "active_storage_downloading" => ["app/models/upload.rb", "  include ActiveStorage::Downloading"],
+    "variant_combine_options" => ["app/views/users/_avatar.html.erb", "<%= image_tag user.avatar.variant(combine_options: { resize: '100x100' }) %>"]
   }.freeze
 
   # The replacement APIs. Flagging code that is already fixed is worse than missing it.
@@ -267,6 +271,9 @@ class DeprecationAnalyzerTest < Minitest::Test
     "ActiveStorage::Current.url_options = { host: request.base_url }",
     "configs_for(env_name: 'production', include_hidden: true)",
     "config.active_job.queue_adapter = :queue_classic",
+    "filter = ActiveSupport::ParameterFilter.new([:password])",
+    "UserMailer.welcome(user).deliver_later",
+    "<%= image_tag user.avatar.variant(resize_to_limit: [100, 100]) %>",
     "ActiveRecord::Base.connection_pool.with_connection { |conn| conn.execute('SELECT 1') }",
     "<%= form_with url: search_path do |f| %>",
     "get '/about', to: 'pages#about'",
