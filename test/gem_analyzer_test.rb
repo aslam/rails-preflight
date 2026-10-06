@@ -75,6 +75,20 @@ class GemAnalyzerTest < Minitest::Test
     assert_includes check[:message], "It doesn't work from Rails 7.0, so plan the move before then. Used in 0 files."
   end
 
+  def test_version_and_usage_conditions_narrow_an_entry
+    write_app_file("config/application.rb", "config.active_job.queue_adapter = :que\n")
+
+    old = run_checks(lockfile_specs("que (1.4.1)"), hops: %w[7.1]).first
+    fixed = run_checks(lockfile_specs("que (2.3.0)"), hops: %w[7.1])
+
+    assert_equal "7.1", old[:removed_in]
+    assert_includes old[:message], "que 1.4.1 runs Active Job"
+    assert_equal [], fixed.map { |c| c[:message] }.grep(/que/)
+
+    File.write(File.join(@tmp_dir, "config/application.rb"), "config.active_job.queue_adapter = :sidekiq\n")
+    assert_equal [], run_checks(lockfile_specs("que (1.4.1)"), hops: %w[7.1]).map { |c| c[:message] }.grep(/que/)
+  end
+
   def test_retired_gem_is_to_fix_without_a_hop
     specs = lockfile_specs("therubyracer (0.12.3)")
 
@@ -89,6 +103,7 @@ class GemAnalyzerTest < Minitest::Test
     YAML.load_file(RailsPreflight::GemAnalyzer::DATA_PATH)["gems"].each do |entry|
       Regexp.new(entry["pattern"]) if entry["pattern"]
       assert entry["source"].start_with?("https://"), "#{entry['name']} needs a source"
+      assert entry["pattern"], "#{entry['name']} is only_if_used, so it needs a pattern" if entry["only_if_used"]
     end
   end
 

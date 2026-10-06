@@ -3,6 +3,8 @@
 #   breaks_in: first Rails minor the gem doesn't work on; a blocker on that hop. Omitted for gems that are
 #              retired or deprecated but still run: fix them when convenient.
 #   pattern:   optional; counts the files that use the gem, so the report shows how big the move is.
+#   fixed_in:  optional; only locked versions below it are affected.
+#   only_if_used: report only when the pattern matches, for gems that break in one use only.
 gems:
   - name: protected_attributes_continued
     breaks_in: "7.0"
@@ -35,6 +37,14 @@ gems:
   - name: sassc
     message: "is archived and gets no updates. Move to dartsass-rails or dartsass-sprockets, or to sassc-embedded as a drop-in."
     source: "https://github.com/sass/sassc-ruby#readme"
+    fix_effort: low
+  - name: que
+    breaks_in: "7.1"
+    fixed_in: "2.3.0"
+    only_if_used: true
+    message: "runs Active Job through Rails' Que adapter, which Rails 7.1 removed. Upgrade que to 2.3.0+, which ships its own."
+    source: "https://github.com/que-rb/que/blob/master/CHANGELOG.md#230-2023-10-16"
+    pattern: "\\bqueue_adapter\\s*=\\s*:que\\b"
     fix_effort: low
 
 # Database adapter gems Rails checks itself when it loads the adapter (`gem "pg", "~> 1.1"`), so no gemspec

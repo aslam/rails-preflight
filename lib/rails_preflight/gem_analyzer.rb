@@ -84,17 +84,23 @@ module RailsPreflight
     end
 
     def curated
-      names = @specs.map(&:name)
-      @entries.select { |entry| names.include?(entry['name']) }.map do |entry|
+      locked = @specs.to_h { |spec| [spec.name, spec.version] }
+      @entries.filter_map do |entry|
+        version = locked[entry['name']]
+        next unless version
+        next if entry['fixed_in'] && version >= Gem::Version.new(entry['fixed_in'])
+
+        files = usage(entry['pattern'])
+        next if entry['only_if_used'] && files.empty?
+
         breaks_in = entry['breaks_in']
         blocks = @hops.include?(breaks_in) # every hop is past the current Rails
-        message = "#{entry['name']} #{entry['message']}"
+        message = "#{entry['name']} #{entry['fixed_in'] ? "#{version} " : ''}#{entry['message']}"
         if breaks_in && !blocks
           message += Gem::Version.new(breaks_in) <= Gem::Version.new(@hops.last) ?
             " It doesn't work from Rails #{breaks_in}, which this app is already on." :
             " It doesn't work from Rails #{breaks_in}, so plan the move before then."
         end
-        files = usage(entry['pattern'])
         message += " Used in #{files.size} #{files.size == 1 ? 'file' : 'files'}." if files
 
         { message: message, status: blocks ? :failed : :warning, removed_in: (breaks_in if blocks),

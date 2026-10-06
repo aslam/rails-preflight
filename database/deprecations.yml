@@ -653,3 +653,39 @@ deprecations:
     guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-job-removals"
     recategorization: "Rails 6.1 -> 7.0"
     fix_effort: low
+  - id: active_record_base_config_accessors
+    pattern: "\\bActiveRecord::Base\\.(?:reading_role|writing_role|default_timezone|index_nested_attribute_errors|verbose_query_logs|queues|warn_on_records_fetched_greater_than|maintain_test_schema|application_record_class|action_on_strict_loading_violation|schema_format|error_on_ignored_order|timestamped_migrations|dump_schema_after_migration|dump_schemas|suppress_multiple_database_warning)\\b"
+    message: "Config accessors on 'ActiveRecord::Base' (e.g. ActiveRecord::Base.default_timezone) were removed in Rails 7.1. Use the same name on 'ActiveRecord', e.g. ActiveRecord.default_timezone, or config.active_record.*."
+    removed_in: "7.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
+  - id: trusted_proxies_single_value
+    pattern: "\\btrusted_proxies\\s*=\\s*(?:IPAddr\\.new|[\"'])"
+    message: "Assigning a single value to 'config.action_dispatch.trusted_proxies' was removed in Rails 7.1. Assign an array, e.g. [IPAddr.new(\"10.0.0.0/8\")]."
+    removed_in: "7.1"
+    severity: error
+    confidence: "Medium"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#action-pack-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
+  - id: removed_core_ext_files
+    pattern: "\\brequire\\s*\\(?\\s*[\"']active_support/core_ext/(?:uri|range/include_time_with_zone)[\"']"
+    message: "'active_support/core_ext/uri' and 'active_support/core_ext/range/include_time_with_zone' were removed in Rails 7.1. Drop the require."
+    removed_in: "7.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-support-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
+  - id: schema_file_type
+    pattern: "\\bDatabaseTasks\\.schema_file_type\\b"
+    message: "'ActiveRecord::Tasks::DatabaseTasks.schema_file_type' was removed in Rails 7.1. Use 'schema_dump_path' for the file path."
+    removed_in: "7.1"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_1_release_notes.html#active-record-removals"
+    recategorization: "Rails 7.0 -> 7.1"
+    fix_effort: low
