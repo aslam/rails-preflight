@@ -78,23 +78,6 @@ module RailsPreflight
       result
     end
 
-    private
-
-    # Removed after the current version and by the target: this upgrade breaks it.
-    def removed_by_target?(removed_in)
-      return false unless removed_in && @target_rails
-      removed = Gem::Version.new(removed_in.to_s)
-      removed <= Gem::Version.new(@target_rails) && (@current_rails.nil? || removed > Gem::Version.new(@current_rails))
-    end
-
-    def check_rubocop_rails
-      lockfile_path = File.join(@root_path, "Gemfile.lock")
-      return false unless File.exist?(lockfile_path)
-      
-      content = File.read(lockfile_path)
-      content.include?("rubocop-rails")
-    end
-
     # One pass over the files, every rule tested per line: a rule costs a regex, not a re-read.
     def scan_files(rules)
       found = []
@@ -137,5 +120,23 @@ module RailsPreflight
       end
       found
     end
+
+    private
+
+    # Removed after the current version and by the target: this upgrade breaks it.
+    def removed_by_target?(removed_in)
+      return false unless removed_in && @target_rails
+      removed = Gem::Version.new(removed_in.to_s)
+      removed <= Gem::Version.new(@target_rails) && (@current_rails.nil? || removed > Gem::Version.new(@current_rails))
+    end
+
+    def check_rubocop_rails
+      lockfile_path = File.join(@root_path, "Gemfile.lock")
+      return false unless File.exist?(lockfile_path)
+      
+      content = File.read(lockfile_path)
+      content.include?("rubocop-rails")
+    end
+
   end
 end
