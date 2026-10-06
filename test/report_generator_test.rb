@@ -6,6 +6,7 @@ class ReportGeneratorTest < Minitest::Test
     data = {
       target_rails: "6.1",
       summary: {
+        broken: [{ section: "Deprecation Warnings", message: "<b>unsafe broken</b>" }],
         blockers: [{ section: "Deprecation Warnings", message: "<b>unsafe blocker</b>", occurrences: 1 }],
         to_fix: [],
         unknowns: [],
@@ -48,6 +49,8 @@ class ReportGeneratorTest < Minitest::Test
 
     assert_includes html, "&lt;script&gt;alert(1)&lt;/script&gt;"
     assert_includes html, "&lt;b&gt;unsafe blocker&lt;/b&gt;"
+    assert_includes html, "&lt;b&gt;unsafe broken&lt;/b&gt;"
+    assert_includes html, "Already broken"
     refute_includes html, "<script>alert(1)</script>"
     refute_includes html, "<b>unsafe step</b>"
     # Summary findings link to their section

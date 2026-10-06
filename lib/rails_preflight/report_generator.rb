@@ -6,6 +6,7 @@ module RailsPreflight
     include ERB::Util
 
     SUMMARY_TILES = [
+      [:broken, "Already broken", "Removed before your current Rails: fails when it runs, or is dead code"],
       [:blockers, "Blockers", "Must be fixed before the upgrade can work"],
       [:to_fix, "To fix", "Will warn or break along the way"],
       [:unknowns, "Couldn't check", "Not verified; review by hand"]
@@ -49,6 +50,7 @@ module RailsPreflight
             .summary-item { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
             .summary-label { font-size: 0.8em; color: #486581; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
             .summary-value { font-size: 1.4em; font-weight: bold; }
+            .count-broken { color: #9b2c2c; }
             .count-blockers { color: #e53e3e; }
             .count-to_fix { color: #dd6b20; }
             .count-unknowns { color: #718096; }
@@ -56,6 +58,7 @@ module RailsPreflight
             .summary-list { margin-top: 15px; }
             .summary-list summary { cursor: pointer; font-weight: bold; color: #102a43; }
             .summary-list ul { margin: 5px 0 0; padding-left: 20px; font-size: 0.9em; }
+            .broken { background-color: #fff5f5; border-left: 5px solid #9b2c2c; }
             .unknown { background-color: #f7fafc; border-left: 5px solid #a0aec0; }
             .tip { background-color: #ebf8ff; border-left: 5px solid #63b3ed; }
             .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.9em; }

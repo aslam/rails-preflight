@@ -89,6 +89,13 @@ class GemAnalyzerTest < Minitest::Test
     assert_equal [], run_checks(lockfile_specs("que (1.4.1)"), hops: %w[7.1]).map { |c| c[:message] }.grep(/que/)
   end
 
+  def test_curated_gem_past_its_limit_on_the_current_rails_is_already_broken
+    check = run_checks(lockfile_specs("protected_attributes_continued (1.9.0)"), hops: %w[7.1]).first
+
+    assert_equal :broken, check[:kind]
+    assert_includes check[:message], "which this app is already on"
+  end
+
   def test_retired_gem_is_to_fix_without_a_hop
     specs = lockfile_specs("therubyracer (0.12.3)")
 

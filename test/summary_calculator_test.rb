@@ -24,6 +24,21 @@ class SummaryCalculatorTest < Minitest::Test
     assert_equal ["Ruby unknown"], summary[:unknowns].map { |f| f[:message] }
   end
 
+  def test_already_broken_findings_come_first_and_stay_out_of_the_steps
+    results = [
+      { title: "Configuration", status: :warning, checks: [{ message: "Old defaults", status: :warning }] },
+      { title: "Deprecation Warnings", status: :failed, checks: [{ message: "render :text", status: :failed, kind: :broken, removed_in: "5.1" }] }
+    ]
+    hops = [{ version: "6.0", min_ruby: "2.5.0", max_ruby: "2.7.99" }]
+
+    summary = RailsPreflight::SummaryCalculator.new(results, "6.0", "5.2.8", hops: hops).calculate
+
+    assert_equal ["render :text"], summary[:broken].map { |f| f[:message] }
+    assert_empty summary[:blockers]
+    assert_equal [["Deprecation Warnings", "1 already broken"], ["Configuration", "1 to fix"]],
+                 summary[:suggested_path].first[:items].map { |i| [i[:section], i[:message]] }
+  end
+
   def test_findings_keep_their_section_and_occurrences
     results = [
       {

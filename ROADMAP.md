@@ -28,6 +28,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - README and report footer point to related tools: next_rails / RailsBump, Brakeman, rubocop-rails
 - Single-file HTML report: blockers, items to fix and what couldn't be checked, each linked to its finding; a suggested path; per-section confidence explained in the legend
 - Upgrade path with one step per Rails minor version, the Ruby range each needs, and the removed APIs to fix at each step
+- "Already broken": APIs removed before the current Rails, and gems past their last supported Rails, listed first in the summary, the terminal and "Before you start"
 - Test suite runs with `bundle exec rake`, in GitHub Actions CI on Ruby 2.7 to 4.0
 - Deprecation scan covers `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, across `.rb`, `.erb` and `.rake`; rules can scope themselves to certain directories with `paths:`
 - 112 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
@@ -56,7 +57,6 @@ Not needed for the first release: `structure.sql` and anything under Maybe.
 ## Next: cover more of the upgrade
 
 - **Say when to upgrade Ruby** in the upgrade path: name the step whose Rails supports both the current and the required Ruby. Two symptoms today: every hop's Ruby note compares against the app's *starting* Ruby, and the end-of-life advice ignores the target. For a Rails 5.2 app on Ruby 2.5.9 targeting 6.0, the report says "Upgrade to Ruby 3.3+" while Rails 6.0 supports only up to 2.7. Cap the advice at the target's max Ruby, and point to the later hop where a supported Ruby becomes possible.
-- **Flag removals that predate the current Rails.** An API removed before the app's current version is reported as "to fix", but it is either dead code or already broken in production. On the Rails 5.2 app, `render text:` (removed in 5.1) sat in a live `before_action`, so outdated clients likely get a 500 instead of the intended 426. Give these their own label, e.g. "already broken or dead code", and list them first.
 - **Deepen the deprecation rules.** Every hop has at least one rule, but the guides list dozens of removals per version. Add the ones that are statically detectable and plausible in app code, applying only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
 - **Grow the gem list** in `database/gems.yml`, citing a README, deprecation notice or Rails source for each entry. The release notes 5.1 → 8.1 have been read in full (2026-10-07); they named few gems, so new entries now come from real-app runs and the stale-gem warning below.
 - **Flag stale Rails gems** (online, skipped with `--offline`): a gem that depends on Rails, isn't on the list, and has no release since before the target Rails shipped gets a "check it still works" warning. Catches the long tail the list never will.

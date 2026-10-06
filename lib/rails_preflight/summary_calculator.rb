@@ -2,7 +2,7 @@ module RailsPreflight
   class SummaryCalculator
     # Explicit check[:kind] (:unknown, :tip) wins; otherwise failures block and warnings need fixing.
     KIND_BY_STATUS = { failed: :blocker, warning: :to_fix }.freeze
-    LABELS = { blocker: "blocker", to_fix: "to fix", unknown: "couldn't check" }.freeze
+    LABELS = { broken: "already broken", blocker: "blocker", to_fix: "to fix", unknown: "couldn't check" }.freeze
     # Covered by the Ruby note on each upgrade step instead of "Before you start"
     STEP_SECTIONS = ["Rails Version", "Ruby Version"].freeze
 
@@ -18,6 +18,7 @@ module RailsPreflight
 
     def calculate
       {
+        broken: findings(:broken),
         blockers: findings(:blocker),
         to_fix: findings(:to_fix),
         unknowns: findings(:unknown),
@@ -61,10 +62,10 @@ module RailsPreflight
     def preparation
       sections = @results.filter_map do |section|
         next if STEP_SECTIONS.include?(section[:title])
-        counts = section[:checks].reject { |check| step_for(check) }.map { |check| kind(check) }.tally.slice(:blocker, :to_fix, :unknown)
+        counts = section[:checks].reject { |check| step_for(check) }.map { |check| kind(check) }.tally.slice(:broken, :blocker, :to_fix, :unknown)
         [section[:title], counts] if counts.any?
       end
-      blocking, rest = sections.partition { |_, counts| counts[:blocker] }
+      blocking, rest = sections.partition { |_, counts| counts[:broken] || counts[:blocker] }
 
       (blocking + rest).map do |title, counts|
         { section: title, message: counts.map { |k, n| "#{n} #{label(k, n)}" }.join(", ") }
