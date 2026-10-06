@@ -221,6 +221,10 @@ class DeprecationAnalyzerTest < Minitest::Test
     "active_storage_downloading" => ["app/models/upload.rb", "  include ActiveStorage::Downloading"],
     "return_only_media_type_on_content_type" => ["config/initializers/new_framework_defaults_6_0.rb", "Rails.application.config.action_dispatch.return_only_media_type_on_content_type = false"],
     "return_false_on_aborted_enqueue" => ["config/initializers/active_job_defaults.rb", "Rails.application.config.active_job.return_false_on_aborted_enqueue = true"],
+    "active_record_base_config_accessors" => ["config/initializers/time_zone.rb", "ActiveRecord::Base.default_timezone = :local"],
+    "trusted_proxies_single_value" => ["config/environments/proxy.rb", "  config.action_dispatch.trusted_proxies = IPAddr.new('10.0.0.0/8')"],
+    "removed_core_ext_files" => ["lib/core_ext.rb", "require 'active_support/core_ext/uri'"],
+    "schema_file_type" => ["lib/tasks/schema_dump.rake", "  file = ActiveRecord::Tasks::DatabaseTasks.schema_file_type(:sql)"],
     "variant_combine_options" => ["app/views/users/_avatar.html.erb", "<%= image_tag user.avatar.variant(combine_options: { resize: '100x100' }) %>"]
   }.freeze
 
@@ -273,6 +277,10 @@ class DeprecationAnalyzerTest < Minitest::Test
     "ActiveStorage::Current.url_options = { host: request.base_url }",
     "configs_for(env_name: 'production', include_hidden: true)",
     "config.active_job.queue_adapter = :queue_classic",
+    "ActiveRecord.default_timezone = :local",
+    "config.active_record.default_timezone = :local",
+    "config.action_dispatch.trusted_proxies = [IPAddr.new('10.0.0.0/8')]",
+    "require 'active_support/core_ext/uri/escape'",
     "filter = ActiveSupport::ParameterFilter.new([:password])",
     "UserMailer.welcome(user).deliver_later",
     "<%= image_tag user.avatar.variant(resize_to_limit: [100, 100]) %>",
@@ -283,6 +291,8 @@ class DeprecationAnalyzerTest < Minitest::Test
   ].freeze
 
   def test_every_shipped_rule_matches_its_canonical_snippet
+    paths = SHIPPED_HITS.values.map(&:first)
+    assert_equal [], paths.select { |path| paths.count(path) > 1 }.uniq, "samples sharing a path overwrite each other"
     SHIPPED_HITS.each_value { |path, line| write_app_file(path, line) }
 
     checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "8.0", current_rails: "5.2.0").run[:checks]
