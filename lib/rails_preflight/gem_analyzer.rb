@@ -7,19 +7,22 @@ module RailsPreflight
                     activejob activemodel activerecord activestorage activesupport].freeze
 
     # specs: Gemfile.lock specs. hops: the Rails minors the upgrade passes through, after the current one, ending at the target.
-    def initialize(project_path, specs, hops:, database_path: DATA_PATH)
+    # direct: gem names the Gemfile lists (Gemfile.lock DEPENDENCIES).
+    def initialize(project_path, specs, hops:, direct: [], database_path: DATA_PATH)
       @project_path = project_path
       @specs = specs
       @hops = hops
+      @direct = direct
       data = YAML.load_file(database_path)
       @entries = data.fetch('gems', [])
       @adapter_requirements = data.fetch('adapter_requirements', {})
+      @dropped_by_rails = data.fetch('dropped_by_rails', {})
     end
 
     def run
       result = { title: "Gem Compatibility", status: :passed, checks: [], confidence: :medium }
       return result if @hops.empty? # already on the target
-      result[:checks].concat(locked_limits, adapter_limits, curated)
+      result[:checks].concat(locked_limits, adapter_limits, dropped_by_rails, curated)
 
       if result[:checks].empty?
         result[:checks] << { message: "No locked gem limits Rails below #{@hops.last}, and none is on the list of retired gems.", status: :passed }
@@ -59,6 +62,19 @@ module RailsPreflight
         requirement = @adapter_requirements[breaks_in][spec.name].join(", ")
         { message: "#{spec.name} #{spec.version} doesn't load on Rails #{breaks_in}, which requires #{spec.name} #{requirement}. Upgrade it in the same step.",
           status: :failed, removed_in: breaks_in, fix_effort: :low }
+      end
+    end
+
+    # A gem the app gets only through `rails` disappears on the hop where rails stops depending on it.
+    # Still pulled in by the Gemfile or another gem (sass-rails needs sprockets-rails), it stays.
+    def dropped_by_rails
+      locked = @specs.map(&:name)
+      kept = @direct + @specs.reject { |spec| spec.name == "rails" }.flat_map { |spec| spec.dependencies.map(&:name) }
+      @hops.flat_map do |hop|
+        @dropped_by_rails.fetch(hop, []).select { |name| locked.include?(name) && !kept.include?(name) }.map do |name|
+          { message: "Rails #{hop} no longer depends on #{name}, and the Gemfile doesn't list it. Add gem \"#{name}\" to the Gemfile in the same step.",
+            status: :failed, removed_in: hop, fix_effort: :low }
+        end
       end
     end
 

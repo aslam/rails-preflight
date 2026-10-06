@@ -635,3 +635,21 @@ deprecations:
     recategorization: "Rails 6.0 -> 6.1"
     fix_effort: low
     paths: [app, lib]
+  - id: return_only_media_type_on_content_type
+    pattern: "\\breturn_only_media_type_on_content_type\\b"
+    message: "'config.action_dispatch.return_only_media_type_on_content_type' was removed in Rails 7.0. Remove it; Content-Type now always includes the charset."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#action-pack-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low
+  - id: return_false_on_aborted_enqueue
+    pattern: "\\breturn_false_on_aborted_enqueue\\b"
+    message: "'config.active_job.return_false_on_aborted_enqueue' was removed in Rails 7.0. Remove it; an aborted enqueue now always returns false."
+    removed_in: "7.0"
+    severity: error
+    confidence: "High"
+    guide_link: "https://guides.rubyonrails.org/7_0_release_notes.html#active-job-removals"
+    recategorization: "Rails 6.1 -> 7.0"
+    fix_effort: low

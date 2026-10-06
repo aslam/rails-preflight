@@ -42,7 +42,7 @@ module RailsPreflight
       results << check_ruby_version
       results << scan_gems
       results << DockerAnalyzer.new(@project_path, checked_ruby: @eol_checked_ruby).run
-      results << GemAnalyzer.new(@project_path, lockfile_specs, hops: upgrade_hops.map { |hop| hop[:version] }).run
+      results << GemAnalyzer.new(@project_path, lockfile_specs, hops: upgrade_hops.map { |hop| hop[:version] }, direct: lockfile&.dependencies&.keys || []).run
       results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails, current_rails: current_rails&.to_s).run
       results << ConfigAnalyzer.new(@project_path, current_rails).run
       results << DatabaseAnalyzer.new(@project_path, database_rules).run
@@ -330,7 +330,12 @@ module RailsPreflight
 
     # Bypass Bundler IO to avoid version mismatch errors
     def lockfile_specs
-      @lockfile_specs ||= File.exist?(@lockfile_path) ? Bundler::LockfileParser.new(File.read(@lockfile_path)).specs : []
+      lockfile&.specs || []
+    end
+
+    def lockfile
+      return @lockfile if defined?(@lockfile)
+      @lockfile = File.exist?(@lockfile_path) ? Bundler::LockfileParser.new(File.read(@lockfile_path)) : nil
     end
 
     def known_rails_versions
