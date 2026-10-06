@@ -24,6 +24,18 @@ gems:
     message: "is unmaintained and stuck on V8 3.16. Move to mini_racer, or drop it if Node.js is available to ExecJS."
     source: "https://github.com/rubyjs/therubyracer#readme"
     fix_effort: low
+  - name: turbolinks
+    message: "is archived and superseded by Turbo (turbo-rails), the default since Rails 7.0."
+    source: "https://github.com/turbolinks/turbolinks#readme"
+    fix_effort: medium
+  - name: sass
+    message: "(Ruby Sass) is archived and gets no updates. Move to dartsass-rails (sassc, the replacement its README names, is archived too)."
+    source: "https://github.com/sass/ruby-sass#readme"
+    fix_effort: low
+  - name: sassc
+    message: "is archived and gets no updates. Move to dartsass-rails or dartsass-sprockets, or to sassc-embedded as a drop-in."
+    source: "https://github.com/sass/sassc-ruby#readme"
+    fix_effort: low
 
 # Database adapter gems Rails checks itself when it loads the adapter (`gem "pg", "~> 1.1"`), so no gemspec
 # declares the limit. Read from activerecord/lib/active_record/connection_adapters/*_adapter.rb on each
@@ -38,3 +50,8 @@ adapter_requirements:
   "7.2": { sqlite3: [">= 1.4"], mysql2: ["~> 0.5"], pg: ["~> 1.1"], trilogy: ["~> 2.7"] }
   "8.0": { sqlite3: [">= 2.1"], mysql2: ["~> 0.5"], pg: ["~> 1.1"], trilogy: ["~> 2.7"] }
   "8.1": { sqlite3: [">= 2.1"], mysql2: ["~> 0.5"], pg: ["~> 1.1"], trilogy: ["~> 2.7"] }
+
+# Gems the rails gem stopped depending on, from rails.gemspec on each X-Y-stable branch. An app that gets one
+# only through rails loses it on that hop: without sprockets-rails, `config.assets` raises on boot.
+dropped_by_rails:
+  "7.0": [sprockets-rails]

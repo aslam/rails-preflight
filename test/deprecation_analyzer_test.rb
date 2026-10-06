@@ -219,6 +219,8 @@ class DeprecationAnalyzerTest < Minitest::Test
     "http_parameter_filter" => ["app/controllers/concerns/log_params.rb", "filter = ActionDispatch::Http::ParameterFilter.new([:password])"],
     "mailer_receive" => ["lib/tasks/inbox.rake", "  InboxMailer.receive(STDIN.read)"],
     "active_storage_downloading" => ["app/models/upload.rb", "  include ActiveStorage::Downloading"],
+    "return_only_media_type_on_content_type" => ["config/initializers/new_framework_defaults_6_0.rb", "Rails.application.config.action_dispatch.return_only_media_type_on_content_type = false"],
+    "return_false_on_aborted_enqueue" => ["config/initializers/active_job_defaults.rb", "Rails.application.config.active_job.return_false_on_aborted_enqueue = true"],
     "variant_combine_options" => ["app/views/users/_avatar.html.erb", "<%= image_tag user.avatar.variant(combine_options: { resize: '100x100' }) %>"]
   }.freeze
 

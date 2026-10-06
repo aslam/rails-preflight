@@ -40,6 +40,18 @@ class GemAnalyzerTest < Minitest::Test
                  checks.map { |c| [c[:removed_in], c[:message]] }.sort
   end
 
+  def test_gem_rails_stops_depending_on_blocks_unless_the_gemfile_lists_it
+    specs = lockfile_specs("sprockets-rails (3.2.2)")
+
+    check = RailsPreflight::GemAnalyzer.new(@tmp_dir, specs, hops: %w[6.1 7.0], direct: %w[rails]).run[:checks].first
+    listed = RailsPreflight::GemAnalyzer.new(@tmp_dir, specs, hops: %w[6.1 7.0], direct: %w[rails sprockets-rails]).run[:checks]
+    via_sass = RailsPreflight::GemAnalyzer.new(@tmp_dir, lockfile_specs("sprockets-rails (3.2.2)", "sass-rails (5.1.0)\n      sprockets-rails (>= 2.0, < 4.0)"), hops: %w[7.0], direct: %w[rails sass-rails]).run[:checks]
+
+    assert_equal "7.0", check[:removed_in]
+    assert_includes check[:message], "Rails 7.0 no longer depends on sprockets-rails"
+    assert_equal [], (listed + via_sass).map { |c| c[:message] }.grep(/sprockets/)
+  end
+
   def test_curated_gem_blocks_the_hop_where_it_stops_working
     write_app_file("app/models/user.rb", "  attr_accessible :name\n  attr_accessor :token\n")
     write_app_file("app/models/post.rb", "  attr_protected :id\n")

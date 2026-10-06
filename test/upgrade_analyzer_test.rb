@@ -20,6 +20,31 @@ class UpgradeAnalyzerTest < Minitest::Test
     FileUtils.remove_entry @tmp_dir
   end
 
+  def test_reads_direct_gems_from_the_lockfile
+    File.write(File.join(@tmp_dir, "Gemfile.lock"), <<~LOCKFILE)
+      GEM
+        remote: https://rubygems.org/
+        specs:
+          railties (6.1.7)
+          sprockets-rails (3.4.2)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        railties
+    LOCKFILE
+
+    RailsPreflight::UpgradeAnalyzer.new("7.0", @tmp_dir, offline: true).run
+
+    assert_includes report, "Rails 7.0 no longer depends on sprockets-rails, and the Gemfile doesn&#39;t list it."
+
+    File.write(File.join(@tmp_dir, "Gemfile.lock"), File.read(File.join(@tmp_dir, "Gemfile.lock")) + "  sprockets-rails\n")
+    RailsPreflight::UpgradeAnalyzer.new("7.0", @tmp_dir, offline: true).run
+
+    refute_includes report, "no longer depends on sprockets-rails"
+  end
+
   def test_unknown_target_rails_generates_a_report_instead_of_crashing
     write_lockfile
 
