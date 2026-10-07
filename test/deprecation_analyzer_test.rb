@@ -122,6 +122,28 @@ class DeprecationAnalyzerTest < Minitest::Test
     assert_nil checks.find { |c| c[:message].include?("positionally") }
   end
 
+  def test_snippets_hide_secret_values
+    File.write(File.join(@app_dir, "secrets.rb"), <<~RUBY)
+      deprecated_method; App.config.secret_token = '189b1a78ff508196'
+      deprecated_method(api_key: "sk-live-123", name: "kept")
+      deprecated_method password: hunter2
+      deprecated_method SECRET_KEY_BASE=abc123 rails s
+      deprecated_method Sidekiq::Web.set :session_secret, Rails.configuration.secret_token
+      deprecated_method(name: "kept")
+    RUBY
+
+    snippets = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml")).run[:checks].first[:details].map { |d| d[:snippet] }
+
+    assert_equal [
+      "deprecated_method; App.config.secret_token = '[hidden]'",
+      'deprecated_method(api_key: "[hidden]", name: "[hidden]")',
+      "deprecated_method password: [hidden]",
+      "deprecated_method SECRET_KEY_BASE=[hidden]",
+      "deprecated_method Sidekiq::Web.set :session_secret, Rails.configuration.secret_token",
+      'deprecated_method(name: "kept")'
+    ], snippets
+  end
+
   def test_shipped_rule_flags_application_secrets_in_config
     FileUtils.mkdir_p(File.join(@tmp_dir, "config", "initializers"))
     File.write(File.join(@tmp_dir, "config", "initializers", "auth.rb"), "KEY = Rails.application.secrets.api_key\n")
