@@ -26,7 +26,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 **Code and config**
 - 118 deprecation rules, at least one removal per Rails step from 5.1 to 8.1, each cited to the release notes and linked to its guide
-- Scans `.rb`, `.erb` and `.rake` under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`; rules can opt into scripts and CI config (removed rake tasks) or config YAML (`cable.yml`, `database.yml`, `storage.yml`), scope themselves with `paths:`, and require a receiver with `needs_receiver_in:` (a bare `errors` in a helper is a local)
+- Scans `.rb`, `.erb` and `.rake` under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`; rules can opt into scripts and CI config (removed rake tasks) or config YAML (`cable.yml`, `database.yml`, `storage.yml`), scope themselves with `paths:`, and require a receiver with `needs_receiver_in:` (a bare `errors` in a helper is a local) or `skip_bare_if_local:` (a file that assigns `errors` or takes it as a parameter)
 - A blocker when this upgrade removes the API; "already broken" when it was removed at or before the current Rails, listed first
 - Commented-out code is skipped; snippets hide values on lines that name a secret, token or password
 - `config.load_defaults` missing or behind; Docker checks (EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3); schema charset and integer IDs
@@ -42,7 +42,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 ## Now
 
-Running the report on open-source Rails apps (item 1 below): Mastodon next, then Discourse.
+Redmine, Mastodon and Discourse are done (item 1 below). Next: grow the gem list from what they found, or one more app on a different stack.
 
 ## First public release
 
@@ -52,6 +52,8 @@ The bar is a report that holds up on real apps, not an empty roadmap. In order:
    - 2026-10-03, two private apps: a Rails 5.2 app (1,923 files; 7 blockers, all real) and a Rails 8.1 app (no findings, even when scanned as if upgrading from 5.0). Fixed a false positive (hash-rocket keyword args in controller tests) and a bogus upgrade step when already on the target.
    - 2026-10-05, the 5.2 app: its Bundler 1.17 lockfile mixes rubygems.org and a private registry in one section. The rubygems.org lookup took minutes and missed 5 of its 11 private gems (private forks under public names); reading the Gemfile's source blocks finds all 11 in about a second.
    - 2026-10-07, Redmine 4.0.0 (Rails 5.2) and 5.0.0 (6.1) → 8.1, with lockfiles from `bundle lock` (Redmine commits none). 28 findings checked against the source and against Redmine 6.0 on Rails 7.2, where any hit still present is suspect. Fixed two false positives: bare `errors.each |a, b|` on an Array in a helper, and sprockets-rails flagged for an app that never loads it. "Already broken" was right every time.
+   - 2026-10-07, Mastodon: ten releases, each one before a Rails bump run to the Rails the next one moved to (5.1 → 8.1), with their committed lockfiles. All 17 gem blockers and every removed-API blocker were fixed in the next release. Fixed three false positives: Chewy `tokenizer:` strings, a service's own `destroy_all(x)`, and an app method named `image_alt`.
+   - 2026-10-07, Discourse: fourteen releases, 5.1 → 8.1. It locks railties, not rails, which the tool reads fine. All 8 gem blockers were fixed in the next release. Fixed false positives: `errors` as a local Hash in a controller, `lib/` and specs (rules now skip a bare `errors` in a file that assigns it or takes it as a parameter), a local named `update_attributes`, and `class_name: Constant` in a non-association DSL. Real "already broken" finds: `render nothing: true` since 5.1, and `clear_active_connections!` in a dev script since 7.2. Left: Onebox's `errors` is a Hash set in another file, so three hits stay; a per-file scan can't see it.
 2. **Grow the gem list** in `database/gems.yml` from what the runs find, citing a README, deprecation notice or Rails source for each entry. The release notes 5.1 → 8.1 have been read in full and name few gems.
    - 2026-10-07, the private 5.2 app → 7.0: five locked gems cap Rails (responders and active_record_replica below 6.0, acts-as-taggable-on below 6.1, activeresource and acts_as_paranoid below 7.0), and protected_attributes_continued blocks 7.0 across 131 files.
 3. **Publish 0.1.0.** Tag `v0.1.0`, `gem push`, make the repo public.

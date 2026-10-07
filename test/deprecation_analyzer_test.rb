@@ -134,6 +134,18 @@ class DeprecationAnalyzerTest < Minitest::Test
     assert_nil checks.find { |c| c[:message].start_with?("Changing error messages") }
   end
 
+  def test_bare_errors_is_a_local_where_the_file_assigns_or_takes_it
+    write_app_file("lib/json_error.rb", "    errors = create_errors_array obj\n    errors[:type] = opts[:type]\n")
+    write_app_file("lib/onebox_check.rb", "  def check(errors = {})\n    errors[:url] << 'is blank'\n")
+    write_app_file("lib/collect.rb", "  list.each do |item, errors|\n    errors[:url] << 'is blank'\n")
+    write_app_file("lib/post_creator.rb", "    valid = a || errors.any? || b\n    errors[:base] << 'is blank'\n    record.errors[:base] << 'too long'\n")
+    write_app_file("app/models/post.rb", "  def valid_body? = errors.empty?\n    errors[:body] << 'is blank'\n  def check_title\n    errors[:title] << 'is blank'\n")
+
+    files = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks].flat_map { |c| (c[:details] || []).map { |d| "#{d[:file]}:#{d[:line]}" } }
+
+    assert_equal ["app/models/post.rb:2", "app/models/post.rb:4", "lib/post_creator.rb:2", "lib/post_creator.rb:3"], files.sort
+  end
+
   def test_snippets_hide_secret_values
     File.write(File.join(@app_dir, "secrets.rb"), <<~RUBY)
       deprecated_method; App.config.secret_token = '189b1a78ff508196'
@@ -378,6 +390,9 @@ class DeprecationAnalyzerTest < Minitest::Test
     "raise e.cause if e.cause",
     "Session.where('updated_at < ?', 1.week.ago).delete_all",
     "destroy_all(@account.subscriptions)",
+    "update_attributes = { name: 'Jimmy' }",
+    "expect(attrs).to eq(update_attributes)",
+    "updater.update(update_attributes)",
     "tokenizer: 'standard',",
     ":tokenizer => 'edge_ngram',",
     "image_description: image_alt || '',",
@@ -390,6 +405,7 @@ class DeprecationAnalyzerTest < Minitest::Test
     "config.active_record.error_on_ignored_order = true",
     "belongs_to :buyer, class_name: 'User'",
     "belongs_to :buyer, class_name: \"Admin::User\"",
+    "policy :not_silenced_already, class_name: User::Policy::NotAlreadySilenced",
     "<% cache post do %>",
     "require 'active_support/core_ext/hash/indifferent_access'",
     "render file: Rails.root.join('public/maintenance.html')",

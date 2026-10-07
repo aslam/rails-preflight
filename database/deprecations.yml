@@ -1,6 +1,7 @@
 deprecations:
   - id: update_attributes
-    pattern: "\\bupdate_attributes!?\\b"
+    # Calls only: x.update_attributes, send(:update_attributes), or a bare call with arguments; not a local of that name
+    pattern: "[.:]update_attributes!?\\b|(?<![.\\w:])update_attributes!?(?:\\(|\\s+[\\w:'\"@\\[{])"
     message: "'update_attributes' was removed in Rails 6.1. Use 'update' instead."
     removed_in: "6.1"
     severity: error
@@ -741,6 +742,7 @@ deprecations:
     recategorization: "Rails 5.0 -> 5.1"
     fix_effort: low
     needs_receiver_in: [app/helpers, app/views]
+    skip_bare_if_local: errors
   - id: dispatch_callbacks_to_prepare
     pattern: "\\bActionDispatch::Callbacks\\.to_(?:prepare|cleanup)\\b"
     message: "'ActionDispatch::Callbacks.to_prepare' and '.to_cleanup' were removed in Rails 5.1. Use ActiveSupport::Reloader.to_prepare and .to_complete."
@@ -769,7 +771,8 @@ deprecations:
     recategorization: "Rails 5.1 -> 5.2"
     fix_effort: low
   - id: association_class_name_constant
-    pattern: "(?:\\bclass_name:|:class_name\\s*=>)\\s*(?:::)?[A-Z]\\w*(?:::[A-Z]\\w*)*\\s*(?:,|\\)|$)"
+    # Associations only; other DSLs take class_name: Constant (Discourse's service policies). Misses a class_name: on a continuation line
+    pattern: "\\b(?:belongs_to|has_many|has_one|has_and_belongs_to_many)\\b[^#\\n]*(?:\\bclass_name:|:class_name\\s*=>)\\s*(?:::)?[A-Z]\\w*(?:::[A-Z]\\w*)*\\s*(?:,|\\)|$)"
     message: "Passing a class to ':class_name' on an association was removed in Rails 5.2. Pass the class name as a string, e.g. class_name: \"User\"."
     removed_in: "5.2"
     severity: error
@@ -825,6 +828,7 @@ deprecations:
     recategorization: "Rails 6.1 -> 7.0"
     fix_effort: low
     needs_receiver_in: [app/helpers, app/views]
+    skip_bare_if_local: errors
   - id: errors_messages_mutation
     pattern: "(?<!@)\\berrors(?:\\.messages)?\\[[^\\]]+\\]\\s*<<|(?<!@)\\berrors\\.messages(?:\\[[^\\]]+\\]\\s*=(?![=>\\x7e])|\\.(?:delete|clear)\\b)"
     message: "Changing error messages in place (errors[:attr] << msg, errors.messages[:attr] = ..., errors.messages.delete/clear) was removed in Rails 7.0: it now changes a copy, so the error is silently lost. Use errors.add, errors.delete and errors.clear."
@@ -835,6 +839,7 @@ deprecations:
     recategorization: "Rails 6.1 -> 7.0"
     fix_effort: low
     needs_receiver_in: [app/helpers, app/views]
+    skip_bare_if_local: errors
   - id: errors_each_two_args
     pattern: "(?<!@)\\berrors\\.each\\s*(?:do|\\{)\\s*\\|\\s*\\w+\\s*,\\s*\\w+\\s*\\|"
     message: "Enumerating 'ActiveModel::Errors' as a hash (errors.each { |attribute, message| }) was removed in Rails 7.0: each now yields ActiveModel::Error objects, so the second argument is nil. Use errors.each { |error| error.attribute; error.message }."
@@ -845,6 +850,7 @@ deprecations:
     recategorization: "Rails 6.1 -> 7.0"
     fix_effort: low
     needs_receiver_in: [app/helpers, app/views]
+    skip_bare_if_local: errors
   - id: configurations_to_h
     pattern: "\\bconfigurations\\.(?:to_h|default_hash)\\b"
     message: "'ActiveRecord::Base.configurations.to_h' and '.default_hash' were removed in Rails 7.0. Use configurations.configs_for(env_name: ...)."
