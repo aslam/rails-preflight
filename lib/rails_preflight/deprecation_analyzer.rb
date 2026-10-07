@@ -11,6 +11,8 @@ module RailsPreflight
                       .circleci/config.yml .gitlab-ci.yml .travis.yml],
       'yaml' => %w[config/**/*.yml config/**/*.yml.erb]
     }.freeze
+    # Snippets go into a report people print and share: on a line that names a secret, values are hidden.
+    SECRET_NAME = /secret|token|passw(?:or)?d|api_?key|access_?key|private_?key|credential/i
 
     def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil)
       @root_path = root_path
@@ -122,7 +124,7 @@ module RailsPreflight
               file: relative_path,
               line: line_num,
               is_test: is_test,
-              snippet: line.strip,
+              snippet: redact(line.strip),
               confidence: rule['confidence'] || "Unknown",
               guide_link: rule['guide_link'],
               recategorization: rule['recategorization'],
@@ -137,6 +139,15 @@ module RailsPreflight
     end
 
     private
+
+    # Quoted strings, and plain `name: value` / `NAME=value` values (YAML, shell, CI config), become [hidden].
+    # ponytail: over-hides (ENV["SECRET_TOKEN"] loses its name too); the file and line still point to it.
+    def redact(line)
+      return line unless line.match?(SECRET_NAME)
+
+      line.gsub(/(["'])(?:\\.|(?!\1).)*\1/) { "#{$1}[hidden]#{$1}" }
+          .gsub(/((?:#{SECRET_NAME.source})\w*\s*(?:=>|[:=])\s*)[^"'\s#,][^#,]*?(?=\s*(?:#|,|$))/i) { "#{$1}[hidden]" }
+    end
 
     # Removed at or before the current version: the app already runs without it.
     def already_removed?(removed_in)
