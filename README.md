@@ -29,12 +29,14 @@ Think of it as **upgrade reconnaissance**, not a fixer.
 
 The audit analyzes your project for common Rails upgrade risk factors:
 
-- Ruby & Rails compatibility
-- End-of-life Ruby versions
+- Ruby & Rails compatibility, and which upgrade step to move Ruby on
+- End-of-life Ruby and Node versions
 - Private / internal gem dependencies
-- Rails deprecations that block upgrades
+- Locked gems whose declared Rails requirement caps the upgrade, plus a curated list of gems with known limits
+- Removed and deprecated Rails APIs in code, config YAML, rake tasks in scripts and CI, including ones already removed from your current Rails
 - Docker runtime risks (EOL base image, locale, tzdata, OpenSSL mismatch)
-- Missing Rails configuration required for newer versions
+- Database schema risks (charset, integer IDs)
+- Missing or outdated `config.load_defaults`
 
 The output is a **single HTML report** designed to be:
 
@@ -63,7 +65,7 @@ These cover what `rails-preflight` leaves out, and pair well with it:
 
 This tool is especially useful if you are:
 
-- Upgrading a Rails 3 / 4 / 5 application
+- Upgrading a Rails 5.0 or newer application (Rails 3 and 4 aren't covered)
 - Planning a security-driven upgrade
 - Estimating upgrade effort before committing resources
 - Auditing multiple legacy Rails apps
@@ -86,11 +88,13 @@ It knows Rails 5.0 to 8.1 (`database/compatibility.yml`); the default target is 
 
 The tool will analyze:
 
-- `Gemfile.lock`
+- `Gemfile` and `Gemfile.lock`
 - `.ruby-version`
 - `Dockerfile` (if present)
-- `DB/schema.rb` (if present)
-- Application source code (static scan)
+- `db/schema.rb` (if present)
+- `config/application.rb` and `config/**/*.yml`
+- `.rb`, `.erb` and `.rake` files under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`
+- Scripts and CI config (`bin/`, `script/`, Procfiles, Makefiles, CI workflows) for removed rake tasks
 
 And generate:
 
@@ -104,7 +108,7 @@ The tool generates a self-contained **HTML report** (`rails_preflight_report.htm
 
 ### Key Sections
 
-1.  **Summary**: The upgrade (`current → target` Rails version) and three counts, each finding linked to its details:
+1.  **Summary**: The upgrade (`current → target` Rails version) and a count for each kind of finding, each finding linked to its details:
     *   **Already broken**: APIs removed before your current Rails, or gems past their last supported Rails. That code fails when it runs, or never runs. Listed first.
     *   **Blockers**: must be fixed before the upgrade can work (e.g. Ruby too old, removed APIs still in use).
     *   **To fix**: will warn or break along the way (deprecations, lagging config).
@@ -113,10 +117,10 @@ The tool generates a self-contained **HTML report** (`rails_preflight_report.htm
 2.  **Suggested Upgrade Path**: One step per Rails minor version, since Rails recommends upgrading one at a time. Each step shows the Ruby range it needs and the removed APIs to fix for it; other findings come first under "Before you start".
 
 3.  **Detailed Findings**:
-    *   **Deprecations**: Grouped by message to reduce noise. Expandable to show individual file/line occurrences, with a link to the relevant Rails guide.
-    *   **Gem Compatibility**: Identifies private gems and known public gem incompatibilities.
+    *   **Deprecations**: Grouped by pattern, with app and test occurrences counted apart. Expandable to show individual file/line occurrences, with a link to the relevant Rails guide.
+    *   **Gem Compatibility**: Locked gems whose Rails requirement excludes a step, gems from the curated list in `database/gems.yml`, and (online) Rails-dependent gems with no release since the target Rails shipped. Private gems get their own section.
     *   **Configuration & Infrastructure**: Checks for Docker/OS issues and missing Rails config.
-    *   **Database Schema**: Highlights potential data issues (e.g. integer overflows).
+    *   **Database Schema**: Charset and integer ID issues, applied by target version.
 
 4.  **Confidence Badges**: Each section is marked with a confidence level (High/Medium/Low) based on the certainty of the analysis.
 
