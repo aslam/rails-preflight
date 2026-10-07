@@ -20,23 +20,12 @@ Gem::Specification.new do |spec|
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.7.0"
 
-  spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/aslam/rails-preflight"
+  spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
+  spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
+  spec.metadata["rubygems_mfa_required"] = "true"
 
-  spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    `git ls-files -z`.split("\x0").reject do |f|
-      (f == __FILE__) || f.match(%r{\A(?:test|spec|features)/})
-    end
-  end
-
-  # For now, manually include everything if git isn't set up
-  if spec.files.empty?
-    spec.files = Dir["lib/**/*", "bin/*", "database/**/*", "README.md", "Gemfile", "Gemfile.lock", "Dockerfile"]
-  end
-
+  spec.files = Dir["lib/**/*.rb", "bin/*", "database/*.yml", "README.md", "CHANGELOG.md", "LICENSE.txt"]
   spec.bindir = "bin"
-  spec.executables = spec.files.grep(%r{\Abin/}) { |f| File.basename(f) }
+  spec.executables = ["rails-preflight"]
   spec.require_paths = ["lib"]
-
-  spec.add_dependency "bundler"
 end
