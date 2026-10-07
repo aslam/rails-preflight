@@ -54,6 +54,24 @@ The bar is a report that holds up on real apps, not an empty roadmap. In order:
 
 Not needed for the first release: `structure.sql` and anything under Maybe.
 
+## After the release: the report and its formats
+
+Decided 2026-10-07. Every format renders one structured set of findings; none parses another's output. In order:
+
+1. **Findings model and HTML redesign.** Findings carry their parts (gem, versions, limit, step, `removed_in`, files with line and snippet, citation, confidence), not only a finished sentence. The HTML follows design A (mockup: claude.ai/artifact/8HHnsQ12mV4exU6wSVJRwY):
+   - Title `app: Rails X to Y` and a one-sentence verdict generated from the findings
+   - Counts, then the route: one stop per Rails minor, blocker counts, Ruby upgrades marked; past the target, faded "ahead" stops count code that later versions remove (gem limits past the target aren't checked)
+   - Plan table under the route: step, what to do, blockers, relative effort (never hours)
+   - One card per step; each finding's meta line ("7 occurrences, all in tests · 2 files") expands to file, line and snippet
+   - "What this report can't see" last: private gems and stale gems by name, behavior changes, multi-line code and test coverage, each with what to do instead (RailsBump, next_rails, rubocop-rails named where they answer the gap)
+   - Footer: confidence, sources, the repo, one help line to syedaslam.com/work-with-me. Neutral otherwise; the free report is complete
+   - Dark mode follows the OS, no toggle. `@media print`: A4, light colors, file lists hidden, `print-color-adjust: exact` (dots, effort bars and markers are backgrounds, which browsers drop when printing)
+2. **JSON** with a versioned schema (`"schema": 1`) and stable rule ids; `--format json` prints JSON on stdout and progress on stderr. `--fail-on blockers|broken` sets the exit code, so CI can gate on it.
+3. **Markdown**, which is also the format for LLMs and coding agents: ordered by step, `file:line` and the replacement for each finding, a short header telling an agent to take one step at a time, run the tests after each, and leave "ahead" and "can't see" items alone. Pastes into issues and PRs as is.
+4. **Console** as a text version of the HTML: verdict, a one-line route, counts, blockers by step, the report's path.
+
+Not doing for now: PDF generation (headless Chrome or a layout library is a heavy dependency for what printing the HTML already does; a `--pdf` that uses an installed Chrome can come later if asked), and an MCP server (an agent can read the Markdown).
+
 ## Next: cover more of the upgrade
 
 - **Deepen the deprecation rules.** Every hop has at least one rule, but the guides list dozens of removals per version. Add the ones that are statically detectable and plausible in app code, applying only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
@@ -65,9 +83,6 @@ Not needed for the first release: `structure.sql` and anything under Maybe.
 ## Later
 
 - **`rails-ujs` after 8.1.** The 7.2 notes list "Remove deprecated @rails/ujs", but that was the JS source and build tooling (rails/rails#50535): `rails-ujs.js` still ships in actionview through `8-1-stable`, so `//= require rails-ujs` works. It is gone on `main`; when that Rails ships, add a rule, which needs `.js` scanning under `app/assets` and `app/javascript`.
-- Report styling: a design pass over the HTML report, which is mostly inline `style` attributes today
-- Print stylesheet, so the report prints or saves to PDF cleanly; an `@media print` block inside the report, since it's a single self-contained file
-- JSON output with a stable schema, so CI can gate on it
 - Scope flags such as `--exclude-tests`
 - Cross-check Ruby version sources (`.ruby-version` vs Dockerfile vs CI config)
 
@@ -75,7 +90,6 @@ Not needed for the first release: `structure.sql` and anything under Maybe.
 
 - **Changelog database.** Build a database of Rails changelog entries and show the ones relevant to the app in the report. Open question: how much of this the deprecation rules already cover.
 - **Upgrade diagram.** A roadmap.sh-style diagram of the actual steps for each upgrade, including when to run `app:update`, etc.
-- **More report formats.** JSON (also under Later), Markdown, and maybe a format best suited for other AI tools or MCP servers to ingest.
 - **Migration risk in the report.** Some findings can only be fixed with a migration that rewrites a table: integer IDs → bigint, utf8mb3 → utf8mb4. Flag the risk that fix carries next to the finding: table rewrite and locking, uniqueness races when adding unique indexes, a suggested rollout order, and Rails/Postgres/MySQL version caveats. Optionally do the same for migrations in `db/migrate` newer than the schema version. Still read-only: the report flags the risk, it doesn't write or run migrations. Open question: whether it belongs in the first release.
 
 ## Not doing
