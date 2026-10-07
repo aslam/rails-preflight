@@ -13,45 +13,48 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 ## Shipped
 
-- Current Rails version from `Gemfile.lock`, shown as `current → target` in the report and upgrade path
-- Target defaults to the next Rails minor after the app's, with a hint pointing to the full path; stops when the current Rails is unknown, exits when already on the newest known
-- Ruby compatibility per target Rails (5.0 – 8.1), read from `.ruby-version`, `Gemfile.lock`, or the Dockerfile
-- EOL checks for Ruby and Node
-- Private gem detection from `Gemfile.lock` and the Gemfile's `source` blocks, `source:` options and `eval_gemfile` files, read but never evaluated; a rubygems.org lookup only for gems neither file places, skipped with `--offline`
-- Gem compatibility: locked gems whose declared Rails requirement excludes a hop block that hop (from `Gemfile.lock`, offline); a curated list in `database/gems.yml` for limits only a README states (`protected_attributes_continued`, `paperclip`, `webpacker`, `therubyracer`), each with its source and a count of the files that use it
-- Deprecation scan, grouped by pattern, with app vs test occurrence counts; a blocker when this upgrade removes the API; commented-out code is skipped; each links to its Rails guide
-- Stops with a clear message when the directory isn't a Rails app
-- Config checks: `config.load_defaults` missing or behind the current Rails version
-- Docker checks: EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3 mismatch
-- Database schema checks: charset and integer IDs, applied by target version
-- Terminal summary: counts plus each blocker, for SSH sessions and CI logs
-- README and report footer point to related tools: next_rails / RailsBump, Brakeman, rubocop-rails
-- Single-file HTML report: blockers, items to fix and what couldn't be checked, each linked to its finding; a suggested path; per-section confidence explained in the legend
-- Upgrade path with one step per Rails minor version, the Ruby range each needs, and the removed APIs to fix at each step
-- Says when to upgrade Ruby: on the Rails before the step that needs it, to the newest Ruby both support, so later steps need as few Ruby upgrades as possible; end-of-life advice stays within what the target Rails supports
-- "Already broken": APIs removed before the current Rails, and gems past their last supported Rails, listed first in the summary, the terminal and "Before you start"
-- Stale gems (online): public gems that depend on Rails and have had no release since before the target Rails shipped, grouped under "couldn't check"; the same rubygems.org lookup as private gem placement, skipped with `--offline`
-- Test suite runs with `bundle exec rake`, in GitHub Actions CI on Ruby 2.7 to 4.0
-- Deprecation scan covers `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, across `.rb`, `.erb` and `.rake`; rules can scope themselves to directories or single files with `paths:`, and opt into other kinds of files with `files:`: `scripts` (`bin/`, `script/`, CI config, Procfiles, Makefiles, Dockerfiles, shell scripts) for removed rake tasks, `yaml` (`config/**/*.yml`) for `cable.yml`, `database.yml` and `storage.yml` settings
-- 118 deprecation rules, at least one removal per Rails hop from 5.1 to 8.1, each cited to the official release notes
-- Every deprecation rule has a sample line in the test suite, and the replacement APIs are checked not to trigger it
+**Reading the app**
+- Current Rails from `Gemfile.lock`, shown as `current → target`; the target defaults to the next Rails minor, with a hint pointing to the full path
+- Ruby from `.ruby-version`, `Gemfile.lock` or the Dockerfile, checked against each Rails from 5.0 to 8.1; Ruby and Node end-of-life
+- Stops with a clear message when the directory isn't a Rails app, or when the current Rails is unknown and no target is given
+
+**Gems**
+- Private gems from `Gemfile.lock` and the Gemfile's `source` blocks, `source:` options and `eval_gemfile` files, read but never evaluated; rubygems.org is asked only about gems neither file places
+- Locked gems whose declared Rails requirement excludes a step block that step
+- `database/gems.yml`: 8 gems whose limits only a README states, each with its source and a count of the files that use it; database adapter versions per Rails; gems `rails` stops depending on (sprockets-rails in 7.0), flagged only when the app uses them
+- Stale gems (online): public gems that depend on Rails with no release since before the target Rails shipped
+
+**Code and config**
+- 118 deprecation rules, at least one removal per Rails step from 5.1 to 8.1, each cited to the release notes and linked to its guide
+- Scans `.rb`, `.erb` and `.rake` under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`; rules can opt into scripts and CI config (removed rake tasks) or config YAML (`cable.yml`, `database.yml`, `storage.yml`), scope themselves with `paths:`, and require a receiver with `needs_receiver_in:` (a bare `errors` in a helper is a local)
+- A blocker when this upgrade removes the API; "already broken" when it was removed at or before the current Rails, listed first
+- Commented-out code is skipped; snippets hide values on lines that name a secret, token or password
+- `config.load_defaults` missing or behind; Docker checks (EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3); schema charset and integer IDs
+
+**Report**
+- Single-file HTML report: counts, each finding linked to its details, per-section confidence
+- Upgrade path with one step per Rails minor, the Ruby range each needs and the APIs to fix at each; says which step to upgrade Ruby on, and to what
+- Terminal summary for SSH sessions and CI logs; related tools (next_rails, RailsBump, Brakeman, rubocop-rails) in the README and footer
+
+**Project**
+- Every deprecation rule has a sample line in the test suite, and its replacement is checked not to trigger it; CI on Ruby 2.7 to 4.0
+- Accurate README, CHANGELOG, MIT LICENSE, gemspec that packages only what the gem needs; `rails_preflight` was free on rubygems.org on 2026-10-07
 
 ## Now
 
-Nothing in progress. Pick the next item from below.
+Running the report on open-source Rails apps (item 1 below): Mastodon next, then Discourse.
 
 ## First public release
 
 The bar is a report that holds up on real apps, not an empty roadmap. In order:
 
-1. **Run it on real apps.** Check out old tagged versions of open-source Rails apps (Discourse, Mastodon, Redmine, …), run the report and review every finding. Every rule is tested only against hand-written sample lines, and false positives are what lose trust fastest. The results will likely reorder the rest of this list.
-   - 2026-10-03, two private apps: a Rails 5.2 app (1,923 files; 7 blockers, all real) and a Rails 8.1 app (no findings, even when scanned as if upgrading from 5.0). Found one false positive (hash-rocket keyword args in controller tests) and a bogus upgrade step when already on the target; both fixed in #14.
-   - 2026-10-05, same 5.2 app: its Bundler 1.17 lockfile mixes rubygems.org and a private registry in one section. The rubygems.org lookup took minutes and missed 5 of its 11 private gems (private forks under public names); reading the Gemfile's source blocks finds all 11 in about a second (#17).
-   - 2026-10-07, Redmine 4.0.0 (Rails 5.2.2) and 5.0.0 (6.1.4.7) → 8.1, with lockfiles from `bundle lock` (Redmine commits none, so unpinned gems resolve to today's versions). 28 findings checked against the source (every blocker and "already broken" item, plus a missing `config.load_defaults`, which is real), and against Redmine 6.0 on Rails 7.2: any hit still there is suspect. Two false positives, both fixed: bare `errors.each |a, b|` on an Array in a helper (rules now need `x.errors` in helpers and views), and sprockets-rails flagged for an app that never loads it (now only with `app/assets` or `config.assets`). "Already broken" was right every time: the bundled open_id_authentication plugin uses APIs removed in 5.1 and 5.2, and `config.secret_token` is silently ignored since 6.0.
-2. **Grow the gem list** (below). The mechanism is in, with 9 entries, the adapter version table and the sprockets-rails drop; the list covers only what someone has checked.
-   - 2026-10-07, the 5.2 app → 7.0: five locked gems cap Rails (responders and active_record_replica below 6.0, acts-as-taggable-on below 6.1, activeresource and acts_as_paranoid below 7.0), and protected_attributes_continued blocks 7.0 across 131 files.
-3. ~~**Make the README accurate.**~~ Done in #35.
-4. **Release basics.** CHANGELOG, LICENSE, gemspec metadata and packaging done in #36; `rails_preflight` was free on rubygems.org on 2026-10-07. Left: tag `v0.1.0` and `gem push`.
+1. **Run it on real apps.** Check out old tagged versions of open-source Rails apps, run the report and review every finding. Rules are tested against hand-written sample lines, and false positives are what lose trust fastest.
+   - 2026-10-03, two private apps: a Rails 5.2 app (1,923 files; 7 blockers, all real) and a Rails 8.1 app (no findings, even when scanned as if upgrading from 5.0). Fixed a false positive (hash-rocket keyword args in controller tests) and a bogus upgrade step when already on the target.
+   - 2026-10-05, the 5.2 app: its Bundler 1.17 lockfile mixes rubygems.org and a private registry in one section. The rubygems.org lookup took minutes and missed 5 of its 11 private gems (private forks under public names); reading the Gemfile's source blocks finds all 11 in about a second.
+   - 2026-10-07, Redmine 4.0.0 (Rails 5.2) and 5.0.0 (6.1) → 8.1, with lockfiles from `bundle lock` (Redmine commits none). 28 findings checked against the source and against Redmine 6.0 on Rails 7.2, where any hit still present is suspect. Fixed two false positives: bare `errors.each |a, b|` on an Array in a helper, and sprockets-rails flagged for an app that never loads it. "Already broken" was right every time.
+2. **Grow the gem list** in `database/gems.yml` from what the runs find, citing a README, deprecation notice or Rails source for each entry. The release notes 5.1 → 8.1 have been read in full and name few gems.
+   - 2026-10-07, the private 5.2 app → 7.0: five locked gems cap Rails (responders and active_record_replica below 6.0, acts-as-taggable-on below 6.1, activeresource and acts_as_paranoid below 7.0), and protected_attributes_continued blocks 7.0 across 131 files.
+3. **Publish 0.1.0.** Tag `v0.1.0`, `gem push`, make the repo public.
 
 Not needed for the first release: `structure.sql` and anything under Maybe.
 
@@ -76,9 +79,8 @@ Not doing for now: PDF generation (headless Chrome or a layout library is a heav
 ## Next: cover more of the upgrade
 
 - **Deepen the deprecation rules.** Every hop has at least one rule, but the guides list dozens of removals per version. Add the ones that are statically detectable and plausible in app code, applying only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
-- **Grow the gem list** in `database/gems.yml`, citing a README, deprecation notice or Rails source for each entry. The release notes 5.1 → 8.1 have been read in full (2026-10-07); they named few gems, so new entries now come from real-app runs and the stale-gem warning.
 - **Support `structure.sql`** in the database checks, not only `db/schema.rb`.
-- **Check each gem's declared Rails support** on rubygems.org (skipped with `--offline`): read the Rails dependency its released versions declare, and report "devise 4.7 caps Rails below 6.1; 4.9 allows 7.2, bump it first". Never query gems from a non-rubygems.org source. Overlaps next_rails' `bundle_report compatibility`; the value is one report. Missing upper bounds read as compatible, so the curated list above still matters.
+- **Check each gem's declared Rails support** on rubygems.org (skipped with `--offline`): read the Rails dependency its released versions declare, and report "devise 4.7 caps Rails below 6.1; 4.9 allows 7.2, bump it first". Never query gems from a non-rubygems.org source. Overlaps next_rails' `bundle_report compatibility`; the value is one report. Missing upper bounds read as compatible, so the curated list still matters.
 - **Parse the Gemfile with Ripper** instead of line by line, if real Gemfiles hit what the line reader misses: one-line `do … end` and `{ … }` source blocks (these fall back to the rubygems.org lookup) and `x = if … end` inside a source block (closes it early, so its later gems count as public).
 
 ## Later
@@ -91,7 +93,7 @@ Not doing for now: PDF generation (headless Chrome or a layout library is a heav
 
 - **Changelog database.** Build a database of Rails changelog entries and show the ones relevant to the app in the report. Open question: how much of this the deprecation rules already cover.
 - **Upgrade diagram.** A roadmap.sh-style diagram of the actual steps for each upgrade, including when to run `app:update`, etc.
-- **Migration risk in the report.** Some findings can only be fixed with a migration that rewrites a table: integer IDs → bigint, utf8mb3 → utf8mb4. Flag the risk that fix carries next to the finding: table rewrite and locking, uniqueness races when adding unique indexes, a suggested rollout order, and Rails/Postgres/MySQL version caveats. Optionally do the same for migrations in `db/migrate` newer than the schema version. Still read-only: the report flags the risk, it doesn't write or run migrations. Open question: whether it belongs in the first release.
+- **Migration risk in the report.** Some findings can only be fixed with a migration that rewrites a table: integer IDs → bigint, utf8mb3 → utf8mb4. Flag the risk that fix carries next to the finding: table rewrite and locking, uniqueness races when adding unique indexes, a suggested rollout order, and Rails/Postgres/MySQL version caveats. Optionally do the same for migrations in `db/migrate` newer than the schema version. Still read-only: the report flags the risk, it doesn't write or run migrations.
 
 ## Not doing
 
