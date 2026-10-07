@@ -32,7 +32,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 - `config.load_defaults` missing or behind; Docker checks (EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3); schema charset and integer IDs
 
 **Report**
-- Single-file HTML report: counts, each finding linked to its details, per-section confidence
+- Single-file HTML report (design A): verdict, counts, route with later versions faded, plan table, one card per step, what the report can't see; dark mode and print styles, no network requests
 - Upgrade path with one step per Rails minor, the Ruby range each needs and the APIs to fix at each; says which step to upgrade Ruby on, and to what
 - Terminal summary for SSH sessions and CI logs; related tools (next_rails, RailsBump, Brakeman, rubocop-rails) in the README and footer
 
@@ -65,7 +65,7 @@ Not needed for the first release: `structure.sql` and anything under Maybe.
 
 Decided 2026-10-07. Every format renders one structured set of findings; none parses another's output. In order:
 
-1. **Findings model and HTML redesign.** Findings carry their parts (gem, versions, limit, step, `removed_in`, files with line and snippet, citation, confidence), not only a finished sentence. The HTML follows design A (mockup: claude.ai/artifact/8HHnsQ12mV4exU6wSVJRwY):
+1. **Findings model and HTML redesign.** The HTML follows design A since 2026-10-08; the findings model is left. Findings carry their parts (gem, versions, limit, step, `removed_in`, files with line and snippet, citation, confidence), not only a finished sentence. The HTML follows design A (mockup: claude.ai/artifact/8HHnsQ12mV4exU6wSVJRwY):
    - Title `app: Rails X to Y` and a one-sentence verdict generated from the findings
    - Counts, then the route: one stop per Rails minor, blocker counts, Ruby upgrades marked; past the target, faded "ahead" stops count code that later versions remove (gem limits past the target aren't checked)
    - Plan table under the route: step, what to do, blockers, relative effort (never hours)

@@ -1,19 +1,26 @@
-# lib/rails_preflight/report_generator.rb
 require 'erb'
+require_relative 'version'
 
 module RailsPreflight
   class ReportGenerator
     include ERB::Util
 
-    SUMMARY_TILES = [
-      [:broken, "Already broken", "Removed before your current Rails: fails when it runs, or is dead code"],
-      [:blockers, "Blockers", "Must be fixed before the upgrade can work"],
-      [:to_fix, "To fix", "Will warn or break along the way"],
-      [:unknowns, "Couldn't check", "Not verified; review by hand"]
-    ].freeze
+    KIND_LABELS = { broken: "Broken", blocker: "Blocker", to_fix: "To fix", tip: "Tip", later: "Later" }.freeze
+    KIND_CLASSES = { broken: "broken", blocker: "blocker", to_fix: "fix", tip: "tip", later: "later" }.freeze
+    # Short label for the right-hand column when a finding has no link
+    SECTION_LABELS = { "Gem Compatibility" => "Gems", "Private Gems" => "Gems", "Deprecation Warnings" => "Code",
+                       "Configuration" => "Config", "Database Schema" => "Schema", "Ruby Version" => "Ruby",
+                       "Docker Configuration" => "Docker", "Rails Version" => "Rails" }.freeze
+    GEM_SECTIONS = ["Gem Compatibility", "Private Gems"].freeze
+    EFFORTS = %w[low medium high].freeze
+    HELP_URL = "https://syedaslam.com/work-with-me/".freeze
+    REPO_URL = "https://github.com/aslam/rails-preflight".freeze
 
+    # data: :results from the analyzers, :summary from SummaryCalculator, plus :app, :current_rails, :target_rails,
+    # :ruby ([version, source]), :offline, :looked_up (gems asked about on rubygems.org) and :later_rails (known versions past the target).
     def initialize(data)
       @data = data
+      @summary = data[:summary] || {}
       @generated_at = Time.now
     end
 
@@ -25,212 +32,286 @@ module RailsPreflight
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>RailsPreFlight Report</title>
+          <title><%= h(@data[:app] || "Rails") %>: Rails <%= h(current_label) %> to <%= h(@data[:target_rails]) %></title>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
-            h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
-            .section { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
-            .section-header { background: #f9f9f9; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
-            .section-body { padding: 15px; }
-            .item { margin-bottom: 10px; padding: 10px; border-radius: 4px; }
-            .passed { background-color: #e6fffa; border-left: 5px solid #38b2ac; }
-            .warning { background-color: #fffaf0; border-left: 5px solid #ed8936; }
-            .failed { background-color: #fff5f5; border-left: 5px solid #f56565; }
-            .badge { padding: 2px 8px; border-radius: 12px; font-size: 0.8em; color: white; }
-            .badge-passed { background-color: #38b2ac; }
-            .badge-warning { background-color: #ed8936; }
-            .badge-failed { background-color: #f56565; }
-            .badge-confidence-high { background-color: #2b6cb0; }
-            .badge-confidence-medium { background-color: #dd6b20; }
-            .badge-confidence-low { background-color: #718096; }
-            .meta { color: #666; font-size: 0.9em; margin-bottom: 20px; }
-            .summary-card { background: #f0f4f8; border: 1px solid #d9e2ec; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-            .summary-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #102a43; border-bottom: 1px solid #bcccdc; padding-bottom: 10px; }
-            .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-            .summary-item { background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-            .summary-label { font-size: 0.8em; color: #486581; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
-            .summary-value { font-size: 1.4em; font-weight: bold; }
-            .count-broken { color: #9b2c2c; }
-            .count-blockers { color: #e53e3e; }
-            .count-to_fix { color: #dd6b20; }
-            .count-unknowns { color: #718096; }
-            .summary-caption { font-size: 0.8em; color: #627d98; }
-            .summary-list { margin-top: 15px; }
-            .summary-list summary { cursor: pointer; font-weight: bold; color: #102a43; }
-            .summary-list ul { margin: 5px 0 0; padding-left: 20px; font-size: 0.9em; }
-            .broken { background-color: #fff5f5; border-left: 5px solid #9b2c2c; }
-            .unknown { background-color: #f7fafc; border-left: 5px solid #a0aec0; }
-            .tip { background-color: #ebf8ff; border-left: 5px solid #63b3ed; }
-            .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 0.9em; }
-            .legend { display: inline-flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: center; margin-top: 10px; }
-            .legend-item { display: flex; align-items: center; gap: 8px; }
+            /* An engineer's checklist on a sheet of paper. System fonts only: the report makes no network requests. */
+            :root {
+              --desk: #eceef1; --paper: #ffffff; --card: #fafbfc; --ink: #18202c; --muted: #5a6474; --rule: #d9dee5; --tint: #f1f5fa;
+              --accent: #1f4f8f; --broken: #8a1c2b; --blocker: #b8322b; --fix: #9a5a00; --unknown: #64708a;
+              --blocker-bg: #fbeceb;
+              --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+              --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+              --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+              color-scheme: light;
+            }
+            @media (prefers-color-scheme: dark) { :root {
+              --desk: #0e1218; --paper: #161b23; --card: #1a202a; --ink: #e5e8ee; --muted: #9aa3b2; --rule: #2c3442; --tint: #1d2532;
+              --accent: #8fb3ea; --broken: #f08a98; --blocker: #ff8a80; --fix: #f0b35a; --unknown: #a0a9bb; --blocker-bg: #2d1615;
+              color-scheme: dark; } }
+
+            * { box-sizing: border-box; }
+            body { margin: 0; background: var(--desk); color: var(--ink); font: 15px/1.55 var(--sans); }
+            .outer { padding: 24px 16px 64px; }
+            .sheet { max-width: 960px; margin: 0 auto; background: var(--paper); padding: clamp(20px, 5vw, 48px); display: grid; gap: 36px; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 30px rgba(20,30,50,.06); }
+            a { color: var(--accent); }
+            a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+            code { font: 0.88em var(--mono); }
+            h1, h2, h3 { margin: 0; text-wrap: balance; }
+            p { margin: 0; }
+
+            header { display: grid; gap: 12px; }
+            .tool { font: 500 12px var(--mono); color: var(--muted); letter-spacing: 0.03em; }
+            h1 { font: 500 clamp(30px, 5.4vw, 46px)/1.08 var(--display); letter-spacing: -0.01em; }
+            h1 .app { color: var(--accent); }
+            h1 .to { color: var(--muted); }
+            .verdict { font: 400 19px/1.45 var(--display); max-width: 62ch; }
+            .facts { display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--muted); font-size: 13px; }
+            .facts b { color: var(--ink); font-weight: 500; }
+
+            .counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--rule); }
+            .count { padding: 14px 16px 14px 0; display: grid; gap: 2px; align-content: start; text-decoration: none; color: inherit; }
+            .count + .count { padding-left: 16px; border-left: 1px solid var(--rule); }
+            .count:hover .l { text-decoration: underline; }
+            .count .n { font: 600 30px/1 var(--mono); color: var(--c); font-variant-numeric: tabular-nums; }
+            .count.zero .n { color: var(--muted); }
+            .count .l { font-weight: 600; font-size: 13px; }
+            .count .d { font-size: 12px; color: var(--muted); }
+            @media (max-width: 640px) { .counts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .count:nth-child(3) { padding-left: 0; border-left: 0; } .count:nth-child(n+3) { border-top: 1px solid var(--rule); } }
+
+            h2 { font: 600 12.5px var(--mono); text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); }
+            .block { display: grid; gap: 12px; }
+
+            .route-box { border: 1px solid var(--rule); border-radius: 6px; }
+            .route-scroll { overflow-x: auto; }
+            .route { display: grid; grid-template-columns: repeat(var(--stops), minmax(88px, 1fr)); min-width: calc(var(--stops) * 90px); padding: 18px 8px 12px; }
+            .stop { display: grid; justify-items: center; align-content: start; gap: 6px; position: relative; text-decoration: none; color: inherit; }
+            .stop::before { content: ""; position: absolute; top: 9px; left: -50%; width: 100%; height: 2px; background: var(--rule); }
+            .stop:first-child::before { display: none; }
+            .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 2px solid var(--muted); z-index: 1; }
+            .stop.now .dot { background: var(--ink); border-color: var(--ink); }
+            .stop.has .dot { border-color: var(--blocker); background: var(--blocker-bg); }
+            .stop.target .v { text-decoration: underline 2px; text-underline-offset: 4px; }
+            .stop.ahead { opacity: 0.6; }
+            .stop.ahead .dot { border-style: dashed; }
+            .stop.ahead::before { background: repeating-linear-gradient(90deg, var(--rule) 0 6px, transparent 6px 10px); }
+            .stop .v { font: 600 15px var(--mono); }
+            .stop .b { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
+            .stop.has .b { color: var(--blocker); font-weight: 500; }
+            .route-note { font-size: 12px; color: var(--muted); padding: 0 14px 12px; }
+
+            .table-scroll { overflow-x: auto; }
+            table.plan { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 14px; }
+            .plan th { text-align: left; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--ink); }
+            .plan td { padding: 11px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+            .plan td:first-child { font: 500 14px var(--mono); white-space: nowrap; }
+            .plan td:first-child a { color: inherit; }
+            .plan .num { text-align: right; font-variant-numeric: tabular-nums; }
+            .plan tr.target td { background: var(--tint); }
+            .plan tr.later td { color: var(--muted); }
+            .plan td:last-child { white-space: nowrap; }
+            .plan .ruby { display: block; margin-top: 3px; font-size: 12.5px; color: var(--accent); font-weight: 500; }
+            .effort { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: 6px; }
+            .effort i { width: 9px; height: 9px; border-radius: 2px; background: var(--rule); }
+            .effort.low i:nth-child(-n+1), .effort.medium i:nth-child(-n+2), .effort.high i:nth-child(-n+3) { background: var(--ink); }
+
+            .step { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; scroll-margin-top: 16px; }
+            .step.ahead-card { border-style: dashed; }
+            .step-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; padding: 11px 16px; border-bottom: 1px solid var(--rule); }
+            .step-head:last-child { border-bottom: 0; }
+            .step-head h3 { font: 600 17px var(--mono); }
+            .ahead-card .step-head h3 { color: var(--muted); }
+            .step-head .tag { font-size: 12px; color: var(--muted); }
+            .rubynote { display: flex; gap: 10px; align-items: baseline; padding: 9px 16px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--rule); }
+            .rubynote:last-child { border-bottom: 0; }
+            .rubynote .k { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; min-width: 40px; color: var(--accent); }
+            ul.rows { list-style: none; margin: 0; padding: 0; }
+            .row { display: grid; grid-template-columns: 88px minmax(0, 1fr) auto; gap: 4px 14px; padding: 11px 16px; border-bottom: 1px solid var(--rule); align-items: start; }
+            .row:last-child { border-bottom: 0; }
+            .kind { font: 600 10.5px/2 var(--mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--c); }
+            .kind::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: var(--c); margin-right: 6px; }
+            .msg { min-width: 0; overflow-wrap: anywhere; }
+            .meta { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+            .cite { font: 12px var(--mono); white-space: nowrap; color: var(--muted); }
+            a.cite { color: var(--accent); }
+            .empty { padding: 12px 16px; color: var(--muted); font-size: 14px; }
+            @media (max-width: 640px) { .row { grid-template-columns: minmax(0, 1fr); } .cite { white-space: normal; } }
+            .broken { --c: var(--broken); } .blocker { --c: var(--blocker); } .fix { --c: var(--fix); } .unknown { --c: var(--unknown); }
+            .tip { --c: var(--accent); } .later { --c: var(--muted); }
+
+            /* The meta line is the toggle for its files */
+            details.occ { margin-top: 3px; }
+            details.occ > summary { list-style: none; cursor: pointer; display: inline-flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; }
+            details.occ > summary::-webkit-details-marker { display: none; }
+            details.occ > summary::before { content: "▸"; transition: transform .15s; }
+            details.occ[open] > summary::before { transform: rotate(90deg); }
+            @media (prefers-reduced-motion: reduce) { details.occ > summary::before { transition: none; } }
+            .snip { overflow: auto; max-height: 360px; margin-top: 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); }
+            .snip table { border-collapse: collapse; font: 12px/1.5 var(--mono); width: 100%; }
+            .snip td { padding: 4px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+            .snip td.line { color: var(--muted); text-align: right; }
+            .snip tr:last-child td { border-bottom: 0; }
+
+            .limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+            .limit { background: var(--card); padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+            .limit h3 { font: 600 14.5px var(--sans); }
+            .limit p { font-size: 13.5px; color: var(--muted); }
+            .limit .next { color: var(--ink); }
+            .limit .next::before { content: "→ "; color: var(--accent); }
+            .names { font: 12px/1.7 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+            @media (max-width: 640px) { .limits { grid-template-columns: minmax(0, 1fr); } }
+
+            footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; gap: 12px; font-size: 13px; color: var(--muted); }
+            footer dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+            footer dt { font-weight: 600; color: var(--ink); }
+            footer dd { margin: 0; }
+            .sig { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+
+            @media print {
+              :root { --desk: #fff; --paper: #fff; --card: #fff; --ink: #18202c; --muted: #5a6474; --rule: #d9dee5; --tint: #f1f5fa;
+                --accent: #1f4f8f; --broken: #8a1c2b; --blocker: #b8322b; --fix: #9a5a00; --unknown: #64708a; --blocker-bg: #fbeceb; color-scheme: light; }
+              /* Dots, effort bars and markers are backgrounds, which browsers drop when printing */
+              * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              body { font-size: 10pt; }
+              .outer { padding: 0; }
+              .sheet { box-shadow: none; padding: 0 2mm; max-width: none; gap: 24px; }
+              details.occ > summary { color: var(--muted); }
+              details.occ > summary::before { content: ""; }
+              details.occ > :not(summary) { display: none; }
+              .route-scroll { overflow: visible; }
+              .route, table.plan { min-width: 0; }
+              .step-head, .rubynote, .row, .plan tr, .limit, .counts, .route-box { break-inside: avoid; }
+              a { color: inherit; text-decoration: none; }
+              @page { size: A4; margin: 14mm; }
+            }
           </style>
         </head>
         <body>
-          <h1>RailsPreFlight</h1>
-          <div class="meta">
-            Generated at: <%= h(@generated_at) %>
-          </div>
+        <div class="outer">
+        <article class="sheet">
+          <header>
+            <div class="tool">rails-preflight <%= h(VERSION) %> · <%= h(@generated_at.strftime("%-d %b %Y, %H:%M")) %></div>
+            <h1><% if @data[:app] %><span class="app"><%= h(@data[:app]) %>:</span> <% end %>Rails <%= h(current_label) %> <span class="to">to</span> <%= h(@data[:target_rails]) %></h1>
+            <p class="verdict"><%= h(verdict) %></p>
+            <div class="facts">
+              <% ruby, source = @data[:ruby] %>
+              <% if ruby %><span>Ruby <b><%= h(ruby) %></b> (<%= h(source) %>)</span><% end %>
+              <% if @data[:offline] %><span><b>Offline</b>: rubygems.org not asked</span><% end %>
+              <% if @data[:looked_up] %><span>Online: <b><%= @data[:looked_up] %></b> gems looked up on rubygems.org</span><% end %>
+            </div>
+          </header>
 
-          <% if @data[:summary] %>
-            <div class="summary-card">
-              <div class="summary-title">Rails <%= h(rails_jump) %></div>
-              <div class="summary-grid">
-                <% SUMMARY_TILES.each do |key, label, caption| %>
-                  <div class="summary-item">
-                    <div class="summary-label"><%= h(label) %></div>
-                    <div class="summary-value <%= "count-#{key}" if @data[:summary][key].any? %>"><%= @data[:summary][key].size %></div>
-                    <div class="summary-caption"><%= h(caption) %></div>
-                  </div>
-                <% end %>
+          <nav class="counts" aria-label="Totals">
+            <% count_tiles.each do |css, n, label, caption, href| %>
+              <a class="count <%= css %><%= " zero" if n.zero? %>" href="<%= href %>"><span class="n"><%= n %></span><span class="l"><%= h(label) %></span><span class="d"><%= h(caption) %></span></a>
+            <% end %>
+          </nav>
+
+          <section class="block" aria-labelledby="plan-h">
+            <h2 id="plan-h">Route and plan</h2>
+            <div class="route-box">
+              <div class="route-scroll">
+                <div class="route" style="--stops: <%= route_stops.size %>">
+                  <% route_stops.each do |css, version, note, href| %>
+                    <a class="stop <%= css %>" href="<%= href %>"><span class="dot"></span><span class="v"><%= h(version) %></span><span class="b"><%= h(note) %></span></a>
+                  <% end %>
+                </div>
               </div>
-              <% SUMMARY_TILES.each do |key, label, _caption| %>
-                <% next if @data[:summary][key].empty? %>
-                <details class="summary-list"<%= " open" unless key == :to_fix %>>
-                  <summary><%= h(label) %> (<%= @data[:summary][key].size %>)</summary>
-                  <ul>
-                    <% @data[:summary][key].each do |finding| %>
-                      <li><%= finding_html(finding) %></li>
-                    <% end %>
-                  </ul>
-                </details>
+              <% if route_ahead.any? %>
+                <p class="route-note">Checked through <%= h(@data[:target_rails]) %>. Faded stops count code that later versions remove, found in the same scan; gem limits past <%= h(@data[:target_rails]) %> aren't checked. Run <code>rails-preflight <%= h(route_ahead.last) %></code> for the full route.</p>
               <% end %>
             </div>
+            <div class="table-scroll">
+              <table class="plan">
+                <thead><tr><th>Step</th><th>What to do</th><th class="num">Blockers</th><th>Effort</th></tr></thead>
+                <tbody>
+                  <% if before.any? %>
+                    <tr><td><a href="#before"><%= h(@data[:current_rails] ? "Now, on #{minor(@data[:current_rails])}" : "Before you start") %></a></td><td><%= h(what_to_do(before)) %></td><td class="num"><%= blockers_in(before) %></td><td><%= effort_html(before) %></td></tr>
+                  <% end %>
+                  <% steps.each do |step| %>
+                    <tr<%= ' class="target"' if step.equal?(steps.last) %>><td><a href="#<%= step_id(step[:version]) %>">→ <%= h(step[:version]) %></a></td><td><%= h(what_to_do(step[:checks])) %><span class="ruby"><%= h(step[:ruby]) %></span></td><td class="num"><%= blockers_in(step[:checks]) %></td><td><%= effort_html(step[:checks]) %></td></tr>
+                  <% end %>
+                  <% if ahead.any? %>
+                    <% later = ahead.values.flatten %>
+                    <tr class="later"><td><a href="#ahead-h">Optional</a></td><td><%= h("Start on what later versions remove while you're in the code: #{what_to_do(later)}") %></td><td class="num">–</td><td><%= effort_html(later) %></td></tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-            <% if @data[:summary][:suggested_path] && @data[:summary][:suggested_path].any? %>
-              <div class="summary-card" style="border-left: 5px solid #38b2ac;">
-                <div class="summary-title" style="color: #234e52; border-bottom-color: #38b2ac;">🚀 Suggested Upgrade Path</div>
-                <div style="background: #fff; padding: 15px; border-radius: 4px;">
-                  <ol style="margin: 0; padding-left: 20px; font-size: 1.1em;">
-                    <% @data[:summary][:suggested_path].each do |step| %>
-                      <li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee;">
-                        <strong><%= h(step[:title]) %></strong>
-                        <ul style="margin: 5px 0 0; padding-left: 18px; font-size: 0.85em;">
-                          <% step[:items].each do |item| %>
-                            <li><%= finding_html(item) %></li>
-                          <% end %>
-                        </ul>
-                      </li>
-                    <% end %>
-                  </ol>
-                </div>
-              </div>
+          <section class="block" aria-labelledby="steps-h">
+            <h2 id="steps-h">Steps</h2>
+            <% if before.any? %>
+              <article class="step" id="before">
+                <div class="step-head"><h3>Before you start</h3><% if @data[:current_rails] %><span class="tag">on Rails <%= h(minor(@data[:current_rails])) %></span><% end %></div>
+                <ul class="rows"><% before.each do |entry| %><%= row_html(entry) %><% end %></ul>
+              </article>
             <% end %>
-          <% end %>
-
-          <% @data[:results].each do |section| %>
-            <div class="section" id="<%= section_id(section[:title]) %>">
-              <div class="section-header">
-                <div>
-                  <span><%= h(section[:title]) %></span>
-                  <% if section[:confidence] %>
-                    <span class="badge <%= confidence_class(section[:confidence]) %>" style="margin-left: 10px; font-weight: normal; font-size: 0.7em; opacity: 0.9;" title="Confidence Level">
-                      CONFIDENCE: <%= h(section[:confidence].to_s.upcase) %>
-                    </span>
-                  <% end %>
-                </div>
-                <span class="badge <%= status_class(section[:status]) %>"><%= h(section[:status].to_s.upcase) %></span>
-              </div>
-              <div class="section-body">
-                <% if section[:checks].empty? %>
-                  <div class="item passed">No issues found.</div>
-                <% else %>
-                  <% section[:checks].each do |check| %>
-                    <div class="item <%= check[:kind] || check[:status] %>">
-                      <% if check[:grouped] %>
-                        <!-- Grouped Finding Header -->
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
-                          <div>
-                            <strong><%= h(check[:message]) %></strong>
-                            <% if check[:stats][:fix_effort] %>
-                              <span class="badge" style="background-color: #4a5568;">Fix: <%= h(check[:stats][:fix_effort].to_s.upcase) %></span>
-                            <% end %>
-                            <% if guide_link?(check[:guide_link]) %>
-                              <a href="<%= h(check[:guide_link]) %>" target="_blank" rel="noopener" style="font-size: 0.85em; margin-left: 8px;">Upgrade guide ↗</a>
-                            <% end %>
-                          </div>
-                          <span class="badge" style="background-color: #718096;"><%= h(check[:stats][:severity]) %></span>
-                        </div>
-                        
-                        <!-- Stats Row -->
-                        <div style="display: flex; gap: 15px; font-size: 0.85em; color: #555; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">
-                          <span>Occurrences: <strong><%= h(check[:stats][:occurrences]) %></strong> <span style="font-weight:normal; color:#718096; font-size:0.9em;">(App: <strong><%= h(check[:stats][:occurrences_app]) %></strong> / Test: <%= h(check[:stats][:occurrences_test]) %>)</span></span>
-                          <span>Files: <strong><%= h(check[:stats][:files]) %></strong></span>
-                          <span>Models: <strong><%= h(check[:stats][:models]) %></strong></span>
-                          <span>Controllers: <strong><%= h(check[:stats][:controllers]) %></strong></span>
-                        </div>
-
-                        <!-- Expandable Details -->
-                        <details>
-                          <summary style="cursor: pointer; color: #3182ce; font-weight: 500; font-size: 0.9em; margin-bottom: 10px;">
-                            Expand to see <%= h(check[:stats][:occurrences]) %> individual instances
-                          </summary>
-                          
-                          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 4px; max-height: 300px; overflow-y: auto;">
-                            <table style="width: 100%; font-size: 0.85em; border-collapse: collapse;">
-                              <thead style="background: #f7fafc; position: sticky; top: 0;">
-                                <tr>
-                                  <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">File</th>
-                                  <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Line</th>
-                                  <th style="text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0;">Snippet</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <% check[:details].each do |occ| %>
-                                  <tr style="border-bottom: 1px solid #edf2f7;">
-                                    <td style="padding: 8px; color: #4a5568;"><%= h(occ[:file]) %></td>
-                                    <td style="padding: 8px; color: #4a5568;"><%= h(occ[:line]) %></td>
-                                    <td style="padding: 8px; font-family: monospace; color: #c53030;"><%= h(occ[:snippet]) %></td>
-                                  </tr>
-                                <% end %>
-                              </tbody>
-                            </table>
-                          </div>
-                        </details>
-
-                      <% else %>
-                        <!-- Standard Check -->
-                        <div style="display: flex; justify-content: space-between;">
-                          <strong><%= h(check[:message]) %></strong>
-                          <% if check[:fix_effort] %>
-                             <span class="badge" style="background-color: #cbd5e0; color: #2d3748; margin-left: 10px;">Fix: <%= h(check[:fix_effort].to_s.upcase) %></span>
-                          <% end %>
-                        </div>
-                        <% if check[:details].is_a?(Array) %>
-                          <ul>
-                            <% check[:details].each do |detail| %>
-                              <li><%= h(detail) %></li>
-                            <% end %>
-                          </ul>
-                        <% elsif check[:details] %>
-                           <p><%= h(check[:details]) %></p>
-                        <% end %>
-                      <% end %>
-                    </div>
-                  <% end %>
+            <% steps.each do |step| %>
+              <article class="step" id="<%= step_id(step[:version]) %>">
+                <div class="step-head"><h3><%= h(step[:from] ? "#{step[:from]} → #{step[:version]}" : "Rails #{step[:version]}") %></h3><span class="tag"><%= h(blocker_tag(step[:checks])) %></span></div>
+                <div class="rubynote"><span class="k">Ruby</span><span><%= h(step[:ruby]) %></span></div>
+                <% if step[:checks].any? %>
+                  <ul class="rows"><% step[:checks].each do |entry| %><%= row_html(entry) %><% end %></ul>
                 <% end %>
-              </div>
-            </div>
+              </article>
+            <% end %>
+            <% if steps.empty? %>
+              <p class="empty">Already on Rails <%= h(@data[:target_rails]) %>: no upgrade steps.</p>
+            <% end %>
+          </section>
+
+          <% if ahead.any? %>
+            <section class="block" aria-labelledby="ahead-h">
+              <h2 id="ahead-h">Ahead of <%= h(@data[:target_rails]) %></h2>
+              <% ahead.each do |version, entries| %>
+                <article class="step ahead-card" id="<%= ahead_id(version) %>">
+                  <div class="step-head"><h3><%= h(version) %></h3><span class="tag">not needed for <%= h(@data[:target_rails]) %></span></div>
+                  <ul class="rows"><% entries.each do |entry| %><%= row_html(entry, :later) %><% end %></ul>
+                </article>
+              <% end %>
+              <% clear = route_ahead - ahead.keys %>
+              <% if clear.any? %><p class="empty">Nothing in the code is removed by <%= h(clear.join(" or ")) %>.</p><% end %>
+            </section>
           <% end %>
 
-          <div class="footer">
-            <div class="legend">
-              <div class="legend-item">
-                <strong>Severity:</strong> Upgrade blocking impact
+          <section class="block" id="cant-see" aria-labelledby="cant-h">
+            <h2 id="cant-h">What this report can't see</h2>
+            <div class="limits">
+              <% @summary.fetch(:cant_see, []).each do |entry| %>
+                <div class="limit">
+                  <h3><%= h(entry[:section]) %></h3>
+                  <p><%= code_html(entry[:message]) %></p>
+                  <% names = Array(entry[:details]) %>
+                  <% if names.any? %><p class="names"><%= h(names.join(" · ")) %></p><% end %>
+                  <% if (next_step = cant_see_next(entry)) %><p class="next"><%= next_step %></p><% end %>
+                </div>
+              <% end %>
+              <div class="limit">
+                <h3>Behavior changes</h3>
+                <p>Some changes leave no telltale line: new framework defaults and changed query behavior.</p>
+                <p class="next">Run the test suite with <code>config.active_support.deprecation = :raise</code>.</p>
               </div>
-              <span style="color: #cbd5e0;">|</span>
-              <div class="legend-item">
-                <strong>Fix Effort:</strong> Implementation cost
-              </div>
-              <span style="color: #cbd5e0;">|</span>
-              <div class="legend-item">
-                <strong>Confidence:</strong> High: read from project files · Medium: pattern-based · Low: key input missing
+              <div class="limit">
+                <h3>Multi-line code and test coverage</h3>
+                <p>The scan matches single lines and never runs the app, so a call split across lines is missed, and it can't tell how much of the app the tests cover.</p>
+                <p class="next">Treat a clean step as "nothing found", not "nothing there".</p>
               </div>
             </div>
-            <p style="margin-top: 10px;">Also worth running: <a href="https://github.com/fastruby/next_rails">next_rails</a> or <a href="https://railsbump.org">RailsBump</a> for gem compatibility, <a href="https://brakemanscanner.org">Brakeman</a> for security, <a href="https://github.com/rubocop/rubocop-rails">rubocop-rails</a> for autofixes.</p>
-            <p style="margin-top: 10px;">RailsPreFlight</p>
-          </div>
+          </section>
 
+          <footer>
+            <dl>
+              <dt>Confidence</dt><dd><%= h(confidence_line) %></dd>
+              <dt>Sources</dt><dd>Removed APIs link to the Rails release notes for the version that removed them. Gem limits come from <code>Gemfile.lock</code> or the gem's README.</dd>
+            </dl>
+            <div class="sig">
+              <span>Made with <a href="<%= REPO_URL %>">rails-preflight</a>. Run it again after each step.</span>
+              <span>Need a hand with the upgrade? <a href="<%= HELP_URL %>">syedaslam.com/work-with-me</a></span>
+            </div>
+          </footer>
+        </article>
+        </div>
         </body>
         </html>
       ERB
@@ -240,35 +321,203 @@ module RailsPreflight
 
     private
 
-    def rails_jump
-      "#{@data[:current_rails] || 'unknown'} → #{@data[:target_rails]}"
+    def before
+      @summary.fetch(:before, [])
     end
 
-    def confidence_class(confidence)
-      "badge-confidence-#{confidence.to_s.downcase}"
+    def steps
+      @summary.fetch(:steps, [])
     end
 
-    # Links come from the rules database; render https only.
-    def guide_link?(url)
-      url.to_s.start_with?("https://")
+    def ahead
+      @summary.fetch(:ahead, {})
     end
 
-    # One finding line, linked to its section when it has one. Escapes everything it renders.
-    def finding_html(finding)
-      prefix = finding[:section] ? %(<a href="##{section_id(finding[:section])}">#{h(finding[:section])}</a>: ) : ""
-      prefix + h(finding[:message]) + occurrences_note(finding[:occurrences])
+    def current_label
+      @data[:current_rails] || "unknown"
     end
 
-    def occurrences_note(count)
-      count ? " (#{count.to_i} occurrence#{'s' unless count == 1})" : ""
+    def minor(version)
+      version.to_s.split(".").first(2).join(".")
     end
 
-    def section_id(title)
-      "section-#{title.to_s.downcase.gsub(/[^a-z0-9]+/, '-')}"
+    def count(key)
+      @summary.fetch(key, []).size
     end
 
-    def status_class(status)
-      "badge-#{status}"
+    def step_id(version)
+      "s#{version.to_s.tr('.', '-')}"
+    end
+
+    def ahead_id(version)
+      "a#{version.to_s.tr('.', '-')}"
+    end
+
+    def blockers_in(entries)
+      entries.count { |entry| entry[:kind] == :blocker }
+    end
+
+    # One sentence on the shape of the upgrade, from the counts.
+    def verdict
+      return "Already on Rails #{@data[:target_rails]}: there is nothing to upgrade." if steps.empty?
+
+      upgrades = steps.select { |step| step[:ruby_upgrade] }
+      route = steps.one? ? "One step" : "#{steps.size} steps"
+      ruby, = @data[:ruby]
+      route +=
+        if upgrades.any? then ", upgrading Ruby to #{upgrades.map { |step| "#{step[:ruby_upgrade]} before #{step[:version]}" }.join(', then ')}."
+        elsif ruby && steps.all? { |step| step[:ruby].end_with?("works") } then ", and Ruby #{ruby} can stay."
+        else "."
+        end
+
+      blockers = count(:blockers)
+      gems = @summary.fetch(:blockers, []).count { |finding| GEM_SECTIONS.include?(finding[:section]) }
+      blocking =
+        if blockers.zero? then "No blockers."
+        else "#{blockers} #{blockers == 1 ? 'blocker' : 'blockers'}#{", #{gems == blockers ? 'all' : gems} of them #{gems == 1 && blockers == 1 ? 'a gem' : 'gems'}" if gems.positive?}."
+        end
+      broken = count(:broken)
+      [route, blocking, ("#{broken} #{broken == 1 ? 'is' : 'are'} already broken today." if broken.positive?)].compact.join(" ")
+    end
+
+    def count_tiles
+      later = ahead.values.sum(&:size)
+      now = count(:to_fix) - later
+      first_blocked = steps.find { |step| blockers_in(step[:checks]).positive? }
+      [
+        ["broken", count(:broken), "Already broken", "Removed before #{@data[:current_rails] ? minor(@data[:current_rails]) : 'your Rails'}: fails when it runs", "#before"],
+        ["blocker", count(:blockers), "Blockers", "Must be fixed for #{@data[:target_rails]} to work", first_blocked ? "##{step_id(first_blocked[:version])}" : "#steps-h"],
+        ["fix", count(:to_fix), "To fix", later.positive? ? "#{now} now, #{later} before later versions" : "Will warn or break along the way", now.positive? ? "#before" : "#ahead-h"],
+        ["unknown", count(:unknowns), "Couldn't check", "Review by hand", "#cant-see"]
+      ]
+    end
+
+    # Known versions past the target, plus any version a finding names
+    def route_ahead
+      @route_ahead ||= (Array(@data[:later_rails]) | ahead.keys).sort_by { |version| Gem::Version.new(version) }
+    end
+
+    # [css, version, note, href] for each stop: where the app is, each step, then later versions faded.
+    def route_stops
+      stops = []
+      stops << ["now", minor(@data[:current_rails]), "you are here", before.any? ? "#before" : "#steps-h"] if @data[:current_rails]
+      steps.each do |step|
+        blockers = blockers_in(step[:checks])
+        css = [("has" if blockers.positive?), ("target" if step.equal?(steps.last))].compact.join(" ")
+        stops << [css, step[:version], blockers.zero? ? "no blockers" : "#{blockers} #{blockers == 1 ? 'blocker' : 'blockers'}", "##{step_id(step[:version])}"]
+      end
+      route_ahead.each do |version|
+        seen = ahead.fetch(version, []).size
+        stops << ["ahead", version, seen.zero? ? "none seen" : "#{seen} seen ahead", seen.zero? ? "#ahead-h" : "##{ahead_id(version)}"]
+      end
+      stops
+    end
+
+    # A short summary of a step's work, by kind and area.
+    def what_to_do(entries)
+      work = entries.reject { |entry| entry[:kind] == :tip }
+      return "Nothing found." if work.empty?
+
+      broken, rest = work.partition { |entry| entry[:kind] == :broken }
+      gems, rest = rest.partition { |entry| GEM_SECTIONS.include?(entry[:section]) }
+      code, rest = rest.partition { |entry| entry[:section] == "Deprecation Warnings" }
+      lines = code.sum { |entry| entry.dig(:stats, :occurrences) || 1 }
+      parts = []
+      parts << "#{broken.size} already broken" if broken.any?
+      parts << plural(gems.size, "gem") if gems.any?
+      parts << "#{plural(code.size, 'removed API')} (#{plural(lines, 'line')})" if code.any?
+      parts << "#{rest.size} more (#{rest.map { |entry| SECTION_LABELS.fetch(entry[:section], entry[:section]) }.uniq.join(', ')})" if rest.any?
+      "#{parts.join(', ')}."
+    end
+
+    def plural(n, word)
+      "#{n} #{word}#{'s' unless n == 1}"
+    end
+
+    def blocker_tag(entries)
+      blockers = blockers_in(entries)
+      return "nothing to fix" if entries.empty?
+
+      blockers.zero? ? "no blockers" : plural(blockers, "blocker")
+    end
+
+    # The highest fix effort among the step's findings; relative only, never hours.
+    def effort_html(entries)
+      level = entries.filter_map { |entry| EFFORTS.index((entry[:fix_effort] || entry.dig(:stats, :fix_effort)).to_s) }.max
+      return "–" unless level
+
+      %(<span class="effort #{EFFORTS[level]}"><i></i><i></i><i></i></span>#{EFFORTS[level].capitalize})
+    end
+
+    # One finding: kind, message with its meta line (the toggle for its files), and a link or its area.
+    def row_html(entry, kind = entry[:kind])
+      css = KIND_CLASSES.fetch(kind, "unknown")
+      %(<li class="row #{css}"><span class="kind">#{h(KIND_LABELS.fetch(kind, kind.to_s))}</span>) +
+        %(<div class="msg">#{code_html(entry[:message])}#{occurrences_html(entry)}</div>#{cite_html(entry)}</li>)
+    end
+
+    # Grouped findings list file, line and snippet; others may list files or names. Everything is escaped.
+    def occurrences_html(entry)
+      effort = entry[:fix_effort] || entry.dig(:stats, :fix_effort)
+      meta = []
+      rows =
+        if entry[:grouped]
+          stats = entry[:stats]
+          meta << occurrence_count(stats) << plural(stats[:files], "file")
+          entry[:details].map { |occ| %(<tr><td>#{h(occ[:file])}</td><td class="line">#{h(occ[:line])}</td><td>#{h(occ[:snippet])}</td></tr>) }
+        else
+          items = (entry[:details].is_a?(Array) ? entry[:details] : []).reject { |detail| detail.to_s.start_with?("Source: ") }
+          meta << plural(items.size, items.all? { |item| item.to_s.include?("/") } ? "file" : "item") if items.any?
+          items.map { |item| %(<tr><td>#{h(item)}</td></tr>) }
+        end
+      meta << "Fix: #{effort}" if effort && effort.to_s != "unknown"
+      return "" if meta.empty?
+
+      spans = meta.map { |part| "<span>#{h(part)}</span>" }.join
+      return %(<div class="meta">#{spans}</div>) if rows.empty?
+
+      %(<details class="occ"><summary>#{spans}</summary><div class="snip"><table>#{rows.join}</table></div></details>)
+    end
+
+    def occurrence_count(stats)
+      total, app, test = stats.values_at(:occurrences, :occurrences_app, :occurrences_test)
+      text = plural(total, "occurrence")
+      return text if test.to_i.zero?
+      return "#{text}, #{total == 1 ? 'in a test' : 'all in tests'}" if app.to_i.zero?
+
+      "#{text} (#{app} app, #{test} test)"
+    end
+
+    # The release notes or source a finding cites; its area when it has none. Links render https only.
+    def cite_html(entry)
+      source = Array(entry[:details]).find { |detail| detail.to_s.start_with?("Source: ") }.to_s.delete_prefix("Source: ")
+      url = [entry[:guide_link], source].find { |link| link.to_s.start_with?("https://") }
+      return %(<span class="cite">#{h(SECTION_LABELS.fetch(entry[:section], entry[:section]))}</span>) unless url
+
+      notes = url[%r{guides\.rubyonrails\.org/(\d+)_(\d+)_release_notes}] && "#{$1}.#{$2} notes"
+      label = notes || (url.include?("guides.rubyonrails.org") ? "Guide" : "Source")
+      %(<a class="cite" href="#{h(url)}" target="_blank" rel="noopener">#{label} ↗</a>)
+    end
+
+    # Escaped, with 'quoted' names set as code. An apostrophe inside a word (doesn't) isn't a quote.
+    def code_html(text)
+      h(text).gsub(/(?<![\w&;])&#39;(.+?)&#39;(?![\w&])/) { "<code>#{$1}</code>" }
+    end
+
+    def cant_see_next(entry)
+      case entry[:section]
+      when "Private Gems" then "Check each gemspec's Rails dependency, and bump them in the same step."
+      when "Gem Compatibility"
+        %(<a href="https://railsbump.org">RailsBump</a> or next_rails' <code>bundle_report compatibility</code> show which releases support #{h(@data[:target_rails])}.)
+      end
+    end
+
+    def confidence_line
+      by_level = Array(@data[:results]).select { |section| section[:confidence] }.group_by { |section| section[:confidence].to_sym }
+      { high: "read from project files", medium: "pattern matches", low: "a key input is missing" }.filter_map do |level, meaning|
+        sections = by_level[level]
+        "#{level.to_s.capitalize}, #{meaning}: #{sections.map { |section| section[:title] }.join(', ')}." if sections
+      end.join(" ")
     end
   end
 end

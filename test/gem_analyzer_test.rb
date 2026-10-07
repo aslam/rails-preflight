@@ -82,7 +82,7 @@ class GemAnalyzerTest < Minitest::Test
     check = run_checks(specs, hops: %w[6.0]).first
 
     assert_equal :warning, check[:status]
-    assert_nil check[:removed_in]
+    assert_equal "7.0", check[:removed_in]
     assert_includes check[:message], "It doesn't work from Rails 7.0, so plan the move before then. Used in 0 files."
   end
 
