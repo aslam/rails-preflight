@@ -8,12 +8,14 @@ module RailsPreflight
 
     # hops: Rails minor versions to pass through, each { version:, min_ruby:, max_ruby: }
     # (see UpgradeAnalyzer#upgrade_hops); empty when already on the target. app_ruby: the app's Ruby version, if known.
-    def initialize(results, target_rails = "Unknown", current_rails = nil, hops: nil, app_ruby: nil)
+    # current_max_ruby: newest Ruby the current Rails supports, if known.
+    def initialize(results, target_rails = "Unknown", current_rails = nil, hops: nil, app_ruby: nil, current_max_ruby: nil)
       @results = results
       @target_rails = target_rails
       @current_rails = current_rails
       @hops = hops || [{ version: target_rails }]
       @app_ruby = app_ruby
+      @current_max_ruby = current_max_ruby
     end
 
     def calculate
@@ -50,10 +52,14 @@ module RailsPreflight
       steps << { title: "Before you start", items: prep } if prep.any?
 
       from = @current_rails
+      ruby = @app_ruby # the Ruby the app runs at each step, after the upgrades suggested so far
+      max_now = @current_max_ruby
       @hops.each do |hop|
         title = from ? "Rails #{from} → #{hop[:version]}" : "Upgrade to Rails #{hop[:version]}"
-        steps << { title: title, items: [ruby_note(hop)] + step_findings(hop[:version]) }
+        note, ruby = ruby_note(hop, ruby, max_now)
+        steps << { title: title, items: [note] + step_findings(hop[:version]) }
         from = hop[:version]
+        max_now = hop[:max_ruby]
       end
       steps
     end
@@ -84,18 +90,27 @@ module RailsPreflight
       end
     end
 
-    def ruby_note(hop)
-      return { message: "Ruby requirements for Rails #{hop[:version]} are unknown" } unless hop[:min_ruby]
+    # [note, Ruby after this step]. A Ruby too old for the step is upgraded on the Rails before it, to the newest
+    # Ruby both support, so later steps need as few Ruby upgrades as possible.
+    def ruby_note(hop, ruby, max_now)
+      return [{ message: "Ruby requirements for Rails #{hop[:version]} are unknown" }, ruby] unless hop[:min_ruby]
 
-      range = "Ruby #{hop[:min_ruby]}–#{hop[:max_ruby].delete_suffix('.99')}"
-      ruby = @app_ruby && Gem::Version.new(@app_ruby)
+      range = "Ruby #{hop[:min_ruby]}–#{short(hop[:max_ruby])}"
+      version = ruby && Gem::Version.new(ruby)
       message =
-        if ruby.nil? then "Needs #{range}"
-        elsif ruby < Gem::Version.new(hop[:min_ruby]) then "Needs #{range}: upgrade Ruby from #{@app_ruby} first"
-        elsif ruby > Gem::Version.new(hop[:max_ruby]) then "Needs #{range}: Ruby #{@app_ruby} is newer than it supports"
-        else "Needs #{range}: #{@app_ruby} works"
+        if version.nil? then "Needs #{range}"
+        elsif version < Gem::Version.new(hop[:min_ruby])
+          upgraded = [max_now, hop[:max_ruby]].compact.min_by { |v| Gem::Version.new(v) }
+          from, ruby = ruby, upgraded
+          "Needs #{range}: upgrade Ruby from #{short(from)} to #{short(upgraded)} first"
+        elsif version > Gem::Version.new(hop[:max_ruby]) then "Needs #{range}: Ruby #{short(ruby)} is newer than it supports"
+        else "Needs #{range}: #{short(ruby)} works"
         end
-      { message: message }
+      [{ message: message }, ruby]
+    end
+
+    def short(ruby)
+      ruby.delete_suffix(".99")
     end
 
     def label(kind, count)

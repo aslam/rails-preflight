@@ -159,9 +159,20 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
 
-    ["Rails 6.1.7 → 7.0", "Rails 7.0 → 7.1", "Rails 7.1 → 7.2", "Needs Ruby 3.1.0–3.4: upgrade Ruby from 2.7.8 first"].each do |text|
+    ["Rails 6.1.7 → 7.0", "Rails 7.0 → 7.1", "Rails 7.1 → 7.2", "Needs Ruby 3.1.0–3.4: upgrade Ruby from 2.7.8 to 3.4 first"].each do |text|
       assert_includes report, text
     end
+  end
+
+  def test_end_of_life_advice_stays_within_the_target
+    write_lockfile(rails: "5.2.8.1")
+    File.write(File.join(@tmp_dir, ".ruby-version"), "2.5.9\n")
+
+    RailsPreflight::UpgradeAnalyzer.new("6.0", @tmp_dir).run
+    assert_includes report, "Ruby 2.5.9 is end-of-life. Rails 6.0 supports up to Ruby 2.7; Ruby 3.3+ needs Rails 7.1."
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+    assert_includes report, "Ruby 2.5.9 is end-of-life. Upgrade to Ruby 3.3+."
   end
 
   def test_defaults_to_the_next_known_minor
