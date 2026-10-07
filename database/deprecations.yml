@@ -85,7 +85,7 @@ deprecations:
     recategorization: "Rails 7.0 -> 7.1"
     fix_effort: medium
   - id: clear_connections
-    pattern: "(?<!connection_handler\\.)\\b(?:clear_active_connections!|clear_reloadable_connections!|clear_all_connections!|flush_idle_connections!)"
+    pattern: "(?<!connection_handler\\.)(?<!:)\\b(?:clear_active_connections!|clear_reloadable_connections!|clear_all_connections!|flush_idle_connections!)"
     message: "'ActiveRecord::Base.clear_active_connections!', 'clear_reloadable_connections!', 'clear_all_connections!' and 'flush_idle_connections!' were removed in Rails 7.2. Call the same methods on a connection handler, e.g. 'ActiveRecord::Base.connection_handler.clear_active_connections!'."
     removed_in: "7.2"
     severity: error
@@ -150,7 +150,8 @@ deprecations:
     recategorization: "Rails 5.1 -> 5.2"
     fix_effort: medium
   - id: secret_token
-    pattern: "\\.secret_token\\b"
+    # Rails config only: AhoyEmail.secret_token and other gems' settings are fine
+    pattern: "\\b(?:config|configuration)\\.secret_token\\b"
     message: "'config.secret_token' was removed in Rails 6.0. Use 'secret_key_base', held in credentials."
     removed_in: "6.0"
     severity: error
@@ -800,7 +801,7 @@ deprecations:
     recategorization: "Rails 6.0 -> 6.1"
     fix_effort: low
   - id: render_file_relative_path
-    pattern: "\\brender\\s*\\(?\\s*(?:file:|:file\\s*=>)\\s*[\"'](?!/|#\\{Rails\\.root)"
+    pattern: "\\brender\\s*\\(?\\s*(?:file:|:file\\s*=>)\\s*[\"'](?!/|#\\{Rails\\.root|public/)"
     message: "Passing a relative path to 'render file:' was removed in Rails 6.1. Pass an absolute path, e.g. Rails.root.join(\"public/404.html\"), or use render template:."
     removed_in: "6.1"
     severity: error

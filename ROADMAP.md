@@ -42,7 +42,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 ## Now
 
-Redmine, Mastodon and Discourse are done (item 1 below). Next: grow the gem list from what they found, or one more app on a different stack.
+Redmine, Mastodon, Discourse and Forem are done (item 1 below). Next: grow the gem list from what they found, or one more app on a different stack.
 
 ## First public release
 
@@ -54,6 +54,7 @@ The bar is a report that holds up on real apps, not an empty roadmap. In order:
    - 2026-10-07, Redmine 4.0.0 (Rails 5.2) and 5.0.0 (6.1) → 8.1, with lockfiles from `bundle lock` (Redmine commits none). 28 findings checked against the source and against Redmine 6.0 on Rails 7.2, where any hit still present is suspect. Fixed two false positives: bare `errors.each |a, b|` on an Array in a helper, and sprockets-rails flagged for an app that never loads it. "Already broken" was right every time.
    - 2026-10-07, Mastodon: ten releases, each one before a Rails bump run to the Rails the next one moved to (5.1 → 8.1), with their committed lockfiles. All 17 gem blockers and every removed-API blocker were fixed in the next release. Fixed three false positives: Chewy `tokenizer:` strings, a service's own `destroy_all(x)`, and an app method named `image_alt`.
    - 2026-10-07, Discourse: fourteen releases, 5.1 → 8.1. It locks railties, not rails, which the tool reads fine. All 8 gem blockers were fixed in the next release. Fixed false positives: `errors` as a local Hash in a controller, `lib/` and specs (rules now skip a bare `errors` in a file that assigns it or takes it as a parameter), a local named `update_attributes`, and `class_name: Constant` in a non-association DSL. Real "already broken" finds: `render nothing: true` since 5.1, and `clear_active_connections!` in a dev script since 7.2. Left: Onebox's `errors` is a Hash set in another file, so three hits stay; a per-file scan can't see it.
+   - 2026-10-07, Forem (dev.to): the commit before and after each of its seven Rails upgrades, 5.1 → 8.0, found by bisecting `Gemfile.lock`. All 3 gem blockers were fixed in the upgrade commit. Fixed false positives: `AhoyEmail.secret_token` (a gem's setting), the new `connection_handler` API mocked as `receive(:clear_active_connections!)`, `render file: "public/404.html"` (paths that exist from the app root still render on 6.1+), and setting names inside `respond_to?(:x)` guards. Real "already broken" finds: `render text:` in an API controller since 5.1, and `ActiveRecord::Base.timestamped_migrations` in a generator since 7.1. Left: a removed setting in the `else` branch of a `respond_to?` guard is reported as dead code, which it is, but on purpose.
 2. **Grow the gem list** in `database/gems.yml` from what the runs find, citing a README, deprecation notice or Rails source for each entry. The release notes 5.1 → 8.1 have been read in full and name few gems.
    - 2026-10-07, the private 5.2 app → 7.0: five locked gems cap Rails (responders and active_record_replica below 6.0, acts-as-taggable-on below 6.1, activeresource and acts_as_paranoid below 7.0), and protected_attributes_continued blocks 7.0 across 131 files.
 3. **Publish 0.1.0.** Tag `v0.1.0`, `gem push`, make the repo public.
