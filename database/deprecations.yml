@@ -158,7 +158,8 @@ deprecations:
     recategorization: "Rails 5.2 -> 6.0"
     fix_effort: medium
   - id: image_alt_helper
-    pattern: "\\bimage_alt\\b"
+    # The helper took the image source; a bare image_alt or an image_alt: key is the app's own
+    pattern: "\\bimage_alt(?:\\s*\\(|\\s+['\"@])"
     message: "The 'image_alt' helper was removed in Rails 6.0. Pass the alt text to 'image_tag' yourself."
     removed_in: "6.0"
     severity: error
@@ -700,7 +701,8 @@ deprecations:
     recategorization: "Rails 5.0 -> 5.1"
     fix_effort: low
   - id: length_validator_tokenizer
-    pattern: "\\btokenizer:"
+    # The option took a proc; a string tokenizer is search-index config (Chewy, Elasticsearch)
+    pattern: "(?:\\btokenizer:|:tokenizer\\s*=>)\\s*(?:->|lambda\\b|proc\\b|Proc\\.new\\b|method\\s*\\()"
     message: "The ':tokenizer' option of the length validator was removed in Rails 5.1. Count tokens in a custom validator instead."
     removed_in: "5.1"
     severity: error
@@ -719,7 +721,8 @@ deprecations:
     recategorization: "Rails 5.0 -> 5.1"
     fix_effort: low
   - id: delete_destroy_all_conditions
-    pattern: "\\b(?:delete|destroy)_all\\s*\\(\\s*(?!\\)|:(?:delete_all|nullify|destroy)\\b)\\S"
+    # A bare delete_all(x) is usually the class's own method; misses a model calling its own bare delete_all(conditions)
+    pattern: "\\.(?:delete|destroy)_all\\s*\\(\\s*(?!\\)|:(?:delete_all|nullify|destroy)\\b)\\S"
     message: "Passing conditions to 'delete_all' or 'destroy_all' was removed in Rails 5.1. Use where(...).delete_all or where(...).destroy_all."
     removed_in: "5.1"
     severity: error
