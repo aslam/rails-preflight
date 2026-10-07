@@ -111,10 +111,16 @@ module RailsPreflight
           rule.fetch('files', ['code']).include?(kind) && (rule['paths'].nil? || under.(rule['paths']))
         end
         next if applicable.empty?
-        # Under `needs_receiver_in:`, only `x.errors` counts: a bare `errors` in a helper or view is a local, not ActiveModel's.
-        needs_receiver = applicable.select { |_regex, rule| rule['needs_receiver_in'] && under.(rule['needs_receiver_in']) }.map(&:last)
+        content = File.read(file)
+        # Only `x.errors` counts under `needs_receiver_in:` (a bare `errors` in a helper or view is a local), and in a
+        # file that assigns `errors` or takes it as a parameter (`skip_bare_if_local:`), where the bare name is that local.
+        # ponytail: file-wide, so a model with an `errors` local in one method loses bare hits in the others.
+        needs_receiver = applicable.select do |_regex, rule|
+          (rule['needs_receiver_in'] && under.(rule['needs_receiver_in'])) ||
+            (rule['skip_bare_if_local'] && local?(content, rule['skip_bare_if_local']))
+        end.map(&:last)
 
-        File.foreach(file).with_index(1) do |line, line_num|
+        content.each_line.with_index(1) do |line, line_num|
           # Skip comments and method definitions (e.g. "def update_attributes") to avoid false positives
           next if line.lstrip.start_with?("#", "def ", "<%#")
 
@@ -150,6 +156,13 @@ module RailsPreflight
 
       line.gsub(/(["'])(?:\\.|(?!\1).)*\1/) { "#{$1}[hidden]#{$1}" }
           .gsub(/((?:#{SECRET_NAME.source})\w*\s*(?:=>|[:=])\s*)[^"'\s#,][^#,]*?(?=\s*(?:#|,|$))/i) { "#{$1}[hidden]" }
+    end
+
+    # `name = ...`, `name ||= ...`, a block parameter (`do |x, name|`) or a method parameter.
+    def local?(content, name)
+      # [ \t], not \s: each part stays on one line (`def valid?` then `errors` on the next isn't a parameter).
+      content.match?(/(?<![.@\w])#{name}[ \t]*(?:\|\|)?=(?![=~>])|(?:\bdo|\{)[ \t]*\|[\w \t,*&]*\b#{name}\b[\w \t,*&]*\||
+                      ^[ \t]*def[ \t]+(?:self\.)?\w+[!?]?(?:[ \t]*\([^)\n]*\b#{name}\b|[ \t]+[^(=;\n]*\b#{name}\b)/x)
     end
 
     # Removed at or before the current version: the app already runs without it.
