@@ -105,19 +105,22 @@ module RailsPreflight
         relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path)).to_s
         is_test = relative_path.start_with?('test/', 'spec/')
 
+        under = ->(paths) { paths.any? { |path| relative_path == path || relative_path.start_with?("#{path}/") } }
         # A rule with `paths:` only applies under those directories or to those files.
         applicable = compiled.select do |_regex, rule|
-          rule.fetch('files', ['code']).include?(kind) &&
-            (rule['paths'].nil? || rule['paths'].any? { |path| relative_path == path || relative_path.start_with?("#{path}/") })
+          rule.fetch('files', ['code']).include?(kind) && (rule['paths'].nil? || under.(rule['paths']))
         end
         next if applicable.empty?
+        # Under `needs_receiver_in:`, only `x.errors` counts: a bare `errors` in a helper or view is a local, not ActiveModel's.
+        needs_receiver = applicable.select { |_regex, rule| rule['needs_receiver_in'] && under.(rule['needs_receiver_in']) }.map(&:last)
 
         File.foreach(file).with_index(1) do |line, line_num|
           # Skip comments and method definitions (e.g. "def update_attributes") to avoid false positives
           next if line.lstrip.start_with?("#", "def ", "<%#")
 
           applicable.each do |regex, rule|
-            next unless line.match?(regex)
+            next unless (match = regex.match(line))
+            next if needs_receiver.include?(rule) && !match.pre_match.end_with?(".")
 
             found << {
               message: rule['message'],

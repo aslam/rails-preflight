@@ -41,6 +41,7 @@ class GemAnalyzerTest < Minitest::Test
   end
 
   def test_gem_rails_stops_depending_on_blocks_unless_the_gemfile_lists_it
+    write_app_file("config/application.rb", "require 'rails/all'\n    config.assets.enabled = false\n")
     specs = lockfile_specs("sprockets-rails (3.2.2)")
 
     check = RailsPreflight::GemAnalyzer.new(@tmp_dir, specs, hops: %w[6.1 7.0], direct: %w[rails]).run[:checks].first
@@ -50,6 +51,16 @@ class GemAnalyzerTest < Minitest::Test
     assert_equal "7.0", check[:removed_in]
     assert_includes check[:message], "Rails 7.0 no longer depends on sprockets-rails"
     assert_equal [], (listed + via_sass).map { |c| c[:message] }.grep(/sprockets/)
+  end
+
+  def test_gem_rails_stops_depending_on_is_fine_when_the_app_never_uses_it
+    write_app_file("config/application.rb", "# require 'sprockets/railtie'\n    # config.assets.enabled = false\n")
+    specs = lockfile_specs("sprockets-rails (3.2.2)")
+
+    assert_equal [], run_checks(specs, hops: %w[7.0]).map { |c| c[:message] }.grep(/sprockets/)
+
+    write_app_file("app/assets/config/manifest.js", "//= link_tree ../images\n")
+    assert_equal 1, run_checks(specs, hops: %w[7.0]).map { |c| c[:message] }.grep(/sprockets/).size
   end
 
   def test_curated_gem_blocks_the_hop_where_it_stops_working

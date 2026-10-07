@@ -122,6 +122,18 @@ class DeprecationAnalyzerTest < Minitest::Test
     assert_nil checks.find { |c| c[:message].include?("positionally") }
   end
 
+  def test_bare_errors_in_helpers_and_views_is_a_local
+    write_app_file("app/helpers/settings_helper.rb", "    errors.each do |name, message|\n    form.errors.each do |attribute, message|\n")
+    write_app_file("app/views/shared/_errors.html.erb", "<% errors[:base] << 'x' %>\n")
+    write_app_file("lib/sudo_form.rb", "    errors.each do |attribute, message|\n")
+
+    checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks]
+    check = checks.find { |c| c[:message].start_with?("Enumerating 'ActiveModel::Errors'") }
+
+    assert_equal ["app/helpers/settings_helper.rb:2", "lib/sudo_form.rb:1"], check[:details].map { |d| "#{d[:file]}:#{d[:line]}" }.sort
+    assert_nil checks.find { |c| c[:message].start_with?("Changing error messages") }
+  end
+
   def test_snippets_hide_secret_values
     File.write(File.join(@app_dir, "secrets.rb"), <<~RUBY)
       deprecated_method; App.config.secret_token = '189b1a78ff508196'
