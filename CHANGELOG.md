@@ -9,3 +9,4 @@ First release. Point it at a Rails 5.0 – 8.1 app and a target version; it writ
 - Gem checks: private gems from `Gemfile.lock` and the Gemfile's sources, locked gems whose Rails requirement caps the upgrade, a curated list of gems with known limits, and (online) gems with no release since the target Rails shipped
 - Ruby and Node end-of-life, Docker runtime risks, database schema charset and integer IDs, `config.load_defaults`
 - `--offline` for a fully static run
+- Report snippets hide quoted values on lines that name a secret, token or password
