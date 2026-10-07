@@ -127,6 +127,8 @@ module RailsPreflight
           applicable.each do |regex, rule|
             next unless (match = regex.match(line))
             next if needs_receiver.include?(rule) && !match.pre_match.end_with?(".")
+            # `respond_to?(:x)` or `try(:x)` checks for the API, it doesn't use it; the line still counts if it uses it too.
+            next if match.pre_match.match?(/(?:respond_to\?|try)\(\s*:\z/) && line.scan(regex).size == 1
 
             found << {
               message: rule['message'],
