@@ -57,7 +57,8 @@ module RailsPreflight
       }
 
       # Calculate Summary
-      summary_calc = SummaryCalculator.new(results, @target_rails, current_rails&.to_s, hops: upgrade_hops, app_ruby: app_ruby.first)
+      summary_calc = SummaryCalculator.new(results, @target_rails, current_rails&.to_s, hops: upgrade_hops, app_ruby: app_ruby.first,
+                                           current_max_ruby: current_rails_rules&.dig('max_ruby'))
       report_data[:summary] = summary_calc.calculate
       summary = report_data[:summary]
       puts "#{"Already broken: #{summary[:broken].size} · " if summary[:broken].any?}Blockers: #{summary[:blockers].size} · To fix: #{summary[:to_fix].size} · Couldn't check: #{summary[:unknowns].size}"
@@ -135,7 +136,13 @@ module RailsPreflight
       eol_below = DockerAnalyzer::RUBY_EOL_BELOW
       if current_ver < Gem::Version.new(eol_below)
         result[:status] = :warning if result[:status] == :passed
-        result[:checks] << { message: "Ruby #{current_ver} is end-of-life. Upgrade to Ruby #{eol_below}+.", status: :warning, fix_effort: :high }
+        advice =
+          if max_ver >= Gem::Version.new(eol_below) then "Upgrade to Ruby #{eol_below}+."
+          else
+            later = @rules['rails_versions'].find { |_, rules| Gem::Version.new(rules['max_ruby']) >= Gem::Version.new(eol_below) }&.first
+            "Rails #{@target_rails} supports up to Ruby #{constraints['max_ruby'].delete_suffix('.99')}; Ruby #{eol_below}+ needs Rails #{later || 'newer than ' + latest_known_rails}."
+          end
+        result[:checks] << { message: "Ruby #{current_ver} is end-of-life. #{advice}", status: :warning, fix_effort: :high }
       end
 
       result
@@ -373,6 +380,10 @@ module RailsPreflight
       end
       current_minor = Gem::Version.new(current_rails.segments.first(2).join("."))
       known_rails_versions.find { |v| Gem::Version.new(v) > current_minor }
+    end
+
+    def current_rails_rules
+      current_rails && @rules.fetch('rails_versions', {})[current_rails.segments.first(2).join(".")]
     end
 
     def target_rails_rules
