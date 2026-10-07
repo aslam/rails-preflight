@@ -62,6 +62,11 @@ adapter_requirements:
   "8.1": { sqlite3: [">= 2.1"], mysql2: ["~> 0.5"], pg: ["~> 1.1"], trilogy: ["~> 2.7"] }
 
 # Gems the rails gem stopped depending on, from rails.gemspec on each X-Y-stable branch. An app that gets one
-# only through rails loses it on that hop: without sprockets-rails, `config.assets` raises on boot.
+# only through rails loses it on that hop, which matters only if the app uses it: `paths` any of which exists,
+# or `config`, a pattern for an uncommented line in config/**/*.rb. Without sprockets-rails, `config.assets`
+# raises on boot (7.0's rails/all no longer requires sprockets/railtie); an app with neither never loaded it.
 dropped_by_rails:
-  "7.0": [sprockets-rails]
+  "7.0":
+    sprockets-rails:
+      paths: [app/assets]
+      config: "\\bconfig\\.assets\\b|require\\s*\\(?\\s*[\"']sprockets"

@@ -34,6 +34,7 @@ class UpgradeAnalyzerTest < Minitest::Test
       DEPENDENCIES
         railties
     LOCKFILE
+    FileUtils.mkdir_p(File.join(@tmp_dir, "app/assets"))
 
     RailsPreflight::UpgradeAnalyzer.new("7.0", @tmp_dir, offline: true).run
 

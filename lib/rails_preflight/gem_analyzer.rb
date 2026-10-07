@@ -71,15 +71,24 @@ module RailsPreflight
     end
 
     # A gem the app gets only through `rails` disappears on the hop where rails stops depending on it.
-    # Still pulled in by the Gemfile or another gem (sass-rails needs sprockets-rails), it stays.
+    # Still pulled in by the Gemfile or another gem (sass-rails needs sprockets-rails), it stays; unused, it doesn't matter.
     def dropped_by_rails
       locked = @specs.map(&:name)
       kept = @direct + @specs.reject { |spec| spec.name == "rails" }.flat_map { |spec| spec.dependencies.map(&:name) }
       @hops.flat_map do |hop|
-        @dropped_by_rails.fetch(hop, []).select { |name| locked.include?(name) && !kept.include?(name) }.map do |name|
+        @dropped_by_rails.fetch(hop, {}).select { |name, used_if| locked.include?(name) && !kept.include?(name) && used?(used_if) }.keys.map do |name|
           { message: "Rails #{hop} no longer depends on #{name}, and the Gemfile doesn't list it. Add gem \"#{name}\" to the Gemfile in the same step.",
             status: :failed, removed_in: hop, fix_effort: :low }
         end
+      end
+    end
+
+    def used?(used_if)
+      return true if used_if.fetch('paths', []).any? { |path| File.exist?(File.join(@project_path, path)) }
+
+      pattern = used_if['config'] && Regexp.new(used_if['config'])
+      pattern && Dir.glob(File.join(@project_path, "config/**/*.rb")).any? do |file|
+        File.foreach(file).any? { |line| !line.lstrip.start_with?("#") && line.match?(pattern) }
       end
     end
 
