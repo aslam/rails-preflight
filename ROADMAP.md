@@ -49,8 +49,8 @@ The bar is a report that holds up on real apps, not an empty roadmap. In order:
    - 2026-10-05, same 5.2 app: its Bundler 1.17 lockfile mixes rubygems.org and a private registry in one section. The rubygems.org lookup took minutes and missed 5 of its 11 private gems (private forks under public names); reading the Gemfile's source blocks finds all 11 in about a second (#17).
 2. **Grow the gem list** (below). The mechanism is in, with 9 entries, the adapter version table and the sprockets-rails drop; the list covers only what someone has checked.
    - 2026-10-07, the 5.2 app → 7.0: five locked gems cap Rails (responders and active_record_replica below 6.0, acts-as-taggable-on below 6.1, activeresource and acts_as_paranoid below 7.0), and protected_attributes_continued blocks 7.0 across 131 files.
-3. **Make the README accurate.** It claims Rails 3 / 4 support (`compatibility.yml` starts at 5.0) and known public gem incompatibilities (not built yet), and has a `DB/schema.rb` typo.
-4. **Release basics.** A CHANGELOG, gemspec metadata, a check that `rails_preflight` is free on rubygems.org, and a 0.x version.
+3. ~~**Make the README accurate.**~~ Done in #35.
+4. **Release basics.** CHANGELOG, LICENSE, gemspec metadata and packaging done in #36; `rails_preflight` was free on rubygems.org on 2026-10-07. Left: tag `v0.1.0` and `gem push`.
 
 Not needed for the first release: `structure.sql` and anything under Maybe.
 
