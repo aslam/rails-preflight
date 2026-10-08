@@ -10,7 +10,7 @@ It helps teams understand:
 - what is easy vs painful to fix
 - where hidden dependency and infrastructure risks exist
 
-This tool is designed for **planning and estimation**, not automated migration.
+This tool is designed for **planning and scoping**, not automated migration.
 
 ## Why this exists
 
@@ -23,7 +23,7 @@ Rails upgrades fail not because teams can’t write code, but because they under
 
 `rails-preflight` makes these risks visible before you start upgrading.
 
-Think of it as **upgrade reconnaissance**, not a fixer.
+Think of it as **upgrade reconnaissance**, not a fixer. Run it before the upgrade starts, whoever does it: your team, a consultant or a coding agent.
 
 ## What this tool does
 
@@ -67,7 +67,7 @@ This tool is especially useful if you are:
 
 - Upgrading a Rails 5.0 or newer application (Rails 3 and 4 aren't covered)
 - Planning a security-driven upgrade
-- Estimating upgrade effort before committing resources
+- Scoping an upgrade before committing resources
 - Auditing multiple legacy Rails apps
 - A consultant or staff engineer responsible for upgrade strategy
 
