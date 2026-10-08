@@ -114,7 +114,7 @@ The tool writes one self-contained **HTML report** (`rails_preflight_report.html
     *   **To fix**: will warn or break along the way (deprecations, lagging config), split into now and later versions.
     *   **Couldn't check**: what the tool could not verify (private gems, missing files), to review by hand.
 
-3.  **Route and plan**: one stop per Rails minor, since Rails recommends upgrading one at a time, with the blockers at each. Later versions past the target are faded and count the code they remove, found in the same scan. A table gives each step's work, the Ruby it needs and a relative effort.
+3.  **Route and plan**: one stop per Rails minor, since Rails recommends upgrading one at a time, with the blockers at each. Later versions past the target are faded and count the code they remove, found in the same scan. A table gives each step's work, the Ruby it needs and a relative effort: the hardest single fix in it (low, medium or high, set per check), not the amount of work. The occurrence counts on each finding show that.
 
 4.  **Steps**: "Before you start" for findings that don't belong to a step, then one card per step with its Ruby range and the removed APIs and gems to fix for it. Each finding links to the Rails release notes or the gem's source; its occurrence line expands to file, line and snippet, with app and test occurrences counted apart.
 
