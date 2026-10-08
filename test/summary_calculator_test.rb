@@ -35,8 +35,9 @@ class SummaryCalculatorTest < Minitest::Test
 
     assert_equal ["render :text"], summary[:broken].map { |f| f[:message] }
     assert_empty summary[:blockers]
-    assert_equal [["Deprecation Warnings", "1 already broken"], ["Configuration", "1 to fix"]],
-                 summary[:suggested_path].first[:items].map { |i| [i[:section], i[:message]] }
+    assert_equal [["Deprecation Warnings", "render :text", :broken], ["Configuration", "Old defaults", :to_fix]],
+                 summary[:before].map { |e| e.values_at(:section, :message, :kind) }
+    assert_empty summary[:steps].first[:checks]
   end
 
   def test_findings_keep_their_section_and_occurrences
@@ -63,7 +64,9 @@ class SummaryCalculatorTest < Minitest::Test
         status: :failed,
         checks: [
           { message: "Old API", status: :failed, removed_in: "7.1", stats: { occurrences: 4 } },
-          { message: "Older API", status: :warning, removed_in: "6.1" }
+          { message: "Older API", status: :warning, removed_in: "6.1" },
+          { message: "Later API", status: :warning, removed_in: "7.2" },
+          { message: "Use rubocop", status: :passed, kind: :tip }
         ]
       }
     ]
@@ -72,27 +75,21 @@ class SummaryCalculatorTest < Minitest::Test
       { version: "7.1", min_ruby: "2.7.0", max_ruby: "3.4.99" }
     ]
 
-    path = RailsPreflight::SummaryCalculator.new(results, "7.1", "6.1.7", hops: hops, app_ruby: "2.7.8").calculate[:suggested_path]
+    summary = RailsPreflight::SummaryCalculator.new(results, "7.1", "6.1.7", hops: hops, app_ruby: "2.7.8").calculate
 
-    assert_equal [
-      { title: "Before you start", items: [
-        { section: "Private Gems", message: "1 couldn't check" },
-        { section: "Deprecation Warnings", message: "1 to fix" }
-      ] },
-      { title: "Rails 6.1.7 → 7.0", items: [{ message: "Needs Ruby 2.7.0–3.2: 2.7.8 works" }] },
-      { title: "Rails 7.0 → 7.1", items: [
-        { message: "Needs Ruby 2.7.0–3.4: 2.7.8 works" },
-        { section: "Deprecation Warnings", message: "Old API", occurrences: 4 }
-      ] }
-    ], path
+    assert_equal ["Older API", "Use rubocop"], summary[:before].map { |e| e[:message] }
+    assert_equal [["7.0", "6.1.7", "Needs Ruby 2.7.0–3.2: 2.7.8 works", []], ["7.1", "7.0", "Needs Ruby 2.7.0–3.4: 2.7.8 works", ["Too old", "Old API"]]],
+                 summary[:steps].map { |step| [step[:version], step[:from], step[:ruby], step[:checks].map { |e| e[:message] }] }
+    assert_equal({ "7.2" => ["Later API"] }, summary[:ahead].transform_values { |entries| entries.map { |e| e[:message] } })
+    assert_equal ["1 private gem"], summary[:cant_see].map { |e| e[:message] }
   end
 
   def test_ruby_note_says_when_to_upgrade_ruby
     hops = [{ version: "7.2", min_ruby: "3.1.0", max_ruby: "3.4.99" }]
 
-    path = RailsPreflight::SummaryCalculator.new([], "7.2", "7.1.3", hops: hops, app_ruby: "2.7.8").calculate[:suggested_path]
+    steps = RailsPreflight::SummaryCalculator.new([], "7.2", "7.1.3", hops: hops, app_ruby: "2.7.8").calculate[:steps]
 
-    assert_equal [{ title: "Rails 7.1.3 → 7.2", items: [{ message: "Needs Ruby 3.1.0–3.4: upgrade Ruby from 2.7.8 to 3.4 first" }] }], path
+    assert_equal [["Needs Ruby 3.1.0–3.4: upgrade Ruby from 2.7.8 to 3.4 first", "3.4"]], steps.map { |step| step.values_at(:ruby, :ruby_upgrade) }
   end
 
   def test_ruby_is_upgraded_as_far_as_the_rails_before_the_step_allows
@@ -104,7 +101,7 @@ class SummaryCalculatorTest < Minitest::Test
       { version: "7.2", min_ruby: "3.1.0", max_ruby: "3.4.99" }
     ]
 
-    path = RailsPreflight::SummaryCalculator.new([], "7.2", "5.2.8", hops: hops, app_ruby: "2.5.9", current_max_ruby: "2.6.99").calculate[:suggested_path]
+    steps = RailsPreflight::SummaryCalculator.new([], "7.2", "5.2.8", hops: hops, app_ruby: "2.5.9", current_max_ruby: "2.6.99").calculate[:steps]
 
     assert_equal [
       "Needs Ruby 2.5.0–2.7: 2.5.9 works",
@@ -112,7 +109,7 @@ class SummaryCalculatorTest < Minitest::Test
       "Needs Ruby 2.7.0–3.2: upgrade Ruby from 2.5.9 to 3.0 first",
       "Needs Ruby 2.7.0–3.4: 3.0 works",
       "Needs Ruby 3.1.0–3.4: upgrade Ruby from 3.0 to 3.4 first"
-    ], path.map { |step| step[:items].first[:message] }
+    ], steps.map { |step| step[:ruby] }
   end
 
   def test_clean_results_without_version_data_suggest_just_the_target
@@ -123,6 +120,6 @@ class SummaryCalculatorTest < Minitest::Test
     assert_empty summary[:blockers]
     assert_empty summary[:to_fix]
     assert_empty summary[:unknowns]
-    assert_equal [{ title: "Upgrade to Rails 7.1", items: [{ message: "Ruby requirements for Rails 7.1 are unknown" }] }], summary[:suggested_path]
+    assert_equal [{ version: "7.1", from: nil, ruby: "Ruby requirements for Rails 7.1 are unknown", ruby_upgrade: nil, checks: [] }], summary[:steps]
   end
 end

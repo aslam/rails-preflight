@@ -51,8 +51,13 @@ module RailsPreflight
       results << DatabaseAnalyzer.new(@project_path, database_rules).run
 
       report_data = {
+        app: File.basename(File.expand_path(@project_path)),
         target_rails: @target_rails,
         current_rails: current_rails&.to_s,
+        ruby: app_ruby,
+        offline: @offline,
+        looked_up: @looked_up,
+        later_rails: known_rails_versions.select { |v| Gem::Version.correct?(@target_rails) && Gem::Version.new(v) > Gem::Version.new(@target_rails) },
         results: results
       }
 
@@ -223,6 +228,7 @@ module RailsPreflight
 
       unless @offline || (mixed_gems | dated_gems).empty?
         names = mixed_gems | dated_gems
+        @looked_up = names.size
         puts "Looking up #{names.size} gems on rubygems.org (--offline skips this)..."
         found, inconclusive = lookup_on_rubygems(names)
         private_gems.concat(mixed_gems.select { |name| found[name] == false })

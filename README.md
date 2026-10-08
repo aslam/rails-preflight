@@ -10,7 +10,7 @@ It helps teams understand:
 - what is easy vs painful to fix
 - where hidden dependency and infrastructure risks exist
 
-This tool is designed for **planning and estimation**, not automated migration.
+This tool is designed for **planning and scoping**, not automated migration.
 
 ## Why this exists
 
@@ -23,7 +23,7 @@ Rails upgrades fail not because teams can’t write code, but because they under
 
 `rails-preflight` makes these risks visible before you start upgrading.
 
-Think of it as **upgrade reconnaissance**, not a fixer.
+Think of it as **upgrade reconnaissance**, not a fixer. Run it before the upgrade starts, whoever does it: your team, a consultant or a coding agent.
 
 ## What this tool does
 
@@ -67,7 +67,7 @@ This tool is especially useful if you are:
 
 - Upgrading a Rails 5.0 or newer application (Rails 3 and 4 aren't covered)
 - Planning a security-driven upgrade
-- Estimating upgrade effort before committing resources
+- Scoping an upgrade before committing resources
 - Auditing multiple legacy Rails apps
 - A consultant or staff engineer responsible for upgrade strategy
 
@@ -104,25 +104,25 @@ rails_preflight_report.html
 
 ## Report Overview
 
-The tool generates a self-contained **HTML report** (`rails_preflight_report.html`) that provides a comprehensive view of your upgrade readiness.
+The tool writes one self-contained **HTML report** (`rails_preflight_report.html`). It makes no network requests when opened, follows the OS dark mode, and prints on A4.
 
-### Key Sections
+1.  **Title and verdict**: `app: Rails current to target`, then one sentence: how many steps, when to upgrade Ruby, how many blockers.
 
-1.  **Summary**: The upgrade (`current → target` Rails version) and a count for each kind of finding, each finding linked to its details:
-    *   **Already broken**: APIs removed before your current Rails, or gems past their last supported Rails. That code fails when it runs, or never runs. Listed first.
+2.  **Counts**, each linked to where the findings are:
+    *   **Already broken**: APIs removed before your current Rails, or gems past their last supported Rails. That code fails when it runs, or never runs.
     *   **Blockers**: must be fixed before the upgrade can work (e.g. Ruby too old, removed APIs still in use).
-    *   **To fix**: will warn or break along the way (deprecations, lagging config).
+    *   **To fix**: will warn or break along the way (deprecations, lagging config), split into now and later versions.
     *   **Couldn't check**: what the tool could not verify (private gems, missing files), to review by hand.
 
-2.  **Suggested Upgrade Path**: One step per Rails minor version, since Rails recommends upgrading one at a time. Each step shows the Ruby range it needs and the removed APIs to fix for it; other findings come first under "Before you start".
+3.  **Route and plan**: one stop per Rails minor, since Rails recommends upgrading one at a time, with the blockers at each. Later versions past the target are faded and count the code they remove, found in the same scan. A table gives each step's work, the Ruby it needs and a relative effort: the hardest single fix in it (low, medium or high, set per check), not the amount of work. The occurrence counts on each finding show that.
 
-3.  **Detailed Findings**:
-    *   **Deprecations**: Grouped by pattern, with app and test occurrences counted apart. Expandable to show individual file/line occurrences, with a link to the relevant Rails guide.
-    *   **Gem Compatibility**: Locked gems whose Rails requirement excludes a step, gems from the curated list in `database/gems.yml`, and (online) Rails-dependent gems with no release since the target Rails shipped. Private gems get their own section.
-    *   **Configuration & Infrastructure**: Checks for Docker/OS issues and missing Rails config.
-    *   **Database Schema**: Charset and integer ID issues, applied by target version.
+4.  **Steps**: "Before you start" for findings that don't belong to a step, then one card per step with its Ruby range and the removed APIs and gems to fix for it. Each finding links to the Rails release notes or the gem's source; its occurrence line expands to file, line and snippet, with app and test occurrences counted apart.
 
-4.  **Confidence Badges**: Each section is marked with a confidence level (High/Medium/Low) based on the certainty of the analysis.
+5.  **Ahead of the target**: code that later Rails versions remove, by version. Not needed now.
+
+6.  **What this report can't see**: private gems and quiet gems by name, behavior changes, multi-line code and test coverage, with what to do instead.
+
+7.  **Footer**: the confidence of each section (read from project files, pattern matches, or a key input missing) and where the findings come from.
 
 ## Roadmap
 

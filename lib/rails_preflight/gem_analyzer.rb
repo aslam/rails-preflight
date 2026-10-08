@@ -135,7 +135,7 @@ module RailsPreflight
         end
         message += " Used in #{files.size} #{files.size == 1 ? 'file' : 'files'}." if files
 
-        { message: message, status: blocks || broken ? :failed : :warning, kind: (:broken if broken), removed_in: (breaks_in if blocks),
+        { message: message, status: blocks || broken ? :failed : :warning, kind: (:broken if broken), removed_in: breaks_in,
           details: ["Source: #{entry['source']}", *files], fix_effort: entry['fix_effort']&.to_sym }
       end
     end

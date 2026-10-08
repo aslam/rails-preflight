@@ -62,7 +62,8 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     RailsPreflight::UpgradeAnalyzer.new("8.1", @tmp_dir).run
 
-    assert_includes File.read(File.join(@tmp_dir, "rails_preflight_report.html")), "Ruby 4.0.1 (.ruby-version) is compatible with Rails 8.1."
+    assert_includes report, "Ruby <b>4.0.1</b> (.ruby-version)"
+    assert_includes report, "4.0.1 works"
   end
 
   def test_missing_lockfile_is_reported_without_crashing
@@ -81,7 +82,7 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
 
-    assert_includes report, "Ruby 3.3 (.ruby-version) is compatible with Rails 7.2."
+    assert_includes report, "Ruby <b>3.3</b> (.ruby-version)"
   end
 
   def test_two_part_dockerfile_ruby_tag_does_not_crash
@@ -89,7 +90,8 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
 
-    assert_includes report, "Ruby 3.3 (Dockerfile) is compatible with Rails 7.2."
+    assert_includes report, "Ruby <b>3.3</b> (Dockerfile)"
+    assert_includes report, "3.3 works"
   end
 
   def test_reads_ruby_version_from_gemfile_lock
@@ -97,7 +99,8 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
 
-    assert_includes report, "Ruby 3.3.5 (Gemfile.lock) is compatible with Rails 7.2."
+    assert_includes report, "Ruby <b>3.3.5</b> (Gemfile.lock)"
+    assert_includes report, "3.3.5 works"
   end
 
   def test_undetectable_app_ruby_is_reported_not_guessed
@@ -114,8 +117,8 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
 
-    assert_includes report, "Rails 7.1.3 (Gemfile.lock) → 7.2"
-    assert_includes report, "Rails 7.1.3 → 7.2"
+    assert_includes report, "Rails 7.1.3 <span class=\"to\">to</span> 7.2"
+    assert_includes report, "7.1.3 → 7.2"
   end
 
   def test_flags_target_that_is_not_an_upgrade
@@ -160,7 +163,7 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
 
-    ["Rails 6.1.7 → 7.0", "Rails 7.0 → 7.1", "Rails 7.1 → 7.2", "Needs Ruby 3.1.0–3.4: upgrade Ruby from 2.7.8 to 3.4 first"].each do |text|
+    ["6.1.7 → 7.0", "7.0 → 7.1", "7.1 → 7.2", "Needs Ruby 3.1.0–3.4: upgrade Ruby from 2.7.8 to 3.4 first"].each do |text|
       assert_includes report, text
     end
   end
@@ -182,7 +185,7 @@ class UpgradeAnalyzerTest < Minitest::Test
 
       RailsPreflight::UpgradeAnalyzer.new(nil, @tmp_dir).run
 
-      assert_includes report, "Rails #{current} (Gemfile.lock) → #{expected}"
+      assert_includes report, "Rails #{current} <span class=\"to\">to</span> #{expected}"
       assert_includes $stdout.string, "Latest known is 8.1: run `rails-preflight 8.1` for the full path."
     end
   end
@@ -235,7 +238,7 @@ class UpgradeAnalyzerTest < Minitest::Test
 
     assert_equal %w[devise example_sso], looked_up.sort
     assert_includes report, "Private gems (3): compatibility with Rails 7.2 is unknown"
-    assert_includes report, "Looked up 2 gems on rubygems.org"
+    assert_includes report, "<b>2</b> gems looked up on rubygems.org"
   end
 
   def test_gemfile_source_blocks_place_gems_without_going_online
@@ -262,8 +265,8 @@ class UpgradeAnalyzerTest < Minitest::Test
     end
 
     assert_includes report, "Private gems (3): compatibility with Rails 7.2 is unknown"
-    assert_includes report, "<li>example_sso</li>"
-    refute_includes report, "<li>devise</li>"
+    assert_match(/class="names">[^<]*example_sso/, report)
+    refute_match(/class="names">[^<]*devise/, report)
     refute_includes report, "Looked up"
   end
 
@@ -289,8 +292,8 @@ class UpgradeAnalyzerTest < Minitest::Test
     end
 
     assert_includes report, "Private gems (3): compatibility with Rails 7.2 is unknown"
-    assert_includes report, "<li>example_sso</li>"
-    refute_includes report, "<li>devise</li>"
+    assert_match(/class="names">[^<]*example_sso/, report)
+    refute_match(/class="names">[^<]*devise/, report)
   end
 
   def test_online_looks_up_release_dates_for_public_rails_gems_only
