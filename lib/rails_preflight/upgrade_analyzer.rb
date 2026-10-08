@@ -93,7 +93,7 @@ module RailsPreflight
         result[:checks] << { message: "Could not read current Rails version from Gemfile.lock.", status: :warning, kind: :unknown, fix_effort: :low }
       elsif Gem::Version.new(current_rails.segments.first(2).join(".")) >= Gem::Version.new(@target_rails)
         result[:status] = :warning
-        result[:checks] << { message: "Already on Rails #{current_rails}: #{@target_rails} is not an upgrade.", status: :warning, kind: :unknown, fix_effort: :low }
+        result[:checks] << { message: "Already on Rails #{current_rails}: #{@target_rails} is not an upgrade.", status: :passed }
       else
         result[:checks] << { message: "Rails #{current_rails} (Gemfile.lock) → #{@target_rails}", status: :passed, fix_effort: :low }
       end
