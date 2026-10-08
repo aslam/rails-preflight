@@ -63,10 +63,41 @@ adapter_requirements:
 
 # Gems the rails gem stopped depending on, from rails.gemspec on each X-Y-stable branch. An app that gets one
 # only through rails loses it on that hop, which matters only if the app uses it: `paths` any of which exists,
-# or `config`, a pattern for an uncommented line in config/**/*.rb. Without sprockets-rails, `config.assets`
+# or `pattern` on an uncommented line in `files` (default config/**/*.rb). Without sprockets-rails, `config.assets`
 # raises on boot (7.0's rails/all no longer requires sprockets/railtie); an app with neither never loaded it.
 dropped_by_rails:
   "7.0":
     sprockets-rails:
       paths: [app/assets]
-      config: "\\bconfig\\.assets\\b|require\\s*\\(?\\s*[\"']sprockets"
+      pattern: "\\bconfig\\.assets\\b|require\\s*\\(?\\s*[\"']sprockets"
+
+# Gems Rails loads itself for one feature, with a version requirement of its own (`gem "listen", "~> 3.5"`), so no
+# gemspec declares the limit. Read from each X-Y-stable branch. `from` maps the first hop that requires a version
+# to that requirement, which holds until a later key. `used_if` works as in dropped_by_rails: an app that never
+# uses the feature never loads the gem.
+loaded_by_rails:
+  listen:
+    from: { "7.0": ["~> 3.5"] }
+    for: "the evented file watcher in development"
+    used_if: { pattern: "\\bEventedFileUpdateChecker\\b" }
+    source: "https://github.com/rails/rails/blob/7-0-stable/activesupport/lib/active_support/evented_file_update_checker.rb#L3"
+  capybara:
+    from: { "5.1": [">= 2.15"], "6.1": [">= 3.26"] }
+    for: "system tests"
+    used_if: { files: "{test,spec}/**/*.rb", pattern: "\\bdriven_by\\b|\\bSystemTestCase\\b|type:\\s*:system\\b" }
+    source: "https://github.com/rails/rails/blob/6-1-stable/actionpack/lib/action_dispatch/system_test_case.rb#L3"
+  selenium-webdriver:
+    from: { "7.0": [">= 4.0.0"] }
+    for: "system tests driven by :selenium"
+    used_if: { files: "{test,spec}/**/*.rb", pattern: "\\bdriven_by\\s*\\(?\\s*:selenium\\b" }
+    source: "https://github.com/rails/rails/blob/7-0-stable/actionpack/lib/action_dispatch/system_testing/driver.rb#L24"
+  redis:
+    from: { "5.1": [">= 3", "< 5"], "7.0": [">= 3", "< 6"], "7.1": [">= 4", "< 6"], "8.0": [">= 4", "< 7"] }
+    for: "Action Cable's redis adapter"
+    used_if: { files: "config/cable.yml", pattern: "^\\s*adapter:\\s*[\"']?redis\\b" }
+    source: "https://github.com/rails/rails/blob/7-1-stable/actioncable/lib/action_cable/subscription_adapter/redis.rb#L3"
+  google-cloud-storage:
+    from: { "5.2": ["~> 1.8"], "6.0": ["~> 1.11"] }
+    for: "Active Storage's GCS service"
+    used_if: { files: "config/storage.yml", pattern: "^\\s*service:\\s*[\"']?GCS\\b" }
+    source: "https://github.com/rails/rails/blob/6-0-stable/activestorage/lib/active_storage/service/gcs_service.rb#L3"

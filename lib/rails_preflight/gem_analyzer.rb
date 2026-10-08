@@ -21,12 +21,13 @@ module RailsPreflight
       @entries = data.fetch('gems', [])
       @adapter_requirements = data.fetch('adapter_requirements', {})
       @dropped_by_rails = data.fetch('dropped_by_rails', {})
+      @loaded_by_rails = data.fetch('loaded_by_rails', {})
     end
 
     def run
       result = { title: "Gem Compatibility", status: :passed, checks: [], confidence: :medium }
       return result if @hops.empty? # already on the target
-      result[:checks].concat(locked_limits, adapter_limits, dropped_by_rails, curated)
+      result[:checks].concat(locked_limits, adapter_limits, loaded_limits, dropped_by_rails, curated)
       result[:checks].concat(stale(result[:checks].filter_map { |check| check[:gem] }))
 
       if result[:checks].empty?
@@ -70,6 +71,27 @@ module RailsPreflight
       end
     end
 
+    # listen 3.1 installs next to Rails 7.0, but the evented file watcher refuses to load it. Only checked when the app uses the feature.
+    def loaded_limits
+      locked = @specs.to_h { |spec| [spec.name, spec.version] }
+      @loaded_by_rails.filter_map do |name, entry|
+        version = locked[name]
+        breaks_in = version && @hops.find do |hop|
+          requirement = requirement_at(entry['from'], hop)
+          requirement && !Gem::Requirement.new(*requirement).satisfied_by?(version)
+        end
+        next unless breaks_in && used?(entry['used_if'])
+
+        { message: "#{name} #{version} doesn't load on Rails #{breaks_in}, which requires #{name} #{requirement_at(entry['from'], breaks_in).join(', ')} for #{entry['for']}. Upgrade it in the same step.",
+          status: :failed, removed_in: breaks_in, fix_effort: :low, gem: name, details: ["Source: #{entry['source']}"] }
+      end
+    end
+
+    # The requirement under the latest `from` key at or before the hop.
+    def requirement_at(from, hop)
+      from.select { |since, _| Gem::Version.new(since) <= Gem::Version.new(hop) }.max_by { |since, _| Gem::Version.new(since) }&.last
+    end
+
     # A gem the app gets only through `rails` disappears on the hop where rails stops depending on it.
     # Still pulled in by the Gemfile or another gem (sass-rails needs sprockets-rails), it stays; unused, it doesn't matter.
     def dropped_by_rails
@@ -86,8 +108,8 @@ module RailsPreflight
     def used?(used_if)
       return true if used_if.fetch('paths', []).any? { |path| File.exist?(File.join(@project_path, path)) }
 
-      pattern = used_if['config'] && Regexp.new(used_if['config'])
-      pattern && Dir.glob(File.join(@project_path, "config/**/*.rb")).any? do |file|
+      pattern = used_if['pattern'] && Regexp.new(used_if['pattern'])
+      pattern && Dir.glob(File.join(@project_path, used_if.fetch('files', "config/**/*.rb"))).any? do |file|
         File.foreach(file).any? { |line| !line.lstrip.start_with?("#") && line.match?(pattern) }
       end
     end
