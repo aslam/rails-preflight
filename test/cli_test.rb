@@ -9,6 +9,7 @@ class CliTest < Minitest::Test
   def test_json_goes_to_stdout_and_fail_on_sets_the_exit_code
     out, err, status = rails_preflight("--format", "json", "--fail-on", "blockers")
 
+    assert out.start_with?("{"), "no JSON on stdout; stderr: #{err}"
     report = JSON.parse(out)
     assert_equal 1, report["schema"]
     assert_equal({ "broken" => 0, "blockers" => 1 }, report["counts"].slice("broken", "blockers"))

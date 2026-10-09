@@ -38,7 +38,8 @@ module RailsPreflight
 
     # :status is how the analyzer saw it; :kind is what the report counts it as.
     def finding(entry)
-      entry.slice(:section, :kind).merge(entry.except(:status, :section, :kind)).compact
+      # Hash#except needs Ruby 3.0; the tool runs on 2.7.
+      entry.slice(:section, :kind).merge(entry.reject { |key, _| %i[status section kind].include?(key) }).compact
     end
   end
 end
