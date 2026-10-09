@@ -58,6 +58,18 @@ class GemAnalyzerTest < Minitest::Test
     assert_equal "7.0", run_checks(specs, hops: %w[7.0]).find { |c| c[:gem] == "selenium-webdriver" }[:removed_in]
   end
 
+  def test_gem_that_checks_the_rails_version_itself_blocks_the_first_minor_it_doesnt_know
+    specs = lockfile_specs("bullet (7.1.6)")
+
+    assert_nil run_checks(specs, hops: %w[7.2]).find { |c| c[:gem] == "bullet" }
+
+    write_app_file("config/environments/development.rb", "    Bullet.enable = true\n")
+
+    assert_nil run_checks(specs, hops: %w[7.1]).find { |c| c[:gem] == "bullet" }
+    assert_equal ["7.2", "bullet 7.1.6 doesn't load on Rails 7.2: Bullet raises on an Active Record minor it doesn't know; Rails 7.2 needs bullet >= 7.2.0. Upgrade it in the same step."],
+                 run_checks(specs, hops: %w[7.1 7.2 8.0]).find { |c| c[:gem] == "bullet" }.values_at(:removed_in, :message)
+  end
+
   def test_gem_rails_stops_depending_on_blocks_unless_the_gemfile_lists_it
     write_app_file("config/application.rb", "require 'rails/all'\n    config.assets.enabled = false\n")
     specs = lockfile_specs("sprockets-rails (3.2.2)")
@@ -163,9 +175,9 @@ class GemAnalyzerTest < Minitest::Test
       assert entry["source"].start_with?("https://"), "#{entry['name']} needs a source"
       assert entry["pattern"], "#{entry['name']} is only_if_used, so it needs a pattern" if entry["only_if_used"]
     end
-    YAML.load_file(RailsPreflight::GemAnalyzer::DATA_PATH)["loaded_by_rails"].each do |name, entry|
+    YAML.load_file(RailsPreflight::GemAnalyzer::DATA_PATH)["version_limits"].each do |name, entry|
       Regexp.new(entry.dig("used_if", "pattern"))
-      assert entry["source"].start_with?("https://github.com/rails/rails/blob/"), "#{name} needs a Rails source"
+      assert entry["source"].start_with?(entry["raises"] ? "https://" : "https://github.com/rails/rails/blob/"), "#{name} needs a source"
     end
   end
 

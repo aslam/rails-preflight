@@ -71,11 +71,11 @@ dropped_by_rails:
       paths: [app/assets]
       pattern: "\\bconfig\\.assets\\b|require\\s*\\(?\\s*[\"']sprockets"
 
-# Gems Rails loads itself for one feature, with a version requirement of its own (`gem "listen", "~> 3.5"`), so no
-# gemspec declares the limit. Read from each X-Y-stable branch. `from` maps the first hop that requires a version
-# to that requirement, which holds until a later key. `used_if` works as in dropped_by_rails: an app that never
-# uses the feature never loads the gem.
-loaded_by_rails:
+# Version limits no gemspec declares. Mostly gems Rails loads itself for one feature, with a requirement of its own
+# (`gem "listen", "~> 3.5"`), read from each X-Y-stable branch; `raises` marks a gem that checks the Rails version
+# itself instead. `from` maps the first hop that requires a version to that requirement, which holds until a later
+# key. `used_if` works as in dropped_by_rails: an app that never uses the feature never loads the gem.
+version_limits:
   listen:
     from: { "7.0": ["~> 3.5"] }
     for: "the evented file watcher in development"
@@ -101,3 +101,9 @@ loaded_by_rails:
     for: "Active Storage's GCS service"
     used_if: { files: "config/storage.yml", pattern: "^\\s*service:\\s*[\"']?GCS\\b" }
     source: "https://github.com/rails/rails/blob/6-0-stable/activestorage/lib/active_storage/service/gcs_service.rb#L3"
+  bullet:
+    from: { "5.1": [">= 5.4.0"], "5.2": [">= 5.7.0"], "6.0": [">= 6.0.0"], "6.1": [">= 6.1.1"], "7.0": [">= 7.0.0"],
+            "7.1": [">= 7.1.0"], "7.2": [">= 7.2.0"], "8.0": [">= 8.0.0"], "8.1": [">= 8.1.0"] }
+    raises: "Bullet raises on an Active Record minor it doesn't know"
+    used_if: { pattern: "\\bBullet\\.enable\\s*=" }
+    source: "https://github.com/flyerhzm/bullet/blob/8.1.0/lib/bullet/dependency.rb"
