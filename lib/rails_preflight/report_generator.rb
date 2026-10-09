@@ -280,7 +280,7 @@ module RailsPreflight
             <div class="limits">
               <% @summary.fetch(:cant_see, []).each do |entry| %>
                 <div class="limit">
-                  <h3><%= h(entry[:section]) %></h3>
+                  <h3><%= h(entry[:title] || entry[:section]) %></h3>
                   <p><%= code_html(entry[:message]) %></p>
                   <% names = Array(entry[:names]) %>
                   <% if names.any? %><p class="names"><%= h(names.join(" · ")) %></p><% end %>
@@ -477,7 +477,10 @@ module RailsPreflight
       h(text).gsub(/(?<![\w&;])&#39;(.+?)&#39;(?![\w&])/) { "<code>#{$1}</code>" }
     end
 
+    # A titled entry (the rubygems.org lookup) says what to do in its own message.
     def cant_see_next(entry)
+      return if entry[:title]
+
       case entry[:section]
       when "Private Gems" then "Check each gemspec's Rails dependency, and bump them in the same step."
       when "Gem Compatibility"

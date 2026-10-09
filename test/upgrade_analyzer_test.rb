@@ -337,9 +337,38 @@ class UpgradeAnalyzerTest < Minitest::Test
       RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
     end
 
-    assert_includes report, "Could not verify 2 gems against rubygems.org"
-    assert_includes report, "devise (Net::OpenTimeout: timed out)"
-    assert_includes report, "example_sso (RuntimeError: HTTP 429)"
+    assert_includes report, "<h3>rubygems.org lookup</h3>"
+    assert_includes report, "Couldn&#39;t reach rubygems.org for 1 gem (Net::OpenTimeout: timed out), so whether it&#39;s private"
+    assert_includes report, "Couldn&#39;t reach rubygems.org for 1 gem (RuntimeError: HTTP 429), so whether it&#39;s private and when it was last released is unknown. Run it again once rubygems.org is reachable, or pass --offline."
+    refute_includes report.split("rubygems.org lookup").last, "Check each gemspec"
+  end
+
+  # A machine whose OpenSSL can't find the system certificates fails every lookup the same way, with a peer
+  # address that changes per connection: one entry with the gems listed once, and a line in the terminal.
+  def test_the_same_lookup_failure_is_reported_once
+    write_mixed_lockfile
+    error = ->(ip) { OpenSSL::SSL::SSLError.new("SSL_connect returned=1 errno=0 peeraddr=#{ip}:443 state=error: certificate verify failed (unable to get local issuer certificate)") }
+
+    output = capture_io do
+      stub_rubygems(->(name) { raise error.(name == "devise" ? "151.101.1.227" : "151.101.65.227") }) do
+        RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).run
+      end
+    end.first
+
+    assert_equal 1, report.scan("<h3>rubygems.org lookup</h3>").size
+    assert_includes report, "Couldn&#39;t reach rubygems.org for 2 gems (OpenSSL::SSL::SSLError: SSL_connect returned=1 errno=0 state=error: certificate verify failed (unable to get local issuer certificate))"
+    assert_includes report, "devise · example_sso"
+    refute_includes report, "peeraddr"
+    assert_includes report, "point SSL_CERT_FILE at a certificate bundle that includes its root certificate"
+    assert_includes output, "Couldn't reach rubygems.org for 2 gems"
+  end
+
+  def test_rubygems_lookups_also_trust_the_certificates_rubygems_ships
+    require "rubygems/request"
+    store = RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir).send(:rubygems_cert_store)
+    cert = OpenSSL::X509::Certificate.new(File.read(Gem::Request.get_cert_files.first))
+
+    assert store.verify(cert), "RubyGems' bundled CA for rubygems.org should be trusted"
   end
 
   private
