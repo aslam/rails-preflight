@@ -127,7 +127,7 @@ The report is the only file the tool writes. Add `--stdout` to print it instead,
 
 ### HTML
 
-One self-contained file. It makes no network requests when opened, follows the OS dark mode, and prints on A4.
+One self-contained file. It makes no network requests when opened, follows the OS dark mode, and prints on A4. [Sample: Mastodon v3.3.0 to Rails 7.0](https://aslam.github.io/rails-preflight/sample-report.html).
 
 1.  **Title and verdict**: `app: Rails current to target`, then one sentence: how many steps, when to upgrade Ruby, how many blockers.
 
@@ -160,7 +160,7 @@ One self-contained file. It makes no network requests when opened, follows the O
 rails-preflight --format markdown --stdout 7.2 /path/to/your/app
 ```
 
-It's a checklist per step, with `file:line` and the matched line under each finding. It pastes into an issue or PR as is, and opens with a note telling a coding agent to take one step at a time, run the tests after each, and leave "Ahead" and "Couldn't check" alone. From the same Mastodon run:
+It's a checklist per step, with `file:line` and the matched line under each finding. It pastes into an issue or PR as is, and opens with a note telling a coding agent to take one step at a time, run the tests after each, and leave "Ahead" and "Couldn't check" alone. From the same Mastodon run ([full sample](docs/sample-report.md)):
 
 ```markdown
 ## Step 3: 6.1 to 7.0
@@ -181,7 +181,7 @@ Needs Ruby 2.7.0–3.2: 2.7.2 works.
 rails-preflight --format json --stdout 7.2 /path/to/your/app | jq '.counts'
 ```
 
-The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `ruby`, `offline`, `verdict` and `counts`, then the findings in `before` (before the first step), `steps` (each with `from`, `version`, its Ruby note and `findings`), `ahead` (keyed by the Rails version that removes them) and `cant_see`. There's no timestamp, so the same app gives the same output. Schema 1 may still change before 1.0; the number goes up when it does. A step from the same run, shortened:
+The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `ruby`, `offline`, `verdict` and `counts`, then the findings in `before` (before the first step), `steps` (each with `from`, `version`, its Ruby note and `findings`), `ahead` (keyed by the Rails version that removes them) and `cant_see`. There's no timestamp, so the same app gives the same output. Schema 1 may still change before 1.0; the number goes up when it does. A step from the same run, shortened ([full sample](docs/sample-report.json)):
 
 ```json
 {

@@ -1,0 +1,586 @@
+{
+  "schema": 1,
+  "tool": {
+    "name": "rails-preflight",
+    "version": "0.1.0"
+  },
+  "app": "mastodon",
+  "current_rails": "5.2.4.4",
+  "target_rails": "7.0",
+  "ruby": {
+    "version": "2.7.2",
+    "source": ".ruby-version"
+  },
+  "offline": false,
+  "verdict": "3 steps, and Ruby 2.7.2 can stay. 13 blockers, 9 of them gems.",
+  "counts": {
+    "broken": 0,
+    "blockers": 13,
+    "to_fix": 9,
+    "unknowns": 3
+  },
+  "before": [
+    {
+      "section": "Ruby Version",
+      "kind": "to_fix",
+      "message": "Ruby 2.7.2 is end-of-life. Rails 7.0 supports up to Ruby 3.2; Ruby 3.3+ needs Rails 7.1.",
+      "fix_effort": "high"
+    },
+    {
+      "section": "Docker Configuration",
+      "kind": "to_fix",
+      "message": "No ENV LANG or LC_ALL set, which can cause encoding errors.",
+      "fix_effort": "low"
+    },
+    {
+      "section": "Gem Compatibility",
+      "kind": "to_fix",
+      "message": "paperclip is deprecated and archived. Move to Active Storage, or to the maintained kt-paperclip fork. Used in 8 files.",
+      "gem": "paperclip",
+      "version": "6.0.0",
+      "source": "https://github.com/thoughtbot/paperclip#deprecated",
+      "files": [
+        {
+          "file": "app/models/backup.rb"
+        },
+        {
+          "file": "app/models/concerns/account_avatar.rb"
+        },
+        {
+          "file": "app/models/concerns/account_header.rb"
+        },
+        {
+          "file": "app/models/custom_emoji.rb"
+        },
+        {
+          "file": "app/models/import.rb"
+        },
+        {
+          "file": "app/models/media_attachment.rb"
+        },
+        {
+          "file": "app/models/preview_card.rb"
+        },
+        {
+          "file": "app/models/site_upload.rb"
+        }
+      ],
+      "fix_effort": "high"
+    },
+    {
+      "section": "Gem Compatibility",
+      "kind": "to_fix",
+      "message": "webpacker was retired after Rails 7.0. Move to jsbundling-rails or import maps, or to shakapacker to keep webpack. Used in 28 files.",
+      "gem": "webpacker",
+      "version": "5.2.1",
+      "source": "https://github.com/rails/webpacker#readme",
+      "files": [
+        {
+          "file": "app/views/about/more.html.haml"
+        },
+        {
+          "file": "app/views/admin/action_logs/index.html.haml"
+        },
+        {
+          "file": "app/views/admin/custom_emojis/index.html.haml"
+        },
+        {
+          "file": "app/views/admin/domain_allows/new.html.haml"
+        },
+        {
+          "file": "app/views/admin/domain_blocks/edit.html.haml"
+        },
+        {
+          "file": "app/views/admin/domain_blocks/new.html.haml"
+        },
+        {
+          "file": "app/views/admin/ip_blocks/index.html.haml"
+        },
+        {
+          "file": "app/views/admin/pending_accounts/index.html.haml"
+        },
+        {
+          "file": "app/views/admin/reports/show.html.haml"
+        },
+        {
+          "file": "app/views/admin/settings/edit.html.haml"
+        },
+        {
+          "file": "app/views/admin/statuses/index.html.haml"
+        },
+        {
+          "file": "app/views/admin/tags/index.html.haml"
+        },
+        {
+          "file": "app/views/auth/sessions/two_factor.html.haml"
+        },
+        {
+          "file": "app/views/home/index.html.haml"
+        },
+        {
+          "file": "app/views/layouts/admin.html.haml"
+        },
+        {
+          "file": "app/views/layouts/application.html.haml"
+        },
+        {
+          "file": "app/views/layouts/auth.html.haml"
+        },
+        {
+          "file": "app/views/layouts/embedded.html.haml"
+        },
+        {
+          "file": "app/views/layouts/error.html.haml"
+        },
+        {
+          "file": "app/views/layouts/mailer.html.haml"
+        },
+        {
+          "file": "app/views/layouts/modal.html.haml"
+        },
+        {
+          "file": "app/views/layouts/public.html.haml"
+        },
+        {
+          "file": "app/views/media/player.html.haml"
+        },
+        {
+          "file": "app/views/public_timelines/show.html.haml"
+        },
+        {
+          "file": "app/views/relationships/show.html.haml"
+        },
+        {
+          "file": "app/views/settings/two_factor_authentication/webauthn_credentials/new.html.haml"
+        },
+        {
+          "file": "app/views/shares/show.html.haml"
+        },
+        {
+          "file": "app/views/tags/show.html.haml"
+        }
+      ],
+      "fix_effort": "medium"
+    }
+  ],
+  "steps": [
+    {
+      "from": "5.2.4.4",
+      "version": "6.0",
+      "ruby": "Needs Ruby 2.5.0–2.7: 2.7.2 works",
+      "ruby_upgrade": null,
+      "findings": [
+        {
+          "section": "Gem Compatibility",
+          "kind": "blocker",
+          "message": "nsa 0.2.7 requires activesupport >= 4.2, < 6, so it doesn't install on Rails 6.0. Upgrade it to a release that allows 6.0, or replace it.",
+          "removed_in": "6.0",
+          "fix_effort": "medium",
+          "gem": "nsa",
+          "version": "0.2.7",
+          "requires": "activesupport >= 4.2, < 6"
+        },
+        {
+          "section": "Gem Compatibility",
+          "kind": "blocker",
+          "message": "rails-i18n 5.1.3 requires railties >= 5.0, < 6, so it doesn't install on Rails 6.0. Upgrade it to a release that allows 6.0, or replace it.",
+          "removed_in": "6.0",
+          "fix_effort": "medium",
+          "gem": "rails-i18n",
+          "version": "5.1.3",
+          "requires": "railties >= 5.0, < 6"
+        }
+      ]
+    },
+    {
+      "from": "6.0",
+      "version": "6.1",
+      "ruby": "Needs Ruby 2.5.0–3.0: 2.7.2 works",
+      "ruby_upgrade": null,
+      "findings": [
+        {
+          "section": "Gem Compatibility",
+          "kind": "blocker",
+          "message": "active_model_serializers 0.10.10 requires actionpack >= 4.1, < 6.1, activemodel >= 4.1, < 6.1, so it doesn't install on Rails 6.1. Upgrade it to a release that allows 6.1, or replace it.",
+          "removed_in": "6.1",
+          "fix_effort": "medium",
+          "gem": "active_model_serializers",
+          "version": "0.10.10",
+          "requires": "actionpack >= 4.1, < 6.1, activemodel >= 4.1, < 6.1"
+        },
+        {
+          "section": "Gem Compatibility",
+          "kind": "blocker",
+          "message": "devise-two-factor 3.1.0 requires activesupport < 6.1, railties < 6.1, so it doesn't install on Rails 6.1. Upgrade it to a release that allows 6.1, or replace it.",
+          "removed_in": "6.1",
+          "fix_effort": "medium",
+          "gem": "devise-two-factor",
+          "version": "3.1.0",
+          "requires": "activesupport < 6.1, railties < 6.1"
+        },
+        {
+          "section": "Gem Compatibility",
+          "kind": "blocker",
+          "message": "bullet 6.1.0 doesn't load on Rails 6.1: Bullet raises on an Active Record minor it doesn't know; Rails 6.1 needs bullet >= 6.1.1. Upgrade it in the same step.",
+          "removed_in": "6.1",
+          "fix_effort": "low",
+          "gem": "bullet",
+          "version": "6.1.0",
+          "requires": "bullet >= 6.1.1",
+          "source": "https://github.com/flyerhzm/bullet/blob/8.1.0/lib/bullet/dependency.rb"
+        },
+        {
+          "section": "Deprecation Warnings",
+          "kind": "blocker",
+          "message": "'force_ssl' at the controller level was removed in Rails 6.1. Use 'config.force_ssl' to force HTTPS for the whole app.",
+          "rule": "controller_force_ssl",
+          "removed_in": "6.1",
+          "fix_effort": "medium",
+          "confidence": "medium",
+          "source": "https://guides.rubyonrails.org/6_1_release_notes.html#action-pack-removals",
+          "files": [
+            {
+              "file": "app/controllers/application_controller.rb",
+              "line": 8,
+              "snippet": "force_ssl if: :https_enabled?",
+              "test": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "from": "6.1",
+      "version": "7.0",
+      "ruby": "Needs Ruby 2.7.0–3.2: 2.7.2 works",
+      "ruby_upgrade": null,
+      "findings": [
+        {
+          "section": "Gem Compatibility",
+          "kind": "blocker",
+          "message": "annotate 3.1.1 requires activerecord >= 3.2, < 7.0, so it doesn't install on Rails 7.0. Upgrade it to a release that allows 7.0, or replace it.",
+          "removed_in": "7.0",
+          "fix_effort": "medium",
+          "gem": "annotate",
+          "version": "3.1.1",
+          "requires": "activerecord >= 3.2, < 7.0"
+        },
+        {
+          "section": "Gem Compatibility",
+          "kind": "blocker",
+          "message": "discard 1.2.0 requires activerecord >= 4.2, < 7, so it doesn't install on Rails 7.0. Upgrade it to a release that allows 7.0, or replace it.",
+          "removed_in": "7.0",
+          "fix_effort": "medium",
+          "gem": "discard",
+          "version": "1.2.0",
+          "requires": "activerecord >= 4.2, < 7"
+        },
+        {
+          "section": "Gem Compatibility",
+          "kind": "blocker",
+          "message": "redis-actionpack 5.2.0 requires actionpack >= 5, < 7, so it doesn't install on Rails 7.0. Upgrade it to a release that allows 7.0, or replace it.",
+          "removed_in": "7.0",
+          "fix_effort": "medium",
+          "gem": "redis-actionpack",
+          "version": "5.2.0",
+          "requires": "actionpack >= 5, < 7"
+        },
+        {
+          "section": "Gem Compatibility",
+          "kind": "blocker",
+          "message": "redis-activesupport 5.2.0 requires activesupport >= 3, < 7, so it doesn't install on Rails 7.0. Upgrade it to a release that allows 7.0, or replace it.",
+          "removed_in": "7.0",
+          "fix_effort": "medium",
+          "gem": "redis-activesupport",
+          "version": "5.2.0",
+          "requires": "activesupport >= 3, < 7"
+        },
+        {
+          "section": "Deprecation Warnings",
+          "kind": "blocker",
+          "message": "Changing error messages in place (errors[:attr] << msg, errors.messages[:attr] = ..., errors.messages.delete/clear) was removed in Rails 7.0: it now changes a copy, so the error is silently lost. Use errors.add, errors.delete and errors.clear.",
+          "rule": "errors_messages_mutation",
+          "removed_in": "7.0",
+          "fix_effort": "low",
+          "confidence": "high",
+          "source": "https://guides.rubyonrails.org/7_0_release_notes.html#active-model-removals",
+          "files": [
+            {
+              "file": "app/validators/ed25519_key_validator.rb",
+              "line": 9,
+              "snippet": "record.errors[attribute] << I18n.t('crypto.errors.invalid_key') unless verified?(key)",
+              "test": false
+            },
+            {
+              "file": "app/validators/ed25519_signature_validator.rb",
+              "line": 11,
+              "snippet": "record.errors[attribute] << I18n.t('crypto.errors.invalid_signature') unless verified?(verify_key, signature, message)",
+              "test": false
+            }
+          ]
+        },
+        {
+          "section": "Deprecation Warnings",
+          "kind": "blocker",
+          "message": "'ActionMailer::DeliveryJob' and 'ActionMailer::Parameterized::DeliveryJob' were removed in Rails 7.0. Mail is delivered by 'ActionMailer::MailDeliveryJob'.",
+          "rule": "actionmailer_delivery_job",
+          "removed_in": "7.0",
+          "fix_effort": "low",
+          "confidence": "high",
+          "source": "https://guides.rubyonrails.org/7_0_release_notes.html#action-mailer-removals",
+          "files": [
+            {
+              "file": "config/initializers/delivery_job.rb",
+              "line": 1,
+              "snippet": "ActionMailer::DeliveryJob.class_eval do",
+              "test": false
+            },
+            {
+              "file": "spec/models/user_spec.rb",
+              "line": 178,
+              "snippet": "expect { user.send_confirmation_instructions }.to have_enqueued_job(ActionMailer::DeliveryJob)",
+              "test": true
+            }
+          ]
+        },
+        {
+          "section": "Deprecation Warnings",
+          "kind": "blocker",
+          "message": "'ActiveModel::Errors#keys', '#values', '#to_h', '#slice!' and '#to_xml' were removed in Rails 7.0. Use errors.attribute_names, errors.to_hash or the ActiveModel::Error objects errors.each yields.",
+          "rule": "errors_hash_methods",
+          "removed_in": "7.0",
+          "fix_effort": "low",
+          "confidence": "medium",
+          "source": "https://guides.rubyonrails.org/7_0_release_notes.html#active-model-removals",
+          "files": [
+            {
+              "file": "lib/mastodon/accounts_cli.rb",
+              "line": 106,
+              "snippet": "user.errors.to_h.each do |key, error|",
+              "test": false
+            },
+            {
+              "file": "lib/mastodon/accounts_cli.rb",
+              "line": 172,
+              "snippet": "user.errors.to_h.each do |key, error|",
+              "test": false
+            },
+            {
+              "file": "spec/support/matchers/model/model_have_error_on_field.rb",
+              "line": 11,
+              "snippet": "keys = record.errors.keys",
+              "test": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "ahead": {
+    "7.2": [
+      {
+        "section": "Deprecation Warnings",
+        "kind": "to_fix",
+        "message": "Setting 'config.action_dispatch.show_exceptions' to true or false was removed in Rails 7.2. Use :all (was true), :rescuable, or :none (was false).",
+        "rule": "show_exceptions_boolean",
+        "removed_in": "7.2",
+        "fix_effort": "low",
+        "confidence": "high",
+        "source": "https://guides.rubyonrails.org/7_2_release_notes.html#action-pack-removals",
+        "files": [
+          {
+            "file": "config/environments/test.rb",
+            "line": 31,
+            "snippet": "config.action_dispatch.show_exceptions = false",
+            "test": false
+          }
+        ]
+      },
+      {
+        "section": "Deprecation Warnings",
+        "kind": "to_fix",
+        "message": "'Rails.application.secrets' was removed in Rails 7.2. Use credentials, or Rails.application.config_for for non-secret settings.",
+        "rule": "application_secrets",
+        "removed_in": "7.2",
+        "fix_effort": "medium",
+        "confidence": "high",
+        "source": "https://guides.rubyonrails.org/7_2_release_notes.html#railties-removals",
+        "files": [
+          {
+            "file": "config/routes.rb",
+            "line": 6,
+            "snippet": "Sidekiq::Web.set :session_secret, Rails.application.secrets[:secret_key_base]",
+            "test": false
+          }
+        ]
+      },
+      {
+        "section": "Deprecation Warnings",
+        "kind": "to_fix",
+        "message": "'fixture_path' was removed in Rails 7.2. Assign 'fixture_paths' instead, which takes an array.",
+        "rule": "fixture_path_assignment",
+        "removed_in": "7.2",
+        "fix_effort": "low",
+        "confidence": "high",
+        "source": "https://guides.rubyonrails.org/7_2_release_notes.html#active-record-removals",
+        "files": [
+          {
+            "file": "spec/rails_helper.rb",
+            "line": 37,
+            "snippet": "config.fixture_path = \"#{::Rails.root}/spec/fixtures\"",
+            "test": true
+          }
+        ]
+      }
+    ],
+    "8.0": [
+      {
+        "section": "Deprecation Warnings",
+        "kind": "to_fix",
+        "message": "Defining 'enum' with keyword arguments was removed in Rails 8.0. Pass the name positionally, e.g. enum :status, { pending: 0 }.",
+        "rule": "enum_keyword_arguments",
+        "removed_in": "8.0",
+        "fix_effort": "low",
+        "confidence": "medium",
+        "source": "https://guides.rubyonrails.org/8_0_release_notes.html#active-record-removals",
+        "files": [
+          {
+            "file": "app/models/account.rb",
+            "line": 78,
+            "snippet": "enum protocol: [:ostatus, :activitypub]",
+            "test": false
+          },
+          {
+            "file": "app/models/account.rb",
+            "line": 79,
+            "snippet": "enum suspension_origin: [:local, :remote], _prefix: true",
+            "test": false
+          },
+          {
+            "file": "app/models/account_warning.rb",
+            "line": 16,
+            "snippet": "enum action: %i(none disable sensitive silence suspend), _suffix: :action",
+            "test": false
+          },
+          {
+            "file": "app/models/domain_block.rb",
+            "line": 22,
+            "snippet": "enum severity: [:silence, :suspend, :noop]",
+            "test": false
+          },
+          {
+            "file": "app/models/import.rb",
+            "line": 27,
+            "snippet": "enum type: [:following, :blocking, :muting, :domain_blocking, :bookmarks]",
+            "test": false
+          },
+          {
+            "file": "app/models/ip_block.rb",
+            "line": 20,
+            "snippet": "enum severity: {",
+            "test": false
+          },
+          {
+            "file": "app/models/list.rb",
+            "line": 19,
+            "snippet": "enum replies_policy: [:list, :followed, :none], _prefix: :show",
+            "test": false
+          },
+          {
+            "file": "app/models/media_attachment.rb",
+            "line": 34,
+            "snippet": "enum type: [:image, :gifv, :video, :unknown, :audio]",
+            "test": false
+          },
+          {
+            "file": "app/models/media_attachment.rb",
+            "line": 35,
+            "snippet": "enum processing: [:queued, :in_progress, :complete, :failed], _prefix: true",
+            "test": false
+          },
+          {
+            "file": "app/models/preview_card.rb",
+            "line": 40,
+            "snippet": "enum type: [:link, :photo, :video, :rich]",
+            "test": false
+          },
+          {
+            "file": "app/models/relay.rb",
+            "line": 17,
+            "snippet": "enum state: [:idle, :pending, :accepted, :rejected]",
+            "test": false
+          },
+          {
+            "file": "app/models/status.rb",
+            "line": 47,
+            "snippet": "enum visibility: [:public, :unlisted, :private, :direct, :limited], _suffix: :visibility",
+            "test": false
+          },
+          {
+            "file": "db/migrate/20190511134027_add_silenced_at_suspended_at_to_accounts.rb",
+            "line": 8,
+            "snippet": "enum severity: [:silence, :suspend, :noop]",
+            "test": false
+          },
+          {
+            "file": "db/post_migrate/20190511152737_remove_suspended_silenced_account_fields.rb",
+            "line": 10,
+            "snippet": "enum severity: [:silence, :suspend, :noop]",
+            "test": false
+          }
+        ]
+      }
+    ],
+    "8.1": [
+      {
+        "section": "Deprecation Warnings",
+        "kind": "to_fix",
+        "message": "'STATS_DIRECTORIES' was removed in Rails 8.1. Register extra directories with Rails::CodeStatistics.register_directory('Services', 'app/services').",
+        "rule": "stats_directories",
+        "removed_in": "8.1",
+        "fix_effort": "low",
+        "confidence": "high",
+        "source": "https://guides.rubyonrails.org/8_1_release_notes.html#railties-removals",
+        "files": [
+          {
+            "file": "lib/tasks/statistics.rake",
+            "line": 16,
+            "snippet": "::STATS_DIRECTORIES << [name, Rails.root.join(dir)]",
+            "test": false
+          }
+        ]
+      }
+    ]
+  },
+  "cant_see": [
+    {
+      "section": "Private Gems",
+      "kind": "unknown",
+      "message": "Private gems (2): compatibility with Rails 7.0 is unknown",
+      "names": [
+        "health_check",
+        "nilsimsa"
+      ],
+      "fix_effort": "unknown"
+    },
+    {
+      "section": "Docker Configuration",
+      "kind": "unknown",
+      "message": "Could not detect a versioned ruby base image in Dockerfile.",
+      "fix_effort": "medium"
+    },
+    {
+      "section": "Gem Compatibility",
+      "kind": "unknown",
+      "message": "5 gems that depend on Rails had no release since before Rails 7.0 shipped (2021-12-15). Check they work on 7.0, or find replacements.",
+      "fix_effort": "unknown",
+      "names": [
+        "case_transform (last release 2016-09-22)",
+        "hamlit-rails (last release 2019-04-08)",
+        "rails-controller-testing (last release 2020-06-23)",
+        "makara (last release 2021-06-04)",
+        "pluck_each (last release 2021-09-21)"
+      ]
+    }
+  ]
+}
