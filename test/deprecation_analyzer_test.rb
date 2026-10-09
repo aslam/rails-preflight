@@ -94,6 +94,40 @@ class DeprecationAnalyzerTest < Minitest::Test
     assert_equal ["app/views/users/index.html.erb", "config/application.rb"], check[:files].map { |d| d[:file] }.sort
   end
 
+  def test_scans_haml_and_slim_but_not_their_silent_comments
+    write_app_file("app/views/users/index.html.haml", <<~HAML)
+      #main= deprecated_method
+      -# deprecated_method
+      -#
+        = deprecated_method
+      / deprecated_method in an HTML comment
+      /
+        = deprecated_method
+    HAML
+    write_app_file("app/views/users/show.html.slim", <<~SLIM)
+      / deprecated_method
+        = deprecated_method
+      p = deprecated_method
+      /! deprecated_method in an HTML comment
+        = deprecated_method
+    SLIM
+
+    check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml")).run[:checks].first
+
+    assert_equal ["app/views/users/index.html.haml:1", "app/views/users/index.html.haml:7", "app/views/users/show.html.slim:3", "app/views/users/show.html.slim:5"],
+                 check[:files].map { |d| "#{d[:file]}:#{d[:line]}" }.sort
+  end
+
+  def test_gem_that_keeps_the_api_skips_the_rule
+    write_app_file("app/views/posts/index.html.erb", "<%= div_for(post) do %>")
+    checks = -> { RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, current_rails: "5.2.8").run[:checks] }
+
+    assert_equal :broken, checks.call.find { |c| c[:rule] == "record_tag_helper" }[:kind]
+
+    write_app_file("Gemfile.lock", "GEM\n  specs:\n    record_tag_helper (1.0.1)\n      actionview (>= 5)\n")
+    assert_nil checks.call.find { |c| c[:rule] == "record_tag_helper" }
+  end
+
   def test_scans_migrations_and_rake_tasks
     FileUtils.mkdir_p(File.join(@tmp_dir, "db", "migrate"))
     FileUtils.mkdir_p(File.join(@tmp_dir, "lib", "tasks"))

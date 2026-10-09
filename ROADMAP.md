@@ -26,7 +26,7 @@ rails-preflight answers one question about a Rails app: **what stands between th
 
 **Code and config**
 - 118 deprecation rules, at least one removal per Rails step from 5.1 to 8.1, each cited to the release notes and linked to its guide
-- Scans `.rb`, `.erb` and `.rake` under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`; rules can opt into scripts and CI config (removed rake tasks) or config YAML (`cable.yml`, `database.yml`, `storage.yml`), scope themselves with `paths:`, and require a receiver with `needs_receiver_in:` (a bare `errors` in a helper is a local) or `skip_bare_if_local:` (a file that assigns `errors` or takes it as a parameter)
+- Scans `.rb`, `.erb`, `.haml`, `.slim` and `.rake` under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, skipping HAML and Slim silent comments and the lines nested under them; rules can opt into scripts and CI config (removed rake tasks) or config YAML (`cable.yml`, `database.yml`, `storage.yml`), scope themselves with `paths:`, and require a receiver with `needs_receiver_in:` (a bare `errors` in a helper is a local) or `skip_bare_if_local:` (a file that assigns `errors` or takes it as a parameter), and step aside with `unless_gem:` when the app locks a gem that keeps the API (record_tag_helper keeps `div_for`)
 - A blocker when this upgrade removes the API; "already broken" when it was removed at or before the current Rails, listed first
 - Commented-out code is skipped; snippets hide values on lines that name a secret, token or password
 - `config.load_defaults` missing or behind; Docker checks (EOL base image, locale, tzdata, Alpine build deps, Alpine/OpenSSL 3); schema charset and integer IDs
@@ -89,6 +89,7 @@ Not doing for now: PDF generation (headless Chrome or a layout library is a heav
 ## Later
 
 - **`rails-ujs` after 8.1.** The 7.2 notes list "Remove deprecated @rails/ujs", but that was the JS source and build tooling (rails/rails#50535): `rails-ujs.js` still ships in actionview through `8-1-stable`, so `//= require rails-ujs` works. It is gone on `main`; when that Rails ships, add a rule, which needs `.js` scanning under `app/assets` and `app/javascript`.
+- **No target on an app already on the newest known Rails.** `run` returns early, so `--format json` prints nothing and `--fail-on broken` checks nothing. Likely fix: target the current minor and run the normal already-on-target report. Open: all formats, or only Markdown and JSON (deferred 2026-10-09).
 - Scope flags such as `--exclude-tests`
 - Cross-check Ruby version sources (`.ruby-version` vs Dockerfile vs CI config)
 

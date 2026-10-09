@@ -93,7 +93,7 @@ The tool will analyze:
 - `Dockerfile` (if present)
 - `db/schema.rb` (if present)
 - `config/application.rb` and `config/**/*.yml`
-- `.rb`, `.erb` and `.rake` files under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`
+- `.rb`, `.erb`, `.haml`, `.slim` and `.rake` files under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`
 - Scripts and CI config (`bin/`, `script/`, Procfiles, Makefiles, CI workflows) for removed rake tasks
 
 And generate:
