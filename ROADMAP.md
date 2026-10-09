@@ -82,7 +82,7 @@ Not doing for now: PDF generation (headless Chrome or a layout library is a heav
 ## Next: cover more of the upgrade
 
 - **Deepen the deprecation rules.** Every hop has at least one rule, but the guides list dozens of removals per version. Add the ones that are statically detectable and plausible in app code, applying only those whose `removed_in` falls within the jump. Link each rule to the Rails guides, API docs or a commit, not blog posts, which rot.
-- **Support `structure.sql`** in the database checks, not only `db/schema.rb`.
+- **Support `structure.sql`** in the database checks, not only `db/schema.rb`. Since 2026-10-09 the report says when it skipped them because the schema is in `structure.sql`.
 - **Check each gem's declared Rails support** on rubygems.org (skipped with `--offline`): read the Rails dependency its released versions declare, and report "devise 4.7 caps Rails below 6.1; 4.9 allows 7.2, bump it first". Never query gems from a non-rubygems.org source. Overlaps next_rails' `bundle_report compatibility`; the value is one report. Missing upper bounds read as compatible, so the curated list still matters.
 - **Parse the Gemfile with Ripper** instead of line by line, if real Gemfiles hit what the line reader misses: one-line `do … end` and `{ … }` source blocks (these fall back to the rubygems.org lookup) and `x = if … end` inside a source block (closes it early, so its later gems count as public).
 

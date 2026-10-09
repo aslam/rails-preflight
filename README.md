@@ -91,7 +91,7 @@ The tool will analyze:
 - `Gemfile` and `Gemfile.lock`
 - `.ruby-version`
 - `Dockerfile` (if present)
-- `db/schema.rb` (if present)
+- `db/schema.rb` (if present; an app on `db/structure.sql` gets a note that the schema checks were skipped)
 - `config/application.rb` and `config/**/*.yml`
 - `.rb`, `.erb`, `.haml`, `.slim` and `.rake` files under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`
 - Scripts and CI config (`bin/`, `script/`, Procfiles, Makefiles, CI workflows) for removed rake tasks

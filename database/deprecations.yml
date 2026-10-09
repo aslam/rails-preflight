@@ -237,8 +237,9 @@ deprecations:
     fix_effort: low
   - id: benchmark_ms
     pattern: "\\bBenchmark\\.ms\\b"
-    message: "'Benchmark.ms' was removed in Rails 8.1. Use 'Benchmark.realtime' and convert, or the benchmark gem."
+    message: "'Benchmark.ms' was removed from Active Support in Rails 8.1. Use 'Benchmark.realtime' and convert to milliseconds, or add gem \"benchmark\", \">= 0.5\" to the Gemfile, which defines it."
     removed_in: "8.1"
+    unless_gem: "benchmark >= 0.5.0"
     severity: error
     confidence: "High"
     guide_link: "https://guides.rubyonrails.org/8_1_release_notes.html#active-support-removals"
