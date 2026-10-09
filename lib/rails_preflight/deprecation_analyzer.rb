@@ -32,8 +32,7 @@ module RailsPreflight
     def run
       result = { title: "Deprecation Warnings", status: :passed, checks: [], confidence: :medium }
 
-      # `unless_gem:` names a gem that keeps the API working (record_tag_helper keeps div_for).
-      warnings = scan_files(@rules['deprecations'].reject { |rule| rule['unless_gem'] && locked?(rule['unless_gem']) })
+      warnings = scan_files(@rules['deprecations'].reject { |rule| rule['unless_gem'] && kept_by_gem?(rule['unless_gem']) })
 
       if warnings.any?
         # Group warnings by message
@@ -188,9 +187,27 @@ module RailsPreflight
       locked?("rubocop-rails")
     end
 
+    # `unless_gem:` names a gem, optionally with a version ("benchmark >= 0.5.0"), that keeps the API working when the
+    # Gemfile lists it: record_tag_helper keeps div_for, benchmark 0.5+ keeps Benchmark.ms. Only a gem the Gemfile lists
+    # counts; one another gem pulls in can disappear on the upgrade (Active Support 8.1 drops benchmark).
+    def kept_by_gem?(spec)
+      name, requirement = spec.split(" ", 2)
+      version = locked_version(name)
+      direct = lockfile[/^DEPENDENCIES\n((?: {2}.*\n?)*)/, 1].to_s.lines.any? { |line| line.strip[/\A[^\s!]+/] == name }
+      direct && version && Gem::Requirement.new(requirement || ">= 0").satisfied_by?(version)
+    end
+
     def locked?(gem)
+      !locked_version(gem).nil?
+    end
+
+    def locked_version(gem)
+      version = lockfile[/^ {4}#{Regexp.escape(gem)} \(([^)\s-]+)/, 1]
+      version && Gem::Version.new(version)
+    end
+
+    def lockfile
       @lockfile ||= File.exist?(File.join(@root_path, "Gemfile.lock")) ? File.read(File.join(@root_path, "Gemfile.lock")) : ""
-      @lockfile.match?(/^ {4}#{Regexp.escape(gem)} \(/)
     end
 
   end

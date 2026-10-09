@@ -124,8 +124,21 @@ class DeprecationAnalyzerTest < Minitest::Test
 
     assert_equal :broken, checks.call.find { |c| c[:rule] == "record_tag_helper" }[:kind]
 
-    write_app_file("Gemfile.lock", "GEM\n  specs:\n    record_tag_helper (1.0.1)\n      actionview (>= 5)\n")
+    write_app_file("Gemfile.lock", "GEM\n  specs:\n    record_tag_helper (1.0.1)\n      actionview (>= 5)\n\nDEPENDENCIES\n  record_tag_helper\n")
     assert_nil checks.call.find { |c| c[:rule] == "record_tag_helper" }
+  end
+
+  # benchmark 0.5.0 defines Benchmark.ms, but only a gem the Gemfile lists survives Active Support 8.1 dropping it.
+  def test_gem_that_keeps_the_api_must_be_listed_and_new_enough
+    write_app_file("lib/profiler.rb", "elapsed = Benchmark.ms { work }")
+    flagged = lambda do |lock|
+      write_app_file("Gemfile.lock", lock)
+      RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "8.1", current_rails: "8.0.2").run[:checks].any? { |c| c[:rule] == "benchmark_ms" }
+    end
+
+    assert flagged.call("GEM\n  specs:\n    activesupport (8.0.2)\n      benchmark (>= 0.3)\n    benchmark (0.5.0)\n\nDEPENDENCIES\n  rails\n")
+    assert flagged.call("GEM\n  specs:\n    benchmark (0.4.0)\n\nDEPENDENCIES\n  benchmark\n")
+    refute flagged.call("GEM\n  specs:\n    benchmark (0.5.0)\n\nDEPENDENCIES\n  benchmark (>= 0.5)\n  rails\n")
   end
 
   def test_scans_migrations_and_rake_tasks
