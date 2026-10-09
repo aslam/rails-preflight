@@ -47,18 +47,11 @@ class DeprecationAnalyzerTest < Minitest::Test
     check = result[:checks].first
 
     assert_equal "Don't use this", check[:message]
-    assert_equal true, check[:grouped]
-    assert_equal "http://example.com", check[:guide_link]
-    assert_equal 1, check.dig(:stats, :occurrences)
-    assert_equal 1, check.dig(:stats, :occurrences_app)
-    assert_equal 0, check.dig(:stats, :occurrences_test)
-
-    detail = check[:details].first
-    assert_equal "High", detail[:confidence]
-    assert_equal "http://example.com", detail[:guide_link]
-    assert_equal "Rails 6.0 -> 6.1", detail[:recategorization]
-    assert_equal "app/model.rb", detail[:file]
-    assert_equal 2, detail[:line]
+    assert_equal "test_rule", check[:rule]
+    assert_equal :high, check[:confidence]
+    assert_equal "7.0", check[:removed_in]
+    assert_equal "http://example.com", check[:source]
+    assert_equal [{ file: "app/model.rb", line: 2, snippet: "deprecated_method", test: false }], check[:files]
   end
 
   def test_removed_api_blocks_targets_at_or_past_removal
@@ -97,8 +90,8 @@ class DeprecationAnalyzerTest < Minitest::Test
 
     check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml")).run[:checks].first
 
-    assert_equal 2, check.dig(:stats, :occurrences)
-    assert_equal ["app/views/users/index.html.erb", "config/application.rb"], check[:details].map { |d| d[:file] }.sort
+    assert_equal 2, check[:files].size
+    assert_equal ["app/views/users/index.html.erb", "config/application.rb"], check[:files].map { |d| d[:file] }.sort
   end
 
   def test_scans_migrations_and_rake_tasks
@@ -110,7 +103,7 @@ class DeprecationAnalyzerTest < Minitest::Test
     check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml")).run[:checks].first
 
     assert_equal ["db/migrate/20200101000000_backfill.rb", "lib/tasks/backfill.rake"],
-                 check[:details].map { |d| d[:file] }.sort
+                 check[:files].map { |d| d[:file] }.sort
   end
 
   def test_path_scoped_rule_skips_directories_it_does_not_apply_to
@@ -130,7 +123,7 @@ class DeprecationAnalyzerTest < Minitest::Test
     checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks]
     check = checks.find { |c| c[:message].start_with?("Enumerating 'ActiveModel::Errors'") }
 
-    assert_equal ["app/helpers/settings_helper.rb:2", "lib/sudo_form.rb:1"], check[:details].map { |d| "#{d[:file]}:#{d[:line]}" }.sort
+    assert_equal ["app/helpers/settings_helper.rb:2", "lib/sudo_form.rb:1"], check[:files].map { |d| "#{d[:file]}:#{d[:line]}" }.sort
     assert_nil checks.find { |c| c[:message].start_with?("Changing error messages") }
   end
 
@@ -141,7 +134,7 @@ class DeprecationAnalyzerTest < Minitest::Test
     write_app_file("lib/post_creator.rb", "    valid = a || errors.any? || b\n    errors[:base] << 'is blank'\n    record.errors[:base] << 'too long'\n")
     write_app_file("app/models/post.rb", "  def valid_body? = errors.empty?\n    errors[:body] << 'is blank'\n  def check_title\n    errors[:title] << 'is blank'\n")
 
-    files = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks].flat_map { |c| (c[:details] || []).map { |d| "#{d[:file]}:#{d[:line]}" } }
+    files = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks].flat_map { |c| (c[:files] || []).map { |d| "#{d[:file]}:#{d[:line]}" } }
 
     assert_equal ["app/models/post.rb:2", "app/models/post.rb:4", "lib/post_creator.rb:2", "lib/post_creator.rb:3"], files.sort
   end
@@ -156,7 +149,7 @@ class DeprecationAnalyzerTest < Minitest::Test
       deprecated_method(name: "kept")
     RUBY
 
-    snippets = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml")).run[:checks].first[:details].map { |d| d[:snippet] }
+    snippets = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, File.join(@db_dir, "deprecations.yml")).run[:checks].first[:files].map { |d| d[:snippet] }
 
     assert_equal [
       "deprecated_method; App.config.secret_token = '[hidden]'",
@@ -176,7 +169,7 @@ class DeprecationAnalyzerTest < Minitest::Test
                                                .find { |c| c[:message].include?("Rails.application.secrets") }
 
     assert_equal :failed, check[:status]
-    assert_equal "config/initializers/auth.rb", check[:details].first[:file]
+    assert_equal "config/initializers/auth.rb", check[:files].first[:file]
   end
 
   def test_shipped_rule_flags_positional_controller_test_params
@@ -192,7 +185,7 @@ class DeprecationAnalyzerTest < Minitest::Test
 
     check = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks].find { |c| c[:message].include?("positionally") }
 
-    assert_equal 2, check.dig(:stats, :occurrences)
+    assert_equal 2, check[:files].size
   end
 
   # One line per shipped rule. A new rule without a sample here fails the test below,
@@ -454,7 +447,7 @@ class DeprecationAnalyzerTest < Minitest::Test
       check = checks.find { |c| c[:message] == rule["message"] }
 
       refute_nil check, "rule #{rule['id']} did not match its sample line"
-      assert_includes check[:details].map { |d| d[:file] }, sample_path, "rule #{rule['id']} missed #{sample_path}"
+      assert_includes check[:files].map { |d| d[:file] }, sample_path, "rule #{rule['id']} missed #{sample_path}"
     end
   end
 
@@ -463,10 +456,10 @@ class DeprecationAnalyzerTest < Minitest::Test
     write_app_file("Procfile", "release: bundle exec rake db:structure:load")
 
     checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "7.0", current_rails: "6.1.7").run[:checks]
-    flagged = checks.flat_map { |c| (c[:details] || []).map { |d| d[:file] } }
+    flagged = checks.flat_map { |c| (c[:files] || []).map { |d| d[:file] } }
 
     assert_equal %w[Procfile bin/setup], flagged.sort
-    assert_equal 1, checks.count { |c| c[:details].is_a?(Array) }
+    assert_equal 1, checks.count { |c| c[:files].is_a?(Array) }
   end
 
   def test_yaml_rules_run_only_on_their_config_files
@@ -478,7 +471,7 @@ class DeprecationAnalyzerTest < Minitest::Test
 
     checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "8.1", current_rails: "5.1.7").run[:checks]
 
-    assert_equal [], checks.flat_map { |c| (c[:details] || []).map { |d| "#{d[:file]}: #{d[:snippet]}" } }
+    assert_equal [], checks.flat_map { |c| (c[:files] || []).map { |d| "#{d[:file]}: #{d[:snippet]}" } }
   end
 
   def test_replacement_apis_are_not_flagged
@@ -489,7 +482,7 @@ class DeprecationAnalyzerTest < Minitest::Test
     end
 
     checks = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir, target_rails: "8.0", current_rails: "5.2.0").run[:checks]
-    flagged = checks.flat_map { |c| (c[:details] || []).map { |d| "#{d[:file]}: #{d[:snippet]}" } }
+    flagged = checks.flat_map { |c| (c[:files] || []).map { |d| "#{d[:file]}: #{d[:snippet]}" } }
 
     assert_empty flagged
   end

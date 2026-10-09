@@ -1,4 +1,14 @@
 module RailsPreflight
+  # Each analyzer returns { title:, status:, confidence:, checks: [...] }. A check is a Hash with :message and :status,
+  # plus the parts it's made of, so every format renders the same facts and none parses the message:
+  #   kind        :broken, :unknown or :tip; otherwise failed → blocker, warning → to_fix
+  #   removed_in  the Rails minor that removes the API, or that the gem stops working on
+  #   fix_effort  :low, :medium, :high or :unknown; relative, never hours
+  #   source      URL of the release notes, README or Rails source the finding rests on
+  #   rule, confidence    deprecation rule id, and that rule's :high, :medium or :low
+  #   gem, version, requires    the gem, its locked version, and the requirement that fails
+  #   files       [{ file:, line:, snippet:, test: }] where it's used; line, snippet and test for code matches only
+  #   names       what the report couldn't check, e.g. private gems
   class SummaryCalculator
     # Explicit check[:kind] (:broken, :unknown, :tip) wins; otherwise failures block and warnings need fixing.
     KIND_BY_STATUS = { failed: :blocker, warning: :to_fix }.freeze
@@ -23,13 +33,15 @@ module RailsPreflight
       shown = entries.reject { |entry| entry[:kind] == :unknown }
       in_steps, rest = shown.partition { |entry| step_for(entry) }
       ahead, before = rest.partition { |entry| ahead?(entry) }
+      steps = steps(in_steps)
       {
+        verdict: verdict(steps),
         broken: findings(:broken),
         blockers: findings(:blocker),
         to_fix: findings(:to_fix),
         unknowns: findings(:unknown),
         before: in_order(before),
-        steps: steps(in_steps),
+        steps: steps,
         ahead: ahead.group_by { |entry| entry[:removed_in].to_s }.sort_by { |version, _| Gem::Version.new(version) }.to_h,
         cant_see: entries.select { |entry| entry[:kind] == :unknown }
       }
@@ -37,18 +49,34 @@ module RailsPreflight
 
     private
 
+    # One sentence on the shape of the upgrade, from the counts.
+    def verdict(steps)
+      return "Already on Rails #{@target_rails}: there is nothing to upgrade." if steps.empty?
+
+      upgrades = steps.select { |step| step[:ruby_upgrade] }
+      route = steps.one? ? "One step" : "#{steps.size} steps"
+      route +=
+        if upgrades.any? then ", upgrading Ruby to #{upgrades.map { |step| "#{step[:ruby_upgrade]} before #{step[:version]}" }.join(', then ')}."
+        elsif @app_ruby && steps.all? { |step| step[:ruby].end_with?("works") } then ", and Ruby #{@app_ruby} can stay."
+        else "."
+        end
+
+      blockers = findings(:blocker).size
+      gems = findings(:blocker).count { |finding| finding[:gem] }
+      blocking =
+        if blockers.zero? then "No blockers."
+        else "#{blockers} #{blockers == 1 ? 'blocker' : 'blockers'}#{", #{gems == blockers ? 'all' : gems} of them #{gems == 1 && blockers == 1 ? 'a gem' : 'gems'}" if gems.positive?}."
+        end
+      broken = findings(:broken).size
+      [route, blocking, ("#{broken} #{broken == 1 ? 'is' : 'are'} already broken today." if broken.positive?)].compact.join(" ")
+    end
+
     def kind(check)
       check[:kind] || KIND_BY_STATUS[check[:status]]
     end
 
     def findings(wanted)
-      @results.flat_map do |section|
-        section[:checks].select { |check| kind(check) == wanted }.map { |check| finding(section, check) }
-      end
-    end
-
-    def finding(section, check)
-      { section: section[:title], message: check[:message], occurrences: check.dig(:stats, :occurrences) }
+      entries.select { |entry| entry[:kind] == wanted }
     end
 
     # Every check that isn't a plain pass, with its section and kind.

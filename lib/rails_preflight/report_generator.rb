@@ -191,7 +191,7 @@ module RailsPreflight
           <header>
             <div class="tool">rails-preflight <%= h(VERSION) %> · <%= h(@generated_at.strftime("%-d %b %Y, %H:%M")) %></div>
             <h1><% if @data[:app] %><span class="app"><%= h(@data[:app]) %>:</span> <% end %>Rails <%= h(current_label) %> <span class="to">to</span> <%= h(@data[:target_rails]) %></h1>
-            <p class="verdict"><%= h(verdict) %></p>
+            <p class="verdict"><%= h(@summary[:verdict]) %></p>
             <div class="facts">
               <% ruby, source = @data[:ruby] %>
               <% if ruby %><span>Ruby <b><%= h(ruby) %></b> (<%= h(source) %>)</span><% end %>
@@ -282,7 +282,7 @@ module RailsPreflight
                 <div class="limit">
                   <h3><%= h(entry[:section]) %></h3>
                   <p><%= code_html(entry[:message]) %></p>
-                  <% names = Array(entry[:details]) %>
+                  <% names = Array(entry[:names]) %>
                   <% if names.any? %><p class="names"><%= h(names.join(" · ")) %></p><% end %>
                   <% if (next_step = cant_see_next(entry)) %><p class="next"><%= next_step %></p><% end %>
                 </div>
@@ -357,29 +357,6 @@ module RailsPreflight
       entries.count { |entry| entry[:kind] == :blocker }
     end
 
-    # One sentence on the shape of the upgrade, from the counts.
-    def verdict
-      return "Already on Rails #{@data[:target_rails]}: there is nothing to upgrade." if steps.empty?
-
-      upgrades = steps.select { |step| step[:ruby_upgrade] }
-      route = steps.one? ? "One step" : "#{steps.size} steps"
-      ruby, = @data[:ruby]
-      route +=
-        if upgrades.any? then ", upgrading Ruby to #{upgrades.map { |step| "#{step[:ruby_upgrade]} before #{step[:version]}" }.join(', then ')}."
-        elsif ruby && steps.all? { |step| step[:ruby].end_with?("works") } then ", and Ruby #{ruby} can stay."
-        else "."
-        end
-
-      blockers = count(:blockers)
-      gems = @summary.fetch(:blockers, []).count { |finding| GEM_SECTIONS.include?(finding[:section]) }
-      blocking =
-        if blockers.zero? then "No blockers."
-        else "#{blockers} #{blockers == 1 ? 'blocker' : 'blockers'}#{", #{gems == blockers ? 'all' : gems} of them #{gems == 1 && blockers == 1 ? 'a gem' : 'gems'}" if gems.positive?}."
-        end
-      broken = count(:broken)
-      [route, blocking, ("#{broken} #{broken == 1 ? 'is' : 'are'} already broken today." if broken.positive?)].compact.join(" ")
-    end
-
     def count_tiles
       later = ahead.values.sum(&:size)
       now = count(:to_fix) - later
@@ -421,7 +398,7 @@ module RailsPreflight
       broken, rest = work.partition { |entry| entry[:kind] == :broken }
       gems, rest = rest.partition { |entry| GEM_SECTIONS.include?(entry[:section]) }
       code, rest = rest.partition { |entry| entry[:section] == "Deprecation Warnings" }
-      lines = code.sum { |entry| entry.dig(:stats, :occurrences) || 1 }
+      lines = code.sum { |entry| entry[:files].size }
       parts = []
       parts << "#{broken.size} already broken" if broken.any?
       parts << plural(gems.size, "gem") if gems.any?
@@ -443,7 +420,7 @@ module RailsPreflight
 
     # The highest fix effort among the step's findings; relative only, never hours.
     def effort_html(entries)
-      level = entries.filter_map { |entry| EFFORTS.index((entry[:fix_effort] || entry.dig(:stats, :fix_effort)).to_s) }.max
+      level = entries.filter_map { |entry| EFFORTS.index(entry[:fix_effort].to_s) }.max
       return "–" unless level
 
       %(<span class="effort #{EFFORTS[level]}"><i></i><i></i><i></i></span>#{EFFORTS[level].capitalize})
@@ -456,42 +433,38 @@ module RailsPreflight
         %(<div class="msg">#{code_html(entry[:message])}#{occurrences_html(entry)}</div>#{cite_html(entry)}</li>)
     end
 
-    # Grouped findings list file, line and snippet; others may list files or names. Everything is escaped.
+    # Code matches list file, line and snippet; gem usage lists files. Everything is escaped.
     def occurrences_html(entry)
-      effort = entry[:fix_effort] || entry.dig(:stats, :fix_effort)
+      files = Array(entry[:files])
+      lines = files.select { |hit| hit[:line] }
       meta = []
-      rows =
-        if entry[:grouped]
-          stats = entry[:stats]
-          meta << occurrence_count(stats) << plural(stats[:files], "file")
-          entry[:details].map { |occ| %(<tr><td>#{h(occ[:file])}</td><td class="line">#{h(occ[:line])}</td><td>#{h(occ[:snippet])}</td></tr>) }
-        else
-          items = (entry[:details].is_a?(Array) ? entry[:details] : []).reject { |detail| detail.to_s.start_with?("Source: ") }
-          meta << plural(items.size, items.all? { |item| item.to_s.include?("/") } ? "file" : "item") if items.any?
-          items.map { |item| %(<tr><td>#{h(item)}</td></tr>) }
-        end
-      meta << "Fix: #{effort}" if effort && effort.to_s != "unknown"
+      meta << occurrence_count(lines) if lines.any?
+      meta << plural(files.map { |hit| hit[:file] }.uniq.size, "file") if files.any?
+      meta << "Fix: #{entry[:fix_effort]}" if entry[:fix_effort] && entry[:fix_effort].to_s != "unknown"
       return "" if meta.empty?
 
       spans = meta.map { |part| "<span>#{h(part)}</span>" }.join
-      return %(<div class="meta">#{spans}</div>) if rows.empty?
+      return %(<div class="meta">#{spans}</div>) if files.empty?
 
+      rows = files.map do |hit|
+        hit[:line] ? %(<tr><td>#{h(hit[:file])}</td><td class="line">#{h(hit[:line])}</td><td>#{h(hit[:snippet])}</td></tr>) : %(<tr><td>#{h(hit[:file])}</td></tr>)
+      end
       %(<details class="occ"><summary>#{spans}</summary><div class="snip"><table>#{rows.join}</table></div></details>)
     end
 
-    def occurrence_count(stats)
-      total, app, test = stats.values_at(:occurrences, :occurrences_app, :occurrences_test)
+    def occurrence_count(hits)
+      total = hits.size
+      test = hits.count { |hit| hit[:test] }
       text = plural(total, "occurrence")
-      return text if test.to_i.zero?
-      return "#{text}, #{total == 1 ? 'in a test' : 'all in tests'}" if app.to_i.zero?
+      return text if test.zero?
+      return "#{text}, #{total == 1 ? 'in a test' : 'all in tests'}" if test == total
 
-      "#{text} (#{app} app, #{test} test)"
+      "#{text} (#{total - test} app, #{test} test)"
     end
 
     # The release notes or source a finding cites; its area when it has none. Links render https only.
     def cite_html(entry)
-      source = Array(entry[:details]).find { |detail| detail.to_s.start_with?("Source: ") }.to_s.delete_prefix("Source: ")
-      url = [entry[:guide_link], source].find { |link| link.to_s.start_with?("https://") }
+      url = entry[:source] if entry[:source].to_s.start_with?("https://")
       return %(<span class="cite">#{h(SECTION_LABELS.fetch(entry[:section], entry[:section]))}</span>) unless url
 
       notes = url[%r{guides\.rubyonrails\.org/(\d+)_(\d+)_release_notes}] && "#{$1}.#{$2} notes"

@@ -8,12 +8,12 @@ class ReportGeneratorTest < Minitest::Test
   def test_escapes_dynamic_content_in_report
     html = render([
       { title: "Deprecation Warnings", status: :failed, confidence: :medium, checks: [
-        grouped_check("<b>unsafe blocker</b>", "https://guides.rubyonrails.org/6_0_release_notes.html", status: :failed, removed_in: "6.0",
-                      details: [{ file: "app/models/user.rb", line: 12, snippet: "<script>alert(1)</script>" }]),
+        code_check("<b>unsafe blocker</b>", "https://guides.rubyonrails.org/6_0_release_notes.html", status: :failed, removed_in: "6.0",
+                   files: [{ file: "app/models/user.rb", line: 12, snippet: "<script>alert(1)</script>" }]),
         { message: "<b>unsafe broken</b>", status: :failed, kind: :broken, removed_in: "5.1" }
       ] },
       { title: "Private Gems", status: :warning, confidence: :high, checks: [
-        { message: "Private gems (1)", status: :warning, kind: :unknown, details: ["<img src=x>"] }
+        { message: "Private gems (1)", status: :warning, kind: :unknown, names: ["<img src=x>"] }
       ] }
     ], app: "<i>app</i>")
 
@@ -27,8 +27,8 @@ class ReportGeneratorTest < Minitest::Test
 
   def test_links_findings_to_their_release_notes_over_https_only
     html = render([{ title: "Deprecation Warnings", status: :warning, confidence: :medium, checks: [
-      grouped_check("Use update", "https://guides.rubyonrails.org/6_1_release_notes.html#active-record-removals"),
-      grouped_check("Sneaky", "javascript:alert(1)")
+      code_check("Use update", "https://guides.rubyonrails.org/6_1_release_notes.html#active-record-removals"),
+      code_check("Sneaky", "javascript:alert(1)")
     ] }])
 
     assert_includes html, 'href="https://guides.rubyonrails.org/6_1_release_notes.html#active-record-removals" target="_blank" rel="noopener">6.1 notes ↗'
@@ -45,8 +45,8 @@ class ReportGeneratorTest < Minitest::Test
 
   def test_route_shows_each_step_then_later_versions_faded
     html = render([{ title: "Deprecation Warnings", status: :failed, confidence: :medium, checks: [
-      grouped_check("Gone in 6.0", nil, status: :failed, removed_in: "6.0"),
-      grouped_check("Gone in 6.1", nil, removed_in: "6.1")
+      code_check("Gone in 6.0", nil, status: :failed, removed_in: "6.0"),
+      code_check("Gone in 6.1", nil, removed_in: "6.1")
     ] }], later_rails: %w[6.1 7.0])
 
     assert_includes html, "One step, and Ruby 2.5.9 can stay. 1 blocker."
@@ -65,10 +65,7 @@ class ReportGeneratorTest < Minitest::Test
                                         later_rails: later_rails, results: results, summary: summary).generate
   end
 
-  def grouped_check(message, guide_link, status: :warning, removed_in: nil, details: [])
-    {
-      message: message, status: status, grouped: true, guide_link: guide_link, removed_in: removed_in, details: details,
-      stats: { occurrences: 1, occurrences_app: 1, occurrences_test: 0, files: 1, models: 0, controllers: 0, severity: "warning", fix_effort: "low" }
-    }
+  def code_check(message, source, status: :warning, removed_in: nil, files: [{ file: "app/models/user.rb", line: 1, snippet: "x", test: false }])
+    { message: message, status: status, source: source, removed_in: removed_in, fix_effort: :low, files: files }
   end
 end

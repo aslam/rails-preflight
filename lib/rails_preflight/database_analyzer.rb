@@ -31,8 +31,7 @@ module RailsPreflight
         @warnings.each do |w|
            result[:checks] << {
              message: w[:message],
-             status: w[:severity] == 'critical' ? :failed : :warning,
-             details: w[:type]
+             status: w[:severity] == 'critical' ? :failed : :warning
            }
         end
       end

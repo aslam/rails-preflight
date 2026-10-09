@@ -13,9 +13,12 @@ module RailsPreflight
     # target_rails nil: the next known minor after the app's current Rails.
     # offline: never call the network; gems the lockfile can't place are reported as "couldn't check",
     # and gem release dates aren't looked up.
-    def initialize(target_rails = nil, project_path = Dir.pwd, offline: false)
+    # format: :html writes the report into the app; :markdown prints it on stdout, with progress on stderr.
+    def initialize(target_rails = nil, project_path = Dir.pwd, offline: false, format: :html)
       @target_rails = target_rails
       @offline = offline
+      @format = format
+      @out = format == :html ? $stdout : $stderr
       @project_path = project_path
       @lockfile_path = File.join(project_path, "Gemfile.lock")
       @rules = YAML.load_file(DATA_PATH)
@@ -30,12 +33,12 @@ module RailsPreflight
       if defaulted
         @target_rails = next_rails
         unless @target_rails
-          puts "Rails #{current_rails} is already at or past the newest version rails-preflight knows (#{latest_known_rails}). Nothing to upgrade to."
+          @out.puts "Rails #{current_rails} is already at or past the newest version rails-preflight knows (#{latest_known_rails}). Nothing to upgrade to."
           return
         end
       end
 
-      puts "🔍 Starting Audit: Rails #{current_rails || 'unknown'} → #{@target_rails}..."
+      @out.puts "🔍 Starting Audit: Rails #{current_rails || 'unknown'} → #{@target_rails}..."
 
       results = []
       database_rules = @rules.fetch('database_rules', []).select { |rule| Gem::Version.new(rule['since']) <= Gem::Version.new(@target_rails) }
@@ -66,19 +69,20 @@ module RailsPreflight
                                            current_max_ruby: current_rails_rules&.dig('max_ruby'))
       report_data[:summary] = summary_calc.calculate
       summary = report_data[:summary]
-      puts "#{"Already broken: #{summary[:broken].size} · " if summary[:broken].any?}Blockers: #{summary[:blockers].size} · To fix: #{summary[:to_fix].size} · Couldn't check: #{summary[:unknowns].size}"
-      summary[:broken].each { |b| puts "  ‼ #{b[:section]}: #{b[:message]}" }
-      summary[:blockers].each { |b| puts "  ✗ #{b[:section]}: #{b[:message]}" }
+      @out.puts "#{"Already broken: #{summary[:broken].size} · " if summary[:broken].any?}Blockers: #{summary[:blockers].size} · To fix: #{summary[:to_fix].size} · Couldn't check: #{summary[:unknowns].size}"
+      summary[:broken].each { |b| @out.puts "  ‼ #{b[:section]}: #{b[:message]}" }
+      summary[:blockers].each { |b| @out.puts "  ✗ #{b[:section]}: #{b[:message]}" }
 
-      html = ReportGenerator.new(report_data).generate
-      
-      output_path = File.join(@project_path, "rails_preflight_report.html")
-      File.write(output_path, html)
-      
-      puts "\n✅ Report generated at: #{output_path}"
-      puts "   Open it in your browser to see the results."
+      if @format == :markdown
+        $stdout.print MarkdownReport.new(report_data).generate
+      else
+        output_path = File.join(@project_path, "rails_preflight_report.html")
+        File.write(output_path, ReportGenerator.new(report_data).generate)
+        @out.puts "\n✅ Report generated at: #{output_path}"
+        @out.puts "   Open it in your browser to see the results."
+      end
       if defaulted && @target_rails != latest_known_rails
-        puts "\nLatest known is #{latest_known_rails}: run `rails-preflight #{latest_known_rails}` for the full path."
+        @out.puts "\nLatest known is #{latest_known_rails}: run `rails-preflight #{latest_known_rails}` for the full path."
       end
     end
 
@@ -222,14 +226,14 @@ module RailsPreflight
 
       if mixed_gems.any? && @offline
         message = "#{mixed_gems.size} gems come from one Gemfile.lock section that lists rubygems.org and #{mixed_remotes.join(', ')}; can't tell which are private with --offline"
-        result[:checks] << { message: message, status: :warning, kind: :unknown, details: mixed_gems, fix_effort: :unknown }
+        result[:checks] << { message: message, status: :warning, kind: :unknown, names: mixed_gems, fix_effort: :unknown }
         result[:status] = :warning
       end
 
       unless @offline || (mixed_gems | dated_gems).empty?
         names = mixed_gems | dated_gems
         @looked_up = names.size
-        puts "Looking up #{names.size} gems on rubygems.org (--offline skips this)..."
+        @out.puts "Looking up #{names.size} gems on rubygems.org (--offline skips this)..."
         found, inconclusive = lookup_on_rubygems(names)
         private_gems.concat(mixed_gems.select { |name| found[name] == false })
         @last_releases = dated_gems.filter_map { |name| [name, found[name]['version_created_at']] if found[name].is_a?(Hash) && found[name]['version_created_at'] }.to_h
@@ -237,15 +241,15 @@ module RailsPreflight
           result[:checks] << { message: "Looked up #{mixed_gems.size} gems on rubygems.org, since Gemfile.lock lists them under both rubygems.org and #{mixed_remotes.join(', ')}. Pass --offline to skip.", status: :passed, fix_effort: :low }
         end
         if inconclusive.any?
-          details = inconclusive.map { |name, error| "#{name} (#{error})" }
-          result[:checks] << { message: "Could not verify #{inconclusive.size} gems against rubygems.org", status: :warning, kind: :unknown, details: details, fix_effort: :unknown }
+          names = inconclusive.map { |name, error| "#{name} (#{error})" }
+          result[:checks] << { message: "Could not verify #{inconclusive.size} gems against rubygems.org", status: :warning, kind: :unknown, names: names, fix_effort: :unknown }
           result[:status] = :warning
         end
       end
 
       if private_gems.any?
         result[:status] = :warning
-        result[:checks].unshift({ message: "Private gems (#{private_gems.size}): compatibility with Rails #{@target_rails} is unknown", status: :warning, kind: :unknown, details: private_gems.sort, fix_effort: :unknown })
+        result[:checks].unshift({ message: "Private gems (#{private_gems.size}): compatibility with Rails #{@target_rails} is unknown", status: :warning, kind: :unknown, names: private_gems.sort, fix_effort: :unknown })
       else
         result[:checks].unshift({ message: "No private gems detected.", status: :passed, fix_effort: :low })
       end
