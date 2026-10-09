@@ -13,13 +13,15 @@ module RailsPreflight
     # target_rails nil: the next known minor after the app's current Rails.
     # offline: never call the network; gems the lockfile can't place are reported as "couldn't check",
     # and gem release dates aren't looked up.
-    # format: :html writes the report into the app; :markdown and :json print it on stdout, with progress on stderr.
+    # format: :html, :markdown or :json, written into the app as rails_preflight_report.<ext>.
+    # stdout: print the report instead of writing it, with progress on stderr, for pipes and coding agents.
     # run returns the summary (nil when there's nothing to upgrade to), so the caller can set the exit code.
-    def initialize(target_rails = nil, project_path = Dir.pwd, offline: false, format: :html)
+    def initialize(target_rails = nil, project_path = Dir.pwd, offline: false, format: :html, stdout: false)
       @target_rails = target_rails
       @offline = offline
       @format = format
-      @out = format == :html ? $stdout : $stderr
+      @stdout = stdout
+      @out = stdout ? $stderr : $stdout
       @project_path = project_path
       @lockfile_path = File.join(project_path, "Gemfile.lock")
       @rules = YAML.load_file(DATA_PATH)
@@ -74,13 +76,15 @@ module RailsPreflight
       summary[:broken].each { |b| @out.puts "  ‼ #{b[:section]}: #{b[:message]}" }
       summary[:blockers].each { |b| @out.puts "  ✗ #{b[:section]}: #{b[:message]}" }
 
-      if (report = { markdown: MarkdownReport, json: JsonReport }[@format])
-        $stdout.print report.new(report_data).generate
+      renderer, extension = { html: [ReportGenerator, "html"], markdown: [MarkdownReport, "md"], json: [JsonReport, "json"] }.fetch(@format)
+      report = renderer.new(report_data).generate
+      if @stdout
+        $stdout.print report
       else
-        output_path = File.join(@project_path, "rails_preflight_report.html")
-        File.write(output_path, ReportGenerator.new(report_data).generate)
+        output_path = File.join(@project_path, "rails_preflight_report.#{extension}")
+        File.write(output_path, report)
         @out.puts "\n✅ Report generated at: #{output_path}"
-        @out.puts "   Open it in your browser to see the results."
+        @out.puts "   Open it in your browser to see the results." if @format == :html
       end
       if defaulted && @target_rails != latest_known_rails
         @out.puts "\nLatest known is #{latest_known_rails}: run `rails-preflight #{latest_known_rails}` for the full path."
