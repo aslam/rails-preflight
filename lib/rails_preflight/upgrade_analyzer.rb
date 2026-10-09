@@ -13,7 +13,8 @@ module RailsPreflight
     # target_rails nil: the next known minor after the app's current Rails.
     # offline: never call the network; gems the lockfile can't place are reported as "couldn't check",
     # and gem release dates aren't looked up.
-    # format: :html writes the report into the app; :markdown prints it on stdout, with progress on stderr.
+    # format: :html writes the report into the app; :markdown and :json print it on stdout, with progress on stderr.
+    # run returns the summary (nil when there's nothing to upgrade to), so the caller can set the exit code.
     def initialize(target_rails = nil, project_path = Dir.pwd, offline: false, format: :html)
       @target_rails = target_rails
       @offline = offline
@@ -73,8 +74,8 @@ module RailsPreflight
       summary[:broken].each { |b| @out.puts "  ‼ #{b[:section]}: #{b[:message]}" }
       summary[:blockers].each { |b| @out.puts "  ✗ #{b[:section]}: #{b[:message]}" }
 
-      if @format == :markdown
-        $stdout.print MarkdownReport.new(report_data).generate
+      if (report = { markdown: MarkdownReport, json: JsonReport }[@format])
+        $stdout.print report.new(report_data).generate
       else
         output_path = File.join(@project_path, "rails_preflight_report.html")
         File.write(output_path, ReportGenerator.new(report_data).generate)
@@ -84,6 +85,7 @@ module RailsPreflight
       if defaulted && @target_rails != latest_known_rails
         @out.puts "\nLatest known is #{latest_known_rails}: run `rails-preflight #{latest_known_rails}` for the full path."
       end
+      summary
     end
 
     private

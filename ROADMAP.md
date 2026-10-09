@@ -73,7 +73,7 @@ Decided 2026-10-07. Every format renders one structured set of findings; none pa
    - "What this report can't see" last: private gems and stale gems by name, behavior changes, multi-line code and test coverage, each with what to do instead (RailsBump, next_rails, rubocop-rails named where they answer the gap)
    - Footer: confidence, sources, the repo, one help line to syedaslam.com/work-with-me. Neutral otherwise; the free report is complete
    - Dark mode follows the OS, no toggle. `@media print`: A4, light colors, file lists hidden, `print-color-adjust: exact` (dots, effort bars and markers are backgrounds, which browsers drop when printing)
-2. **JSON** with a versioned schema (`"schema": 1`) and stable rule ids; `--format json` prints JSON on stdout and progress on stderr. `--fail-on blockers|broken` sets the exit code, so CI can gate on it.
+2. **JSON**, done 2026-10-09, with a versioned schema (`"schema": 1`) and stable rule ids; `--format json` prints JSON on stdout and progress on stderr. `--fail-on blockers|broken` sets the exit code, so CI can gate on it.
 3. **Markdown**, done 2026-10-09 (`--format markdown`), which is also the format for LLMs and coding agents: ordered by step, `file:line` and the replacement for each finding, a short header telling an agent to take one step at a time, run the tests after each, and leave "ahead" and "can't see" items alone. Pastes into issues and PRs as is.
 4. **Console** as a text version of the HTML: verdict, a one-line route, counts, blockers by step, the report's path.
 
