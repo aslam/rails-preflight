@@ -12,6 +12,13 @@ It helps teams understand:
 
 This tool is designed for **planning and scoping**, not automated migration.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/report-overview-dark.png">
+  <img alt="The report for Mastodon v3.3.0, Rails 5.2.4.4 to 7.0: verdict, counts, the route through 6.0, 6.1 and 7.0 with blockers at each, and the plan table" src="docs/images/report-overview-light.png">
+</picture>
+
+<sub>Mastodon v3.3.0, an open-source app, checked for Rails 7.0.</sub>
+
 ## Why this exists
 
 Rails upgrades fail not because teams can’t write code, but because they underestimate risk:
@@ -43,6 +50,8 @@ The output is a **single HTML report** designed to be:
 - readable by engineers
 - understandable by EMs and tech leads
 - usable in upgrade planning discussions
+
+The same findings also come as **Markdown**, a checklist for issues, PRs and coding agents, and as **JSON** for CI and other tools. See [Output formats](#output-formats).
 
 ## What this tool intentionally does NOT do
 
@@ -102,21 +111,23 @@ And generate:
 rails_preflight_report.html
 ```
 
-Or, with `--format markdown`, print the same report as Markdown instead of writing the file: one checklist per step, with `file:line` for each finding. It pastes into an issue or PR, and opens with a note telling a coding agent to take one step at a time and run the tests after each.
+Or print it as Markdown or JSON instead: see [Output formats](#output-formats).
 
-```bash
-rails-preflight --format markdown 7.2 /path/to/your/app > upgrade.md
-```
+## Output formats
 
-`--format json` prints the same findings as JSON, each with its parts: the gem, its version and the requirement it fails, or the rule id with every `file`, `line` and matched line, plus the source it rests on. The top-level `"schema": 1` may still change before 1.0; the number goes up when it does. To gate CI, add `--fail-on blockers` (exit 1 when anything blocks the upgrade or is already broken) or `--fail-on broken` (only when something is already broken). It works with any format.
+Every format renders the same findings. Each finding carries its parts, not only a sentence: the gem, its locked version and the requirement it fails, or the rule with every file, line and matched line, plus the release notes, README or Rails source it rests on.
 
-```bash
-rails-preflight --offline --format json --fail-on blockers 7.2 > preflight.json
-```
+| Format | Flag | Where it goes | For |
+|---|---|---|---|
+| HTML | (default) | `rails_preflight_report.html` in the app | reading, planning, sharing |
+| Markdown | `--format markdown` | stdout | issues, PRs, coding agents |
+| JSON | `--format json` | stdout | CI and other tools |
 
-## Report Overview
+Every run also prints a short summary (counts, then each blocker) for SSH sessions and CI logs. With Markdown or JSON it goes to stderr, so stdout holds only the report. Neither of them writes the HTML file.
 
-The tool writes one self-contained **HTML report** (`rails_preflight_report.html`). It makes no network requests when opened, follows the OS dark mode, and prints on A4.
+### HTML
+
+One self-contained file. It makes no network requests when opened, follows the OS dark mode, and prints on A4.
 
 1.  **Title and verdict**: `app: Rails current to target`, then one sentence: how many steps, when to upgrade Ruby, how many blockers.
 
@@ -135,6 +146,76 @@ The tool writes one self-contained **HTML report** (`rails_preflight_report.html
 6.  **What this report can't see**: private gems and quiet gems by name, behavior changes, multi-line code and test coverage, with what to do instead.
 
 7.  **Footer**: the confidence of each section (read from project files, pattern matches, or a key input missing) and where the findings come from.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/report-step-dark.png">
+  <img alt="The 6.1 to 7.0 step card: four gem blockers, then removed APIs with their files, line numbers and matched lines expanded" src="docs/images/report-step-light.png">
+</picture>
+
+### Markdown
+
+```bash
+rails-preflight --format markdown 7.2 /path/to/your/app > upgrade.md
+```
+
+A checklist per step, with `file:line` and the matched line under each finding. It pastes into an issue or PR as is, and opens with a note telling a coding agent to take one step at a time, run the tests after each, and leave "Ahead" and "Couldn't check" alone. From the same Mastodon run:
+
+```markdown
+## Step 3: 6.1 to 7.0
+
+Needs Ruby 2.7.0–3.2: 2.7.2 works.
+
+- [ ] **Blocker:** annotate 3.1.1 requires activerecord >= 3.2, < 7.0, so it doesn't install on Rails 7.0. Upgrade it to a release that allows 7.0, or replace it.
+- [ ] **Blocker:** `ActionMailer::DeliveryJob` and `ActionMailer::Parameterized::DeliveryJob` were removed in Rails 7.0. Mail is delivered by `ActionMailer::MailDeliveryJob`. ([source](https://guides.rubyonrails.org/7_0_release_notes.html#action-mailer-removals))
+  - `config/initializers/delivery_job.rb:1` `ActionMailer::DeliveryJob.class_eval do`
+  - `spec/models/user_spec.rb:178` `expect { user.send_confirmation_instructions }.to have_enqueued_job(ActionMailer::DeliveryJob)`
+```
+
+### JSON
+
+```bash
+rails-preflight --offline --format json --fail-on blockers 7.2 > preflight.json
+```
+
+The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `ruby`, `offline`, `verdict` and `counts`, then the findings in `before` (before the first step), `steps` (each with `from`, `version`, its Ruby note and `findings`), `ahead` (keyed by the Rails version that removes them) and `cant_see`. There's no timestamp, so the same app gives the same output. Schema 1 may still change before 1.0; the number goes up when it does. A step from the same run, shortened:
+
+```json
+{
+  "from": "6.1",
+  "version": "7.0",
+  "findings": [
+    {
+      "section": "Gem Compatibility",
+      "kind": "blocker",
+      "message": "annotate 3.1.1 requires activerecord >= 3.2, < 7.0, so it doesn't install on Rails 7.0. ...",
+      "removed_in": "7.0",
+      "fix_effort": "medium",
+      "gem": "annotate",
+      "version": "3.1.1",
+      "requires": "activerecord >= 3.2, < 7.0"
+    },
+    {
+      "section": "Deprecation Warnings",
+      "kind": "blocker",
+      "message": "'ActiveModel::Errors#keys', '#values', '#to_h', '#slice!' and '#to_xml' were removed in Rails 7.0. ...",
+      "rule": "errors_hash_methods",
+      "removed_in": "7.0",
+      "fix_effort": "low",
+      "confidence": "medium",
+      "source": "https://guides.rubyonrails.org/7_0_release_notes.html#active-model-removals",
+      "files": [
+        { "file": "lib/mastodon/accounts_cli.rb", "line": 106, "snippet": "user.errors.to_h.each do |key, error|", "test": false }
+      ]
+    }
+  ]
+}
+```
+
+`kind` is `broken`, `blocker`, `to_fix`, `tip` or `unknown`. A finding has only the parts that apply to it: gem findings have `gem`, `version` and `requires`; code findings have `rule`, `confidence` and `files`; what the report couldn't check has `names`.
+
+### Gating CI
+
+`--fail-on blockers` exits 1 when anything blocks the upgrade or is already broken; `--fail-on broken` only when something is already broken. It works with any format.
 
 ## Roadmap
 
