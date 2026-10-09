@@ -40,6 +40,24 @@ class GemAnalyzerTest < Minitest::Test
                  checks.map { |c| [c[:removed_in], c[:message]] }.sort
   end
 
+  def test_gem_rails_loads_for_a_feature_blocks_only_when_the_app_uses_it
+    specs = lockfile_specs("listen (3.1.5)", "selenium-webdriver (3.142.7)", "redis (3.3.5)")
+
+    assert_equal [], run_checks(specs, hops: %w[6.0 6.1 7.0 7.1]).map { |c| c[:message] }.grep(/doesn't load/)
+
+    write_app_file("config/environments/development.rb", "  config.file_watcher = ActiveSupport::EventedFileUpdateChecker\n")
+    write_app_file("test/application_system_test_case.rb", "  driven_by :selenium_chrome_headless\n")
+    write_app_file("config/cable.yml", "production:\n  adapter: redis\n")
+    checks = run_checks(specs, hops: %w[6.0 6.1 7.0 7.1])
+
+    assert_equal [["7.0", "listen 3.1.5 doesn't load on Rails 7.0, which requires listen ~> 3.5 for the evented file watcher in development. Upgrade it in the same step."],
+                  ["7.1", "redis 3.3.5 doesn't load on Rails 7.1, which requires redis >= 4, < 6 for Action Cable's redis adapter. Upgrade it in the same step."]],
+                 checks.select { |c| c[:message].include?("doesn't load") }.map { |c| [c[:removed_in], c[:message]] }.sort
+
+    write_app_file("test/application_system_test_case.rb", "  driven_by :selenium, using: :chrome\n")
+    assert_equal "7.0", run_checks(specs, hops: %w[7.0]).find { |c| c[:gem] == "selenium-webdriver" }[:removed_in]
+  end
+
   def test_gem_rails_stops_depending_on_blocks_unless_the_gemfile_lists_it
     write_app_file("config/application.rb", "require 'rails/all'\n    config.assets.enabled = false\n")
     specs = lockfile_specs("sprockets-rails (3.2.2)")
@@ -144,6 +162,10 @@ class GemAnalyzerTest < Minitest::Test
       Regexp.new(entry["pattern"]) if entry["pattern"]
       assert entry["source"].start_with?("https://"), "#{entry['name']} needs a source"
       assert entry["pattern"], "#{entry['name']} is only_if_used, so it needs a pattern" if entry["only_if_used"]
+    end
+    YAML.load_file(RailsPreflight::GemAnalyzer::DATA_PATH)["loaded_by_rails"].each do |name, entry|
+      Regexp.new(entry.dig("used_if", "pattern"))
+      assert entry["source"].start_with?("https://github.com/rails/rails/blob/"), "#{name} needs a Rails source"
     end
   end
 
