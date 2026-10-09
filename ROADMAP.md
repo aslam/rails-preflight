@@ -1,6 +1,6 @@
 # Roadmap
 
-_Last updated: 2026-10-07_
+_Last updated: 2026-10-09_
 
 rails-preflight answers one question about a Rails app: **what stands between this app and Rails X, and how sure are we?** Everything below makes that answer more correct, easier to read, or broader.
 
@@ -65,7 +65,7 @@ Not needed for the first release: `structure.sql` and anything under Maybe.
 
 Decided 2026-10-07. Every format renders one structured set of findings; none parses another's output. In order:
 
-1. **Findings model and HTML redesign.** The HTML follows design A since 2026-10-08; the findings model is left. Findings carry their parts (gem, versions, limit, step, `removed_in`, files with line and snippet, citation, confidence), not only a finished sentence. The HTML follows design A (mockup: claude.ai/artifact/8HHnsQ12mV4exU6wSVJRwY):
+1. **Findings model and HTML redesign.** Done: the HTML since 2026-10-08, the findings model since 2026-10-09 (the parts are documented in `summary_calculator.rb`). Findings carry their parts (gem, versions, limit, step, `removed_in`, files with line and snippet, citation, confidence), not only a finished sentence. The HTML follows design A (mockup: claude.ai/artifact/8HHnsQ12mV4exU6wSVJRwY):
    - Title `app: Rails X to Y` and a one-sentence verdict generated from the findings
    - Counts, then the route: one stop per Rails minor, blocker counts, Ruby upgrades marked; past the target, faded "ahead" stops count code that later versions remove (gem limits past the target aren't checked)
    - Plan table under the route: step, what to do, blockers, relative effort (never hours)
@@ -74,7 +74,7 @@ Decided 2026-10-07. Every format renders one structured set of findings; none pa
    - Footer: confidence, sources, the repo, one help line to syedaslam.com/work-with-me. Neutral otherwise; the free report is complete
    - Dark mode follows the OS, no toggle. `@media print`: A4, light colors, file lists hidden, `print-color-adjust: exact` (dots, effort bars and markers are backgrounds, which browsers drop when printing)
 2. **JSON** with a versioned schema (`"schema": 1`) and stable rule ids; `--format json` prints JSON on stdout and progress on stderr. `--fail-on blockers|broken` sets the exit code, so CI can gate on it.
-3. **Markdown**, which is also the format for LLMs and coding agents: ordered by step, `file:line` and the replacement for each finding, a short header telling an agent to take one step at a time, run the tests after each, and leave "ahead" and "can't see" items alone. Pastes into issues and PRs as is.
+3. **Markdown**, done 2026-10-09 (`--format markdown`), which is also the format for LLMs and coding agents: ordered by step, `file:line` and the replacement for each finding, a short header telling an agent to take one step at a time, run the tests after each, and leave "ahead" and "can't see" items alone. Pastes into issues and PRs as is.
 4. **Console** as a text version of the HTML: verdict, a one-line route, counts, blockers by step, the report's path.
 
 Not doing for now: PDF generation (headless Chrome or a layout library is a heavy dependency for what printing the HTML already does; a `--pdf` that uses an installed Chrome can come later if asked), and an MCP server (an agent can read the Markdown).

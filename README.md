@@ -102,6 +102,12 @@ And generate:
 rails_preflight_report.html
 ```
 
+Or, with `--format markdown`, print the same report as Markdown instead of writing the file: one checklist per step, with `file:line` for each finding. It pastes into an issue or PR, and opens with a note telling a coding agent to take one step at a time and run the tests after each.
+
+```bash
+rails-preflight --format markdown 7.2 /path/to/your/app > upgrade.md
+```
+
 ## Report Overview
 
 The tool writes one self-contained **HTML report** (`rails_preflight_report.html`). It makes no network requests when opened, follows the OS dark mode, and prints on A4.

@@ -40,18 +40,19 @@ class SummaryCalculatorTest < Minitest::Test
     assert_empty summary[:steps].first[:checks]
   end
 
-  def test_findings_keep_their_section_and_occurrences
+  def test_findings_keep_their_parts_and_section
     results = [
       {
         title: "Deprecation Warnings",
         status: :warning,
-        checks: [{ message: "Use update", status: :warning, grouped: true, stats: { occurrences: 12 } }]
+        checks: [{ message: "Use update", status: :warning, rule: "update_attributes", files: [{ file: "app/models/user.rb", line: 3 }] }]
       }
     ]
 
     summary = RailsPreflight::SummaryCalculator.new(results, "7.2").calculate
 
-    assert_equal [{ section: "Deprecation Warnings", message: "Use update", occurrences: 12 }], summary[:to_fix]
+    assert_equal [{ message: "Use update", status: :warning, rule: "update_attributes", files: [{ file: "app/models/user.rb", line: 3 }],
+                    section: "Deprecation Warnings", kind: :to_fix }], summary[:to_fix]
   end
 
   def test_path_prepares_then_steps_through_each_minor_version
@@ -63,7 +64,7 @@ class SummaryCalculatorTest < Minitest::Test
         title: "Deprecation Warnings",
         status: :failed,
         checks: [
-          { message: "Old API", status: :failed, removed_in: "7.1", stats: { occurrences: 4 } },
+          { message: "Old API", status: :failed, removed_in: "7.1" },
           { message: "Older API", status: :warning, removed_in: "6.1" },
           { message: "Later API", status: :warning, removed_in: "7.2" },
           { message: "Use rubocop", status: :passed, kind: :tip }

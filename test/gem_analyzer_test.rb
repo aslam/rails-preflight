@@ -22,6 +22,7 @@ class GemAnalyzerTest < Minitest::Test
     assert_equal :failed, check[:status]
     assert_equal "6.1", check[:removed_in]
     assert_includes check[:message], "devise 4.7.1 requires railties >= 4.1.0, < 6.1"
+    assert_equal ["devise", "4.7.1", "railties >= 4.1.0, < 6.1"], check.values_at(:gem, :version, :requires)
   end
 
   def test_locked_limits_allow_any_patch_of_a_minor_and_skip_rails_itself
@@ -38,6 +39,8 @@ class GemAnalyzerTest < Minitest::Test
     assert_equal [["6.0", "sqlite3 1.3.13 doesn't load on Rails 6.0, which requires sqlite3 ~> 1.4. Upgrade it in the same step."],
                   ["6.1", "pg 1.0.0 doesn't load on Rails 6.1, which requires pg ~> 1.1. Upgrade it in the same step."]],
                  checks.map { |c| [c[:removed_in], c[:message]] }.sort
+    assert_equal ["pg", "1.0.0", "pg ~> 1.1", "https://github.com/rails/rails/blob/6-1-stable/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb"],
+                 checks.find { |c| c[:gem] == "pg" }.values_at(:gem, :version, :requires, :source)
   end
 
   def test_gem_rails_loads_for_a_feature_blocks_only_when_the_app_uses_it
@@ -103,7 +106,8 @@ class GemAnalyzerTest < Minitest::Test
     assert_equal :failed, check[:status]
     assert_equal "7.0", check[:removed_in]
     assert_includes check[:message], "Used in 2 files."
-    assert_equal ["Source: https://github.com/westonganger/protected_attributes_continued#readme", "app/models/post.rb", "app/models/user.rb"], check[:details]
+    assert_equal "https://github.com/westonganger/protected_attributes_continued#readme", check[:source]
+    assert_equal [{ file: "app/models/post.rb" }, { file: "app/models/user.rb" }], check[:files]
   end
 
   def test_curated_gem_past_the_target_is_a_deadline
@@ -147,7 +151,7 @@ class GemAnalyzerTest < Minitest::Test
     assert_equal :unknown, check[:kind]
     assert_includes check[:message], "2 gems that depend on Rails had no release since before Rails 7.0 shipped (2021-12-15)"
     # devise is already a blocker and paperclip is on the curated list, so neither is repeated
-    assert_equal ["rails_admin_tag (last release 2017-05-02)", "acts_as_list (last release 2019-03-01)"], check[:details]
+    assert_equal ["rails_admin_tag (last release 2017-05-02)", "acts_as_list (last release 2019-03-01)"], check[:names]
   end
 
   def test_release_date_check_says_when_it_was_skipped

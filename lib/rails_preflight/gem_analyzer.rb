@@ -52,7 +52,7 @@ module RailsPreflight
 
         requires = limits.map { |dep| "#{dep.name} #{dep.requirement}" }.join(", ")
         { message: "#{spec.name} #{spec.version} requires #{requires}, so it doesn't install on Rails #{breaks_in}. Upgrade it to a release that allows #{breaks_in}, or replace it.",
-          status: :failed, removed_in: breaks_in, fix_effort: :medium, gem: spec.name }
+          status: :failed, removed_in: breaks_in, fix_effort: :medium, gem: spec.name, version: spec.version.to_s, requires: requires }
       end
     end
 
@@ -66,8 +66,10 @@ module RailsPreflight
         next unless breaks_in
 
         requirement = @adapter_requirements[breaks_in][spec.name].join(", ")
+        adapter = spec.name == "pg" ? "postgresql" : spec.name
         { message: "#{spec.name} #{spec.version} doesn't load on Rails #{breaks_in}, which requires #{spec.name} #{requirement}. Upgrade it in the same step.",
-          status: :failed, removed_in: breaks_in, fix_effort: :low }
+          status: :failed, removed_in: breaks_in, fix_effort: :low, gem: spec.name, version: spec.version.to_s, requires: "#{spec.name} #{requirement}",
+          source: "https://github.com/rails/rails/blob/#{breaks_in.tr('.', '-')}-stable/activerecord/lib/active_record/connection_adapters/#{adapter}_adapter.rb" }
       end
     end
 
@@ -85,7 +87,7 @@ module RailsPreflight
         requirement = "#{name} #{requirement_at(entry['from'], breaks_in).join(', ')}"
         why = entry['raises'] ? ": #{entry['raises']}; Rails #{breaks_in} needs #{requirement}" : ", which requires #{requirement} for #{entry['for']}"
         { message: "#{name} #{version} doesn't load on Rails #{breaks_in}#{why}. Upgrade it in the same step.",
-          status: :failed, removed_in: breaks_in, fix_effort: :low, gem: name, details: ["Source: #{entry['source']}"] }
+          status: :failed, removed_in: breaks_in, fix_effort: :low, gem: name, version: version.to_s, requires: requirement, source: entry['source'] }
       end
     end
 
@@ -102,7 +104,7 @@ module RailsPreflight
       @hops.flat_map do |hop|
         @dropped_by_rails.fetch(hop, {}).select { |name, used_if| locked.include?(name) && !kept.include?(name) && used?(used_if) }.keys.map do |name|
           { message: "Rails #{hop} no longer depends on #{name}, and the Gemfile doesn't list it. Add gem \"#{name}\" to the Gemfile in the same step.",
-            status: :failed, removed_in: hop, fix_effort: :low }
+            status: :failed, removed_in: hop, fix_effort: :low, gem: name }
         end
       end
     end
@@ -130,7 +132,7 @@ module RailsPreflight
 
       [{ message: "#{old.size} #{old.size == 1 ? 'gem' : 'gems'} that depend on Rails had no release since before Rails #{@hops.last} shipped (#{@target_released}). Check they work on #{@hops.last}, or find replacements.",
          status: :warning, kind: :unknown, fix_effort: :unknown,
-         details: old.map { |name, at| "#{name} (last release #{at[0, 10]})" } }]
+         names: old.map { |name, at| "#{name} (last release #{at[0, 10]})" } }]
     end
 
     # Any patch release of the minor counts: `>= 7.0.1` allows 7.0.
@@ -160,7 +162,8 @@ module RailsPreflight
         message += " Used in #{files.size} #{files.size == 1 ? 'file' : 'files'}." if files
 
         { message: message, status: blocks || broken ? :failed : :warning, kind: (:broken if broken), removed_in: breaks_in,
-          details: ["Source: #{entry['source']}", *files], fix_effort: entry['fix_effort']&.to_sym }
+          gem: entry['name'], version: version.to_s, source: entry['source'], files: Array(files).map { |file| { file: file } },
+          fix_effort: entry['fix_effort']&.to_sym }
       end
     end
 

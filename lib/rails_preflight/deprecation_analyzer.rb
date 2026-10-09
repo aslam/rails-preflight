@@ -31,38 +31,23 @@ module RailsPreflight
         grouped_warnings = warnings.group_by { |w| w[:message] }
         
         grouped_warnings.each do |message, occurrences|
-          # Calculate stats
-          files_affected = occurrences.map { |w| w[:file] }.uniq.count
-          models_affected = occurrences.count { |w| w[:file].include?('app/models') }
-          controllers_affected = occurrences.count { |w| w[:file].include?('app/controllers') }
-          
-          # Use the severity of the first occurrence (rule based)
-          severity = occurrences.first[:severity] || "Warning"
-          fix_effort = occurrences.first[:fix_effort] || "low"
-          info = severity.to_s.downcase == "info"
+          rule = occurrences.first
+          info = rule[:severity].to_s.downcase == "info"
           # An API this upgrade removes blocks it; one removed before the current Rails is already broken
           # (or dead code); otherwise it's a warning to fix.
-          removed_in = occurrences.first[:removed_in]
+          removed_in = rule[:removed_in]
           status = info ? :passed : (removed_by_target?(removed_in) || already_removed?(removed_in) ? :failed : :warning)
 
           result[:checks] << {
             message: message,
             status: status,
             kind: (:tip if info) || (:broken if already_removed?(removed_in)),
-            grouped: true,
-            guide_link: occurrences.first[:guide_link],
-            removed_in: occurrences.first[:removed_in],
-            stats: {
-              occurrences: occurrences.count,
-              occurrences_app: occurrences.count { |w| !w[:is_test] },
-              occurrences_test: occurrences.count { |w| w[:is_test] },
-              files: files_affected,
-              models: models_affected,
-              controllers: controllers_affected,
-              severity: severity,
-              fix_effort: fix_effort
-            },
-            details: occurrences # Pass all occurrences for the detail view
+            rule: rule[:rule],
+            removed_in: removed_in,
+            fix_effort: (rule[:fix_effort] || "low").to_sym,
+            confidence: rule[:confidence]&.downcase&.to_sym,
+            source: rule[:guide_link],
+            files: occurrences.map { |hit| hit.slice(:file, :line, :snippet, :test) }
           }
         end
 
@@ -103,7 +88,7 @@ module RailsPreflight
         next if File.directory?(file)
 
         relative_path = Pathname.new(file).relative_path_from(Pathname.new(@root_path)).to_s
-        is_test = relative_path.start_with?('test/', 'spec/')
+        test = relative_path.start_with?('test/', 'spec/')
 
         under = ->(paths) { paths.any? { |path| relative_path == path || relative_path.start_with?("#{path}/") } }
         # A rule with `paths:` only applies under those directories or to those files.
@@ -132,13 +117,13 @@ module RailsPreflight
 
             found << {
               message: rule['message'],
+              rule: rule['id'],
               file: relative_path,
               line: line_num,
-              is_test: is_test,
+              test: test,
               snippet: redact(line.strip),
-              confidence: rule['confidence'] || "Unknown",
+              confidence: rule['confidence'],
               guide_link: rule['guide_link'],
-              recategorization: rule['recategorization'],
               removed_in: rule['removed_in'],
               severity: rule['severity'],
               fix_effort: rule['fix_effort']

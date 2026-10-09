@@ -9,14 +9,20 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'rails_preflight'
 
 if %w[-h --help].include?(ARGV[0])
-  puts "Usage: rails-preflight [--offline] [TARGET_RAILS_VERSION] [APP_PATH]"
+  puts "Usage: rails-preflight [--offline] [--format html|markdown] [TARGET_RAILS_VERSION] [APP_PATH]"
   puts "Example: rails-preflight 7.2 ~/code/my_app"
   puts "TARGET defaults to the next Rails minor after the app's; APP_PATH to the current directory."
   puts "--offline: don't call rubygems.org; gems the lockfile can't place are reported as unchecked, and gem release dates are skipped."
+  puts "--format markdown: print the report as Markdown on stdout (progress goes to stderr) instead of writing the HTML file."
   exit
 end
 
 offline = !ARGV.delete("--offline").nil?
+format = :html
+if (i = ARGV.index("--format"))
+  format = ARGV.slice!(i, 2)[1].to_s.to_sym
+  abort "--format must be html or markdown (got #{format})." unless %i[html markdown].include?(format)
+end
 
 # The target is optional, so a lone argument that isn't a version is the app path.
 target = ARGV.shift if ARGV[0] && (Gem::Version.correct?(ARGV[0]) || !File.directory?(ARGV[0]))
@@ -24,7 +30,7 @@ abort "Target must be a Rails version such as 7.2 (got #{target.inspect})." if t
 project_path = ARGV[0] || Dir.pwd
 
 begin
-  RailsPreflight::UpgradeAnalyzer.new(target, project_path, offline: offline).run
+  RailsPreflight::UpgradeAnalyzer.new(target, project_path, offline: offline, format: format).run
 rescue RailsPreflight::Error => e
   abort e.message
 end
