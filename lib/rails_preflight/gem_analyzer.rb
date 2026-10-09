@@ -21,13 +21,13 @@ module RailsPreflight
       @entries = data.fetch('gems', [])
       @adapter_requirements = data.fetch('adapter_requirements', {})
       @dropped_by_rails = data.fetch('dropped_by_rails', {})
-      @loaded_by_rails = data.fetch('loaded_by_rails', {})
+      @version_limits = data.fetch('version_limits', {})
     end
 
     def run
       result = { title: "Gem Compatibility", status: :passed, checks: [], confidence: :medium }
       return result if @hops.empty? # already on the target
-      result[:checks].concat(locked_limits, adapter_limits, loaded_limits, dropped_by_rails, curated)
+      result[:checks].concat(locked_limits, adapter_limits, version_limits, dropped_by_rails, curated)
       result[:checks].concat(stale(result[:checks].filter_map { |check| check[:gem] }))
 
       if result[:checks].empty?
@@ -72,9 +72,9 @@ module RailsPreflight
     end
 
     # listen 3.1 installs next to Rails 7.0, but the evented file watcher refuses to load it. Only checked when the app uses the feature.
-    def loaded_limits
+    def version_limits
       locked = @specs.to_h { |spec| [spec.name, spec.version] }
-      @loaded_by_rails.filter_map do |name, entry|
+      @version_limits.filter_map do |name, entry|
         version = locked[name]
         breaks_in = version && @hops.find do |hop|
           requirement = requirement_at(entry['from'], hop)
@@ -82,7 +82,9 @@ module RailsPreflight
         end
         next unless breaks_in && used?(entry['used_if'])
 
-        { message: "#{name} #{version} doesn't load on Rails #{breaks_in}, which requires #{name} #{requirement_at(entry['from'], breaks_in).join(', ')} for #{entry['for']}. Upgrade it in the same step.",
+        requirement = "#{name} #{requirement_at(entry['from'], breaks_in).join(', ')}"
+        why = entry['raises'] ? ": #{entry['raises']}; Rails #{breaks_in} needs #{requirement}" : ", which requires #{requirement} for #{entry['for']}"
+        { message: "#{name} #{version} doesn't load on Rails #{breaks_in}#{why}. Upgrade it in the same step.",
           status: :failed, removed_in: breaks_in, fix_effort: :low, gem: name, details: ["Source: #{entry['source']}"] }
       end
     end
