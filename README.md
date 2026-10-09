@@ -108,6 +108,12 @@ Or, with `--format markdown`, print the same report as Markdown instead of writi
 rails-preflight --format markdown 7.2 /path/to/your/app > upgrade.md
 ```
 
+`--format json` prints the same findings as JSON, each with its parts: the gem, its version and the requirement it fails, or the rule id with every `file`, `line` and matched line, plus the source it rests on. The top-level `"schema": 1` may still change before 1.0; the number goes up when it does. To gate CI, add `--fail-on blockers` (exit 1 when anything blocks the upgrade or is already broken) or `--fail-on broken` (only when something is already broken). It works with any format.
+
+```bash
+rails-preflight --offline --format json --fail-on blockers 7.2 > preflight.json
+```
+
 ## Report Overview
 
 The tool writes one self-contained **HTML report** (`rails_preflight_report.html`). It makes no network requests when opened, follows the OS dark mode, and prints on A4.
