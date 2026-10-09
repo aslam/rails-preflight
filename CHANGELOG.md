@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-10-09)
 
 First release. Point it at a Rails 5.0 – 8.1 app and a target version: it writes a report into the app as HTML, Markdown or JSON, plus a short terminal summary. Read-only and static.
 
