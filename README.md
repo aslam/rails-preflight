@@ -111,19 +111,19 @@ And generate:
 rails_preflight_report.html
 ```
 
-Or print it as Markdown or JSON instead: see [Output formats](#output-formats).
+Or `rails_preflight_report.md` or `.json` with `--format markdown` or `--format json`: see [Output formats](#output-formats).
 
 ## Output formats
 
 Every format renders the same findings. Each finding carries its parts, not only a sentence: the gem, its locked version and the requirement it fails, or the rule with every file, line and matched line, plus the release notes, README or Rails source it rests on.
 
-| Format | Flag | Where it goes | For |
+| Format | Flag | Written to, in the app | For |
 |---|---|---|---|
-| HTML | (default) | `rails_preflight_report.html` in the app | reading, planning, sharing |
-| Markdown | `--format markdown` | stdout | issues, PRs, coding agents |
-| JSON | `--format json` | stdout | CI and other tools |
+| HTML | (default) | `rails_preflight_report.html` | reading, planning, sharing |
+| Markdown | `--format markdown` | `rails_preflight_report.md` | issues, PRs, coding agents |
+| JSON | `--format json` | `rails_preflight_report.json` | CI and other tools |
 
-Every run also prints a short summary (counts, then each blocker) for SSH sessions and CI logs. With Markdown or JSON it goes to stderr, so stdout holds only the report. Neither of them writes the HTML file.
+The report is the only file the tool writes. Add `--stdout` to print it instead, for pipes and coding agents: no file is written, and progress goes to stderr so stdout holds only the report. Every run also prints a short summary (counts, then each blocker) for SSH sessions and CI logs.
 
 ### HTML
 
@@ -154,10 +154,10 @@ One self-contained file. It makes no network requests when opened, follows the O
 
 ### Markdown
 
-`--format markdown` prints the report as Markdown on stdout, so redirect it to a file:
+`--format markdown` writes `rails_preflight_report.md` into the app. A coding agent can read it from stdout instead:
 
 ```bash
-rails-preflight --format markdown 7.2 /path/to/your/app > upgrade.md
+rails-preflight --format markdown --stdout 7.2 /path/to/your/app
 ```
 
 It's a checklist per step, with `file:line` and the matched line under each finding. It pastes into an issue or PR as is, and opens with a note telling a coding agent to take one step at a time, run the tests after each, and leave "Ahead" and "Couldn't check" alone. From the same Mastodon run:
@@ -175,10 +175,10 @@ Needs Ruby 2.7.0–3.2: 2.7.2 works.
 
 ### JSON
 
-`--format json` prints the report as JSON on stdout, for CI and other tools:
+`--format json` writes `rails_preflight_report.json` into the app, for CI and other tools. With `--stdout` it can be piped:
 
 ```bash
-rails-preflight --format json 7.2 /path/to/your/app > preflight.json
+rails-preflight --format json --stdout 7.2 /path/to/your/app | jq '.counts'
 ```
 
 The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `ruby`, `offline`, `verdict` and `counts`, then the findings in `before` (before the first step), `steps` (each with `from`, `version`, its Ruby note and `findings`), `ahead` (keyed by the Rails version that removes them) and `cant_see`. There's no timestamp, so the same app gives the same output. Schema 1 may still change before 1.0; the number goes up when it does. A step from the same run, shortened:
@@ -222,7 +222,7 @@ The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `r
 `--fail-on blockers` exits 1 when anything blocks the upgrade or is already broken; `--fail-on broken` only when something is already broken. It works with any format. In CI, `--offline` keeps the run fully static:
 
 ```bash
-rails-preflight --offline --format json --fail-on blockers 7.2 > preflight.json
+rails-preflight --offline --format json --fail-on blockers 7.2
 ```
 
 ## Roadmap

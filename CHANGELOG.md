@@ -2,7 +2,7 @@
 
 ## 0.1.0 (unreleased)
 
-First release. Point it at a Rails 5.0 – 8.1 app and a target version: it writes an HTML report, or prints it as Markdown or JSON, plus a short terminal summary. Read-only and static.
+First release. Point it at a Rails 5.0 – 8.1 app and a target version: it writes a report into the app as HTML, Markdown or JSON, plus a short terminal summary. Read-only and static.
 
 - Upgrade path with one step per Rails minor, the Ruby each step needs, and which step to upgrade Ruby on
 - 118 deprecation rules from the release notes, 5.0 to 8.1, each cited, scanning `.rb`, `.erb`, `.haml`, `.slim` and `.rake` files, config YAML, and rake tasks in scripts and CI; APIs already removed from the current Rails are listed first as already broken
@@ -11,6 +11,7 @@ First release. Point it at a Rails 5.0 – 8.1 app and a target version: it writ
 - HTML report: verdict, counts, route, plan table, one card per step with files and lines, and what the report can't see; dark mode, print styles, no network requests
 - `--format markdown`: a checklist per step for issues, PRs and coding agents
 - `--format json`: every finding with its parts (`"schema": 1`, may change before 1.0)
+- `--stdout` prints the report instead of writing it, for pipes and coding agents
 - `--fail-on blockers|broken` sets the exit code, so CI can gate on it
 - `--offline` for a fully static run; private gem names are never sent
 - Report snippets hide quoted values on lines that name a secret, token or password
