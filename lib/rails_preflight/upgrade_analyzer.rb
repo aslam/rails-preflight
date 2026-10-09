@@ -246,9 +246,18 @@ module RailsPreflight
         if mixed_gems.any?
           result[:checks] << { message: "Looked up #{mixed_gems.size} gems on rubygems.org, since Gemfile.lock lists them under both rubygems.org and #{mixed_remotes.join(', ')}. Pass --offline to skip.", status: :passed, fix_effort: :low }
         end
-        if inconclusive.any?
-          names = inconclusive.map { |name, error| "#{name} (#{error})" }
-          result[:checks] << { message: "Could not verify #{inconclusive.size} gems against rubygems.org", status: :warning, kind: :unknown, names: names, fix_effort: :unknown }
+        # One entry per distinct error: a missing certificate fails every lookup the same way.
+        inconclusive.group_by { |_, error| error }.each do |error, failed|
+          gems = failed.map(&:first).sort
+          @out.puts "Couldn't reach rubygems.org for #{gems.size} gems (#{error}). See \"Couldn't check\" in the report."
+          # A VPN or proxy that inspects HTTPS re-signs certificates with a root the OS trusts but Ruby's OpenSSL doesn't read.
+          advice = if error.include?("certificate verify failed")
+                     "Behind a VPN or proxy that inspects HTTPS, point SSL_CERT_FILE at a certificate bundle that includes its root certificate, or pass --offline."
+                   else
+                     "Run it again once rubygems.org is reachable, or pass --offline."
+                   end
+          result[:checks] << { message: "Couldn't reach rubygems.org for #{gems.size} #{gems.size == 1 ? 'gem' : 'gems'} (#{error}), so whether #{gems.size == 1 ? "it's private and when it was" : "they're private and when they were"} last released is unknown. #{advice}",
+                               title: "rubygems.org lookup", status: :warning, kind: :unknown, names: gems, fix_effort: :unknown }
           result[:status] = :warning
         end
       end
@@ -272,6 +281,7 @@ module RailsPreflight
       found = {}
       inconclusive = {}
       lock = Mutex.new
+      store = rubygems_cert_store
 
       Array.new([names.size, 8].min) do
         Thread.new do
@@ -279,20 +289,36 @@ module RailsPreflight
             begin
               url = URI("https://rubygems.org/api/v1/gems/#{name}.json")
               # Certificate errors are reported as inconclusive, never silently trusted.
-              response = Net::HTTP.start(url.host, url.port, use_ssl: true, open_timeout: 5, read_timeout: 5) do |http|
+              response = Net::HTTP.start(url.host, url.port, use_ssl: true, cert_store: store, open_timeout: 5, read_timeout: 5) do |http|
                 http.request(Net::HTTP::Get.new(url))
               end
               raise "HTTP #{response.code}" unless %w[200 404].include?(response.code) # e.g. 429 when rate limited
               info = response.code == "200" && (JSON.parse(response.body.to_s) rescue {})
               lock.synchronize { found[name] = info }
             rescue StandardError => e
-              lock.synchronize { inconclusive[name] = "#{e.class.name}: #{e.message}" }
+              # The peer address changes per connection; without it, the same failure reads the same for every gem.
+              # The peer address changes per connection; without it, the same failure reads the same for every gem.
+              lock.synchronize { inconclusive[name] = "#{e.class.name}: #{e.message.sub(/ peeraddr=\S+/, '')}" }
             end
           end
         end
       end.each(&:join)
 
       [found, inconclusive]
+    end
+
+    # The system's certificates plus the ones RubyGems ships for rubygems.org, which is why `gem install` works on a
+    # machine whose OpenSSL can't find the system store. Verification stays on.
+    def rubygems_cert_store
+      require 'rubygems/request'
+      OpenSSL::X509::Store.new.tap do |store|
+        store.set_default_paths
+        Gem::Request.get_cert_files.each do |file|
+          store.add_file(file)
+        rescue OpenSSL::X509::StoreError
+          # already in the system store
+        end
+      end
     end
 
     # From the lockfile: :public, :private (git, path, or only non-rubygems.org remotes), or, when one GEM
