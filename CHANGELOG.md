@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 (2026-10-09)
+
+- rubygems.org lookups also trust the certificates RubyGems ships for rubygems.org, so they work wherever `gem install` does, even when Ruby's OpenSSL can't find the system certificates
+- Failed lookups are reported once per distinct error, under their own "rubygems.org lookup" entry with the gem names listed once, instead of the same error repeated for every gem under a second "Private Gems" card
+- A certificate failure says what to do: behind a VPN or proxy that inspects HTTPS, point `SSL_CERT_FILE` at a bundle that includes its root certificate, or pass `--offline`
+- The terminal warns when lookups fail
+
 ## 0.1.0 (2026-10-09)
 
 First release. Point it at a Rails 5.0 – 8.1 app and a target version: it writes a report into the app as HTML, Markdown or JSON, plus a short terminal summary. Read-only and static.
