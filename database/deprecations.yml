@@ -170,13 +170,15 @@ deprecations:
     recategorization: "Rails 5.2 -> 6.0"
     fix_effort: low
   - id: record_tag_helper
+    # Rails 5.0 moved these to the record_tag_helper gem and left stubs that raise; 6.0 deleted the stubs. With the gem they still work.
     pattern: "\\b(?:div_for|content_tag_for)\\b"
-    message: "'div_for' and 'content_tag_for' were removed in Rails 6.0 along with RecordTagHelper. Use 'content_tag' with 'dom_id', or the record_tag_helper gem."
-    removed_in: "6.0"
+    message: "'div_for' and 'content_tag_for' were moved out of Rails 5.0 into the record_tag_helper gem, and raise without it. Use 'content_tag' with 'dom_id', or add the gem."
+    removed_in: "5.0"
+    unless_gem: record_tag_helper
     severity: error
     confidence: "High"
-    guide_link: "https://guides.rubyonrails.org/6_0_release_notes.html#action-view-removals"
-    recategorization: "Rails 5.2 -> 6.0"
+    guide_link: "https://guides.rubyonrails.org/5_0_release_notes.html#action-view-removals"
+    recategorization: "Rails 4.2 -> 5.0"
     fix_effort: medium
   - id: fragment_cache_key
     pattern: "\\bfragment_cache_key\\b"

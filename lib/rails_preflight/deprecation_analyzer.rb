@@ -3,7 +3,15 @@ module RailsPreflight
   class DeprecationAnalyzer
     DATA_PATH = File.expand_path('../../database/deprecations.yml', __dir__)
     SCAN_DIRS = %w[app config db lib test spec].freeze
-    SCAN_EXTS = %w[.rb .erb .rake].freeze
+    SCAN_EXTS = %w[.rb .erb .rake .haml .slim].freeze
+    # Lines that never run, by file type: [line comment, silent comment]. A silent comment hides the lines indented
+    # under it too (HAML `-#`, Slim `/`); an HTML comment (HAML `/`, Slim `/!` or `/[if IE]`) is text, but the lines
+    # under it still render and run. In templates `#main` is an element id, not a comment.
+    COMMENTS = {
+      '.haml' => [%r{\A/}, /\A-#/],
+      '.slim' => [%r{\A/[!\[]}, %r{\A/(?![!\[])}]
+    }.freeze
+    RUBY_COMMENT = [/\A(?:#|<%#)/, nil].freeze
     # A rule runs on the kinds of files its `files:` lists, code by default.
     # scripts: where rake tasks get called from outside Ruby code. yaml: the app's own config files.
     FILE_GLOBS = {
@@ -24,7 +32,8 @@ module RailsPreflight
     def run
       result = { title: "Deprecation Warnings", status: :passed, checks: [], confidence: :medium }
 
-      warnings = scan_files(@rules['deprecations'])
+      # `unless_gem:` names a gem that keeps the API working (record_tag_helper keeps div_for).
+      warnings = scan_files(@rules['deprecations'].reject { |rule| rule['unless_gem'] && locked?(rule['unless_gem']) })
 
       if warnings.any?
         # Group warnings by message
@@ -105,9 +114,20 @@ module RailsPreflight
             (rule['skip_bare_if_local'] && local?(content, rule['skip_bare_if_local']))
         end.map(&:last)
 
+        line_comment, silent_comment = COMMENTS.fetch(File.extname(file), RUBY_COMMENT)
+        silenced = nil # indent of the silent comment the current lines sit under
         content.each_line.with_index(1) do |line, line_num|
+          indent = line[/\A[ \t]*/].size
+          next if silenced && (line.strip.empty? || indent > silenced)
+
+          silenced = nil
+          code = line.lstrip
+          if silent_comment&.match?(code)
+            silenced = indent
+            next
+          end
           # Skip comments and method definitions (e.g. "def update_attributes") to avoid false positives
-          next if line.lstrip.start_with?("#", "def ", "<%#")
+          next if line_comment.match?(code) || code.start_with?("def ")
 
           applicable.each do |regex, rule|
             next unless (match = regex.match(line))
@@ -165,11 +185,12 @@ module RailsPreflight
     end
 
     def check_rubocop_rails
-      lockfile_path = File.join(@root_path, "Gemfile.lock")
-      return false unless File.exist?(lockfile_path)
-      
-      content = File.read(lockfile_path)
-      content.include?("rubocop-rails")
+      locked?("rubocop-rails")
+    end
+
+    def locked?(gem)
+      @lockfile ||= File.exist?(File.join(@root_path, "Gemfile.lock")) ? File.read(File.join(@root_path, "Gemfile.lock")) : ""
+      @lockfile.match?(/^ {4}#{Regexp.escape(gem)} \(/)
     end
 
   end
