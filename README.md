@@ -17,7 +17,7 @@ This tool is designed for **planning and scoping**, not automated migration.
   <img alt="The report for Mastodon v3.3.0, Rails 5.2.4.4 to 7.0: verdict, counts, the route through 6.0, 6.1 and 7.0 with blockers at each, and the plan table" src="docs/images/report-overview-light.png">
 </picture>
 
-<sub>Mastodon v3.3.0, an open-source app, checked for Rails 7.0.</sub>
+<sub>Mastodon v3.3.0, an open-source app, checked for Rails 7.0. <a href="https://aslam.github.io/rails-preflight/sample-report.html">See the full report</a>.</sub>
 
 ## Why this exists
 
