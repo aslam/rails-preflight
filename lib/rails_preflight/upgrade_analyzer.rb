@@ -24,7 +24,10 @@ module RailsPreflight
       @out = stdout ? $stderr : $stdout
       @project_path = project_path
       # gemfile: another Gemfile, as BUNDLE_GEMFILE names it (Gemfile.next for dual boot); its lockfile sits next to it.
-      @gemfile_path = File.expand_path(gemfile || "Gemfile", project_path)
+      # Only one inside the app counts: `bundle exec` sets BUNDLE_GEMFILE to the Gemfile of wherever it was run.
+      gemfile = File.expand_path(gemfile, project_path) if gemfile
+      inside = gemfile&.start_with?(File.join(File.expand_path(project_path), ""))
+      @gemfile_path = inside ? gemfile : File.expand_path("Gemfile", project_path)
       @lockfile_path = "#{@gemfile_path}.lock"
       @rules = YAML.load_file(DATA_PATH)
     end

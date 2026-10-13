@@ -16,6 +16,7 @@ if %w[-h --help].include?(ARGV[0])
   puts "--format markdown|json: write rails_preflight_report.md or .json into the app instead of the HTML report."
   puts "--stdout: print the report instead of writing it (progress goes to stderr), for pipes and coding agents."
   puts "--fail-on blockers: exit 1 when anything blocks the upgrade or is already broken. --fail-on broken: only when something is already broken."
+  puts "BUNDLE_GEMFILE=Gemfile.next: read that Gemfile and its lockfile instead, for a dual-boot app. Ignored when it's outside APP_PATH."
   exit
 end
 
