@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 (2026-10-13)
+
+- Code inside Packwerk packs (`packs/<name>/app`, `lib`, `spec`, ...) is scanned like the app root, and rules scoped to `app/helpers` or `spec` apply inside packs too (#22, thanks @JuanVqz)
+- `BUNDLE_GEMFILE=Gemfile.next rails-preflight` reads that Gemfile and its lockfile, so a dual-boot app can audit its next boot; one outside the app, as `bundle exec` sets it, is ignored (#23, #24, thanks @JuanVqz)
+- A compiled binary under `bin/` no longer aborts the run, and scanned files are read as UTF-8 whatever the locale, so a file with non-ASCII characters no longer crashes the scan under `LANG=C` (#21, thanks @JuanVqz)
+
 ## 0.1.1 (2026-10-09)
 
 - rubygems.org lookups also trust the certificates RubyGems ships for rubygems.org, so they work wherever `gem install` does, even when Ruby's OpenSSL can't find the system certificates
