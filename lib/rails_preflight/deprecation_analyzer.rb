@@ -24,8 +24,9 @@ module RailsPreflight
     # Snippets go into a report people print and share: on a line that names a secret, values are hidden.
     SECRET_NAME = /secret|token|passw(?:or)?d|api_?key|access_?key|private_?key|credential/i
 
-    def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil)
+    def initialize(root_path = Dir.pwd, database_path = DATA_PATH, target_rails: nil, current_rails: nil, lockfile_path: nil)
       @root_path = root_path
+      @lockfile_path = lockfile_path || File.join(root_path, "Gemfile.lock")
       @rules = YAML.load_file(database_path)
       @target_rails = target_rails
       @current_rails = current_rails
@@ -212,7 +213,7 @@ module RailsPreflight
     end
 
     def lockfile
-      @lockfile ||= File.exist?(File.join(@root_path, "Gemfile.lock")) ? File.read(File.join(@root_path, "Gemfile.lock")) : ""
+      @lockfile ||= File.exist?(@lockfile_path) ? File.read(@lockfile_path) : ""
     end
 
   end

@@ -121,6 +121,16 @@ class UpgradeAnalyzerTest < Minitest::Test
     assert_includes report, "7.1.3 → 7.2"
   end
 
+  def test_reads_the_lockfile_of_another_gemfile
+    write_lockfile(rails: "7.0.8")
+    FileUtils.cp(File.join(@tmp_dir, "Gemfile.lock"), File.join(@tmp_dir, "Gemfile.next.lock"))
+    File.write(File.join(@tmp_dir, "Gemfile.next.lock"), File.read(File.join(@tmp_dir, "Gemfile.next.lock")).sub("7.0.8", "7.1.3"))
+
+    RailsPreflight::UpgradeAnalyzer.new("7.2", @tmp_dir, gemfile: "Gemfile.next").run
+
+    assert_includes report, "Rails 7.1.3 <span class=\"to\">to</span> 7.2"
+  end
+
   def test_flags_target_that_is_not_an_upgrade
     write_lockfile(rails: "7.2.1")
 

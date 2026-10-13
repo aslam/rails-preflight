@@ -97,7 +97,7 @@ It knows Rails 5.0 to 8.1 (`database/compatibility.yml`); the default target is 
 
 The tool will analyze:
 
-- `Gemfile` and `Gemfile.lock`
+- `Gemfile` and `Gemfile.lock`, or the Gemfile `BUNDLE_GEMFILE` names and its lockfile (`BUNDLE_GEMFILE=Gemfile.next` for a dual-boot app)
 - `.ruby-version`
 - `Dockerfile` (if present)
 - `db/schema.rb` (if present; an app on `db/structure.sql` gets a note that the schema checks were skipped)

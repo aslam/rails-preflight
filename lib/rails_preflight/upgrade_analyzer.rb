@@ -16,14 +16,16 @@ module RailsPreflight
     # format: :html, :markdown or :json, written into the app as rails_preflight_report.<ext>.
     # stdout: print the report instead of writing it, with progress on stderr, for pipes and coding agents.
     # run returns the summary (nil when there's nothing to upgrade to), so the caller can set the exit code.
-    def initialize(target_rails = nil, project_path = Dir.pwd, offline: false, format: :html, stdout: false)
+    def initialize(target_rails = nil, project_path = Dir.pwd, offline: false, format: :html, stdout: false, gemfile: nil)
       @target_rails = target_rails
       @offline = offline
       @format = format
       @stdout = stdout
       @out = stdout ? $stderr : $stdout
       @project_path = project_path
-      @lockfile_path = File.join(project_path, "Gemfile.lock")
+      # gemfile: another Gemfile, as BUNDLE_GEMFILE names it (Gemfile.next for dual boot); its lockfile sits next to it.
+      @gemfile_path = File.expand_path(gemfile || "Gemfile", project_path)
+      @lockfile_path = "#{@gemfile_path}.lock"
       @rules = YAML.load_file(DATA_PATH)
     end
 
@@ -52,7 +54,8 @@ module RailsPreflight
       results << DockerAnalyzer.new(@project_path, checked_ruby: @eol_checked_ruby).run
       results << GemAnalyzer.new(@project_path, lockfile_specs, hops: upgrade_hops.map { |hop| hop[:version] }, direct: lockfile&.dependencies&.keys || [],
                                  last_releases: (@last_releases || {} unless @offline), target_released: target_rails_rules&.dig('released')).run
-      results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails, current_rails: current_rails&.to_s).run
+      results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails, current_rails: current_rails&.to_s,
+                                         lockfile_path: @lockfile_path).run
       results << ConfigAnalyzer.new(@project_path, current_rails).run
       results << DatabaseAnalyzer.new(@project_path, database_rules).run
 
@@ -100,12 +103,12 @@ module RailsPreflight
       if current_rails.nil?
         result[:status] = :warning
         result[:confidence] = :low
-        result[:checks] << { message: "Could not read current Rails version from Gemfile.lock.", status: :warning, kind: :unknown, fix_effort: :low }
+        result[:checks] << { message: "Could not read current Rails version from #{lockfile_name}.", status: :warning, kind: :unknown, fix_effort: :low }
       elsif Gem::Version.new(current_rails.segments.first(2).join(".")) >= Gem::Version.new(@target_rails)
         result[:status] = :warning
         result[:checks] << { message: "Already on Rails #{current_rails}: #{@target_rails} is not an upgrade.", status: :passed }
       else
-        result[:checks] << { message: "Rails #{current_rails} (Gemfile.lock) → #{@target_rails}", status: :passed, fix_effort: :low }
+        result[:checks] << { message: "Rails #{current_rails} (#{lockfile_name}) → #{@target_rails}", status: :passed, fix_effort: :low }
       end
 
       result
@@ -169,7 +172,7 @@ module RailsPreflight
       return [File.read(ruby_version_file), ".ruby-version"] if File.exist?(ruby_version_file)
 
       lock_ruby = File.exist?(@lockfile_path) && File.read(@lockfile_path)[/^RUBY VERSION\s+ruby (\S+)/, 1]
-      return [lock_ruby, "Gemfile.lock"] if lock_ruby
+      return [lock_ruby, lockfile_name] if lock_ruby
 
       docker_ruby = DockerAnalyzer.new(@project_path).detect_ruby_version
       [docker_ruby, "Dockerfile"] if docker_ruby
@@ -204,7 +207,7 @@ module RailsPreflight
         result[:status] = :warning
         result[:confidence] = :medium
         result[:checks] << {
-          message: "No Gemfile.lock found. Skipping gem compatibility checks.",
+          message: "No #{lockfile_name} found. Skipping gem compatibility checks.",
           status: :warning,
           kind: :unknown,
           fix_effort: :low
@@ -231,7 +234,7 @@ module RailsPreflight
       end
 
       if mixed_gems.any? && @offline
-        message = "#{mixed_gems.size} gems come from one Gemfile.lock section that lists rubygems.org and #{mixed_remotes.join(', ')}; can't tell which are private with --offline"
+        message = "#{mixed_gems.size} gems come from one #{lockfile_name} section that lists rubygems.org and #{mixed_remotes.join(', ')}; can't tell which are private with --offline"
         result[:checks] << { message: message, status: :warning, kind: :unknown, names: mixed_gems, fix_effort: :unknown }
         result[:status] = :warning
       end
@@ -244,7 +247,7 @@ module RailsPreflight
         private_gems.concat(mixed_gems.select { |name| found[name] == false })
         @last_releases = dated_gems.filter_map { |name| [name, found[name]['version_created_at']] if found[name].is_a?(Hash) && found[name]['version_created_at'] }.to_h
         if mixed_gems.any?
-          result[:checks] << { message: "Looked up #{mixed_gems.size} gems on rubygems.org, since Gemfile.lock lists them under both rubygems.org and #{mixed_remotes.join(', ')}. Pass --offline to skip.", status: :passed, fix_effort: :low }
+          result[:checks] << { message: "Looked up #{mixed_gems.size} gems on rubygems.org, since #{lockfile_name} lists them under both rubygems.org and #{mixed_remotes.join(', ')}. Pass --offline to skip.", status: :passed, fix_effort: :low }
         end
         # One entry per distinct error: a missing certificate fails every lookup the same way.
         inconclusive.group_by { |_, error| error }.each do |error, failed|
@@ -359,7 +362,7 @@ module RailsPreflight
         global = []
         scoped = {}
         blocks = [] # source for a `source … do` block, nil for any other block
-        gemfile_lines(File.join(@project_path, "Gemfile")).each do |line|
+        gemfile_lines(@gemfile_path).each do |line|
           source = line[/^\s*source\b\s*\(?\s*(.+?)\s*\)?\s*(?:do\b.*)?$/, 1]&.delete_prefix("\"")&.delete_suffix("\"")&.delete("'")
           name = line[/^\s*gem\s*\(?\s*["']([^"']+)["']/, 1]
           if name
@@ -406,6 +409,10 @@ module RailsPreflight
       @lockfile = File.exist?(@lockfile_path) ? Bundler::LockfileParser.new(File.read(@lockfile_path)) : nil
     end
 
+    def lockfile_name
+      File.basename(@lockfile_path)
+    end
+
     def known_rails_versions
       @rules.fetch('rails_versions', {}).keys.sort_by { |v| Gem::Version.new(v) }
     end
@@ -417,7 +424,7 @@ module RailsPreflight
     # Next known minor after the current Rails (7.1.3 → 7.2), or nil when already on the newest.
     def next_rails
       unless current_rails
-        reason = File.exist?(@lockfile_path) ? "No Rails in #{@lockfile_path}" : "No Gemfile.lock in #{@project_path}"
+        reason = File.exist?(@lockfile_path) ? "No Rails in #{@lockfile_path}" : "No #{lockfile_name} in #{@project_path}"
         raise Error, "#{reason}, so the current Rails version is unknown. Pass a target, e.g. `rails-preflight #{latest_known_rails}`."
       end
       current_minor = Gem::Version.new(current_rails.segments.first(2).join("."))

@@ -38,7 +38,8 @@ abort "Target must be a Rails version such as 7.2 (got #{target.inspect})." if t
 project_path = ARGV[0] || Dir.pwd
 
 begin
-  summary = RailsPreflight::UpgradeAnalyzer.new(target, project_path, offline: offline, format: format, stdout: stdout).run
+  summary = RailsPreflight::UpgradeAnalyzer.new(target, project_path, offline: offline, format: format, stdout: stdout,
+                                                gemfile: ENV["BUNDLE_GEMFILE"]).run
 rescue RailsPreflight::Error => e
   abort e.message
 end
