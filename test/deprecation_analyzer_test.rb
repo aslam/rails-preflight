@@ -153,6 +153,22 @@ class DeprecationAnalyzerTest < Minitest::Test
                  check[:files].map { |d| d[:file] }.sort
   end
 
+  def test_skips_binary_files
+    FileUtils.mkdir_p(File.join(@tmp_dir, "bin"))
+    File.binwrite(File.join(@tmp_dir, "bin", "cli"), "\xCF\xFA\xED\xFE\x00rake db:structure:dump\n".b)
+    write_app_file("bin/setup", "rake db:structure:dump # café")
+
+    # LANG=C, common in Docker and CI: text is still read as UTF-8, so bin/setup is scanned.
+    verbose, $VERBOSE = $VERBOSE, nil
+    external, Encoding.default_external = Encoding.default_external, Encoding::US_ASCII
+    files = RailsPreflight::DeprecationAnalyzer.new(@tmp_dir).run[:checks].flat_map { |c| (c[:files] || []).map { |d| d[:file] } }
+
+    assert_equal ["bin/setup"], files
+  ensure
+    Encoding.default_external = external if external
+    $VERBOSE = verbose
+  end
+
   def test_scans_packwerk_packs_like_the_app_root
     write_app_file("packs/billing/app/models/invoice.rb", "  deprecated_method")
     write_app_file("packs/billing/spec/models/invoice_spec.rb", "  deprecated_method")

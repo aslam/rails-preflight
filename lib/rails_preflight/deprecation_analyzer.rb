@@ -110,7 +110,9 @@ module RailsPreflight
           rule.fetch('files', ['code']).include?(kind) && (rule['paths'].nil? || under.(rule['paths']))
         end
         next if applicable.empty?
-        content = File.read(file)
+        # UTF-8 whatever the locale (LANG=C reads US-ASCII); a compiled binary under bin/ (e.g. a Rust CLI) isn't text to scan.
+        content = File.read(file, encoding: "UTF-8")
+        next unless content.valid_encoding?
         # Only `x.errors` counts under `needs_receiver_in:` (a bare `errors` in a helper or view is a local), and in a
         # file that assigns `errors` or takes it as a parameter (`skip_bare_if_local:`), where the bare name is that local.
         # ponytail: file-wide, so a model with an `errors` local in one method loses bare hits in the others.
