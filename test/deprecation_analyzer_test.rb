@@ -493,6 +493,8 @@ class DeprecationAnalyzerTest < Minitest::Test
     "@errors.each do |key, value|",
     "@errors.keys.first",
     "@errors[:base] = 'gateway down'",
+    "fixture_path = File.join(fixtures_dir, 'users.json')",
+    "@fixture_path = 'spec/fixtures'",
     "if errors[:email].any?",
     "errors[key] = validator.errors.full_messages",
     "if errors.messages[:email] == ['is taken']",

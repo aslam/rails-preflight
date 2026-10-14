@@ -103,7 +103,8 @@ deprecations:
     recategorization: "Rails 7.1 -> 7.2"
     fix_effort: low
   - id: fixture_path_assignment
-    pattern: "\\bfixture_path\\s*="
+    # Ruby reads a bare `fixture_path = x` as a local variable; the removed setter always has a receiver
+    pattern: "\\.fixture_path\\s*=(?!=)"
     message: "'fixture_path' was removed in Rails 7.2. Assign 'fixture_paths' instead, which takes an array."
     removed_in: "7.2"
     severity: error
