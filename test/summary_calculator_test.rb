@@ -93,6 +93,14 @@ class SummaryCalculatorTest < Minitest::Test
     assert_equal [["Needs Ruby 3.1.0–3.4: upgrade Ruby from 2.7.8 to 3.4 first", "3.4"]], steps.map { |step| step.values_at(:ruby, :ruby_upgrade) }
   end
 
+  def test_each_step_links_to_railsdiff_from_the_minor_before_it
+    hops = [{ version: "6.0" }, { version: "6.1" }]
+
+    steps = RailsPreflight::SummaryCalculator.new([], "6.1", "5.2.8", hops: hops).calculate[:steps]
+
+    assert_equal ["https://railsdiff.org/5.2.0/6.0.0", "https://railsdiff.org/6.0.0/6.1.0"], steps.map { |step| step[:railsdiff] }
+  end
+
   def test_ruby_is_upgraded_as_far_as_the_rails_before_the_step_allows
     hops = [
       { version: "6.0", min_ruby: "2.5.0", max_ruby: "2.7.99" },
@@ -121,6 +129,6 @@ class SummaryCalculatorTest < Minitest::Test
     assert_empty summary[:blockers]
     assert_empty summary[:to_fix]
     assert_empty summary[:unknowns]
-    assert_equal [{ version: "7.1", from: nil, ruby: "Ruby requirements for Rails 7.1 are unknown", ruby_upgrade: nil, checks: [] }], summary[:steps]
+    assert_equal [{ version: "7.1", from: nil, ruby: "Ruby requirements for Rails 7.1 are unknown", ruby_upgrade: nil, railsdiff: nil, checks: [] }], summary[:steps]
   end
 end

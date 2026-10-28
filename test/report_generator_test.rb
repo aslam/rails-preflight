@@ -35,6 +35,12 @@ class ReportGeneratorTest < Minitest::Test
     refute_includes html, "javascript:alert(1)"
   end
 
+  def test_each_step_points_to_app_update_and_railsdiff
+    html = render([])
+
+    assert_includes html, '<span class="k">Config</span><span>Run <code>bin/rails app:update</code> and compare with <a href="https://railsdiff.org/5.2.0/6.0.0">RailsDiff</a></span>'
+  end
+
   def test_quoted_names_are_code_but_apostrophes_are_not
     html = render([{ title: "Configuration", status: :warning, checks: [
       { message: "'update_attributes' doesn't exist; use 'update'.", status: :warning }

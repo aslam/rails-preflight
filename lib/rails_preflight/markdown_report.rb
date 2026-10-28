@@ -22,7 +22,8 @@ module RailsPreflight
       out << section("Before you start#{" (on Rails #{@data[:current_rails]})" if @data[:current_rails]}", before) if before.any?
       @summary.fetch(:steps, []).each.with_index(1) do |step, i|
         title = "Step #{i}: #{step[:from] ? "#{step[:from]} to #{step[:version]}" : "Rails #{step[:version]}"}"
-        out << section(title, step[:checks], "#{step[:ruby]}.")
+        note = ["#{step[:ruby]}.", ("Run `bin/rails app:update` and compare with [RailsDiff](#{step[:railsdiff]})." if step[:railsdiff])]
+        out << section(title, step[:checks], note.compact.join(" "))
       end
       @summary.fetch(:ahead, {}).each do |version, entries|
         out << section("Ahead: removed in #{version}, not needed for #{@data[:target_rails]}", entries)

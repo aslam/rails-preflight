@@ -97,13 +97,18 @@ module RailsPreflight
       max_now = @current_max_ruby
       @hops.map do |hop|
         note, upgraded = ruby_note(hop, ruby, max_now)
-        step = { version: hop[:version], from: from, ruby: note, ruby_upgrade: upgraded,
+        step = { version: hop[:version], from: from, ruby: note, ruby_upgrade: upgraded, railsdiff: railsdiff(from, hop[:version]),
                  checks: in_order(in_steps.select { |entry| step_for(entry) == hop[:version] }) }
         ruby = upgraded || ruby
         from = hop[:version]
         max_now = hop[:max_ruby]
         step
       end
+    end
+
+    # The generated-app diff between the two minors, which is what `bin/rails app:update` brings in.
+    def railsdiff(from, to)
+      from && "https://railsdiff.org/#{from.split('.').first(2).join('.')}.0/#{to}.0"
     end
 
     # An API removed in one of the step versions is fixed as part of that step. A Ruby too old or too new for
