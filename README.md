@@ -225,10 +225,6 @@ The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `r
 rails-preflight --offline --format json --fail-on blockers 7.2
 ```
 
-## Roadmap
-
-For a detailed list of current features and future plans, please see [ROADMAP.md](ROADMAP.md).
-
 ## Philosophy
 
 This tool favors:
