@@ -44,6 +44,7 @@ The audit analyzes your project for common Rails upgrade risk factors:
 - Docker runtime risks (EOL base image, locale, tzdata, OpenSSL mismatch)
 - Database schema risks (charset, integer IDs)
 - Missing or outdated `config.load_defaults`
+- Dual boot (`Gemfile.next`, `next?` in the Gemfile, bootboot) and whether CI runs it, and a Ruby version that `.ruby-version`, the Dockerfile and CI config disagree on
 
 The output is a **single HTML report** designed to be:
 
@@ -103,7 +104,7 @@ The tool will analyze:
 - `db/schema.rb` (if present; an app on `db/structure.sql` gets a note that the schema checks were skipped)
 - `config/application.rb` and `config/**/*.yml`
 - `.rb`, `.erb`, `.haml`, `.slim` and `.rake` files under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, at the root and in each Packwerk pack (`packs/<name>/app/`, ...)
-- Scripts and CI config (`bin/`, `script/`, Procfiles, Makefiles, CI workflows) for removed rake tasks
+- Scripts and CI config (`bin/`, `script/`, Procfiles, Makefiles, CI workflows) for removed rake tasks, and CI config for dual boot and its Ruby version
 
 And generate:
 
@@ -165,7 +166,7 @@ It's a checklist per step, with `file:line` and the matched line under each find
 ```markdown
 ## Step 3: 6.1 to 7.0
 
-Needs Ruby 2.7.0–3.2: 2.7.2 works.
+Needs Ruby 2.7.0–3.2: 2.7.2 works. Run `bin/rails app:update` and compare with [RailsDiff](https://railsdiff.org/6.1.0/7.0.0).
 
 - [ ] **Blocker:** annotate 3.1.1 requires activerecord >= 3.2, < 7.0, so it doesn't install on Rails 7.0. Upgrade it to a release that allows 7.0, or replace it.
 - [ ] **Blocker:** `ActionMailer::DeliveryJob` and `ActionMailer::Parameterized::DeliveryJob` were removed in Rails 7.0. Mail is delivered by `ActionMailer::MailDeliveryJob`. ([source](https://guides.rubyonrails.org/7_0_release_notes.html#action-mailer-removals))
@@ -181,12 +182,13 @@ Needs Ruby 2.7.0–3.2: 2.7.2 works.
 rails-preflight --format json --stdout 7.2 /path/to/your/app | jq '.counts'
 ```
 
-The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `ruby`, `offline`, `verdict` and `counts`, then the findings in `before` (before the first step), `steps` (each with `from`, `version`, its Ruby note and `findings`), `ahead` (keyed by the Rails version that removes them) and `cant_see`. There's no timestamp, so the same app gives the same output. Schema 1 may still change before 1.0; the number goes up when it does. A step from the same run, shortened ([full sample](docs/sample-report.json)):
+The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `ruby`, `offline`, `verdict` and `counts`, then the findings in `before` (before the first step), `steps` (each with `from`, `version`, its Ruby note, `railsdiff` and `findings`), `ahead` (keyed by the Rails version that removes them) and `cant_see`. There's no timestamp, so the same app gives the same output. Schema 1 may still change before 1.0; the number goes up when it does. A step from the same run, shortened ([full sample](docs/sample-report.json)):
 
 ```json
 {
   "from": "6.1",
   "version": "7.0",
+  "railsdiff": "https://railsdiff.org/6.1.0/7.0.0",
   "findings": [
     {
       "section": "Gem Compatibility",

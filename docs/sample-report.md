@@ -48,17 +48,18 @@ Already broken: 0 · Blockers: 13 · To fix: 9 · Couldn't check: 3
   - `app/views/settings/two_factor_authentication/webauthn_credentials/new.html.haml`
   - `app/views/shares/show.html.haml`
   - `app/views/tags/show.html.haml`
+- **Tip:** No dual boot found (no `Gemfile.next` or `next?` in the Gemfile). Set it up first, e.g. with next_rails, so the app and its tests run on the current and the next Rails while each step is in progress. ([source](https://github.com/fastruby/next_rails))
 
 ## Step 1: 5.2.4.4 to 6.0
 
-Needs Ruby 2.5.0–2.7: 2.7.2 works.
+Needs Ruby 2.5.0–2.7: 2.7.2 works. Run `bin/rails app:update` and compare with [RailsDiff](https://railsdiff.org/5.2.0/6.0.0).
 
 - [ ] **Blocker:** nsa 0.2.7 requires activesupport >= 4.2, < 6, so it doesn't install on Rails 6.0. Upgrade it to a release that allows 6.0, or replace it.
 - [ ] **Blocker:** rails-i18n 5.1.3 requires railties >= 5.0, < 6, so it doesn't install on Rails 6.0. Upgrade it to a release that allows 6.0, or replace it.
 
 ## Step 2: 6.0 to 6.1
 
-Needs Ruby 2.5.0–3.0: 2.7.2 works.
+Needs Ruby 2.5.0–3.0: 2.7.2 works. Run `bin/rails app:update` and compare with [RailsDiff](https://railsdiff.org/6.0.0/6.1.0).
 
 - [ ] **Blocker:** active_model_serializers 0.10.10 requires actionpack >= 4.1, < 6.1, activemodel >= 4.1, < 6.1, so it doesn't install on Rails 6.1. Upgrade it to a release that allows 6.1, or replace it.
 - [ ] **Blocker:** devise-two-factor 3.1.0 requires activesupport < 6.1, railties < 6.1, so it doesn't install on Rails 6.1. Upgrade it to a release that allows 6.1, or replace it.
@@ -68,7 +69,7 @@ Needs Ruby 2.5.0–3.0: 2.7.2 works.
 
 ## Step 3: 6.1 to 7.0
 
-Needs Ruby 2.7.0–3.2: 2.7.2 works.
+Needs Ruby 2.7.0–3.2: 2.7.2 works. Run `bin/rails app:update` and compare with [RailsDiff](https://railsdiff.org/6.1.0/7.0.0).
 
 - [ ] **Blocker:** annotate 3.1.1 requires activerecord >= 3.2, < 7.0, so it doesn't install on Rails 7.0. Upgrade it to a release that allows 7.0, or replace it.
 - [ ] **Blocker:** discard 1.2.0 requires activerecord >= 4.2, < 7, so it doesn't install on Rails 7.0. Upgrade it to a release that allows 7.0, or replace it.
@@ -123,4 +124,4 @@ Needs Ruby 2.7.0–3.2: 2.7.2 works.
 - Could not detect a versioned ruby base image in Dockerfile.
 - 5 gems that depend on Rails had no release since before Rails 7.0 shipped (2021-12-15). Check they work on 7.0, or find replacements.: case_transform (last release 2016-09-22), hamlit-rails (last release 2019-04-08), rails-controller-testing (last release 2020-06-23), makara (last release 2021-06-04), pluck_each (last release 2021-09-21)
 
-Made with [rails-preflight](https://github.com/aslam/rails-preflight) 0.1.0. Run it again after each step.
+Made with [rails-preflight](https://github.com/aslam/rails-preflight) 0.1.2. Run it again after each step.

@@ -4,9 +4,9 @@ What's planned, roughly in order. rails-preflight stays read-only and static: it
 
 ## Planned
 
-- [ ] Link each upgrade step to its RailsDiff and remind to run `bin/rails app:update`
-- [ ] Detect a dual-boot setup (`Gemfile.next`, `next_rails`) and whether CI runs both Gemfiles
-- [ ] Warn when `.ruby-version`, the Dockerfile and CI config disagree on Ruby
+- [x] Link each upgrade step to its RailsDiff and remind to run `bin/rails app:update`
+- [x] Detect a dual-boot setup (`Gemfile.next`, `next_rails`) and whether CI runs both Gemfiles
+- [x] Warn when `.ruby-version`, the Dockerfile and CI config disagree on Ruby
 - [ ] Say which version to bump a gem to when it caps an upgrade step
 - [ ] Flag secrets committed in config YAML, by file and key, never the value
 - [ ] List monkeypatches on Rails and gem classes, which need rechecking on every step

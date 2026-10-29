@@ -55,6 +55,7 @@ module RailsPreflight
       results << check_ruby_version
       results << scan_gems
       results << DockerAnalyzer.new(@project_path, checked_ruby: @eol_checked_ruby).run
+      results << DualBootAnalyzer.new(@project_path).run
       results << GemAnalyzer.new(@project_path, lockfile_specs, hops: upgrade_hops.map { |hop| hop[:version] }, direct: lockfile&.dependencies&.keys || [],
                                  last_releases: (@last_releases || {} unless @offline), target_released: target_rails_rules&.dig('released')).run
       results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails, current_rails: current_rails&.to_s,

@@ -1,6 +1,7 @@
 require "rails_preflight/version"
 require "rails_preflight/upgrade_analyzer"
 require "rails_preflight/docker_analyzer"
+require "rails_preflight/dual_boot_analyzer"
 require "rails_preflight/deprecation_analyzer"
 require "rails_preflight/gem_analyzer"
 require "rails_preflight/config_analyzer"
