@@ -229,7 +229,7 @@ deprecations:
     fix_effort: medium
   - id: stats_directories
     pattern: "\\bSTATS_DIRECTORIES\\b"
-    message: "'STATS_DIRECTORIES' was removed in Rails 8.1. Register extra directories with Rails::CodeStatistics.register_directory('Services', 'app/services')."
+    message: "'STATS_DIRECTORIES' was removed in Rails 8.1. Register extra directories with 'Rails::CodeStatistics.register_directory(\"Services\", \"app/services\")'."
     removed_in: "8.1"
     severity: error
     confidence: "High"
