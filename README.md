@@ -166,7 +166,7 @@ It's a checklist per step, with `file:line` and the matched line under each find
 ```markdown
 ## Step 3: 6.1 to 7.0
 
-Needs Ruby 2.7.0–3.2: 2.7.2 works.
+Needs Ruby 2.7.0–3.2: 2.7.2 works. Run `bin/rails app:update` and compare with [RailsDiff](https://railsdiff.org/6.1.0/7.0.0).
 
 - [ ] **Blocker:** annotate 3.1.1 requires activerecord >= 3.2, < 7.0, so it doesn't install on Rails 7.0. Upgrade it to a release that allows 7.0, or replace it.
 - [ ] **Blocker:** `ActionMailer::DeliveryJob` and `ActionMailer::Parameterized::DeliveryJob` were removed in Rails 7.0. Mail is delivered by `ActionMailer::MailDeliveryJob`. ([source](https://guides.rubyonrails.org/7_0_release_notes.html#action-mailer-removals))
@@ -182,12 +182,13 @@ Needs Ruby 2.7.0–3.2: 2.7.2 works.
 rails-preflight --format json --stdout 7.2 /path/to/your/app | jq '.counts'
 ```
 
-The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `ruby`, `offline`, `verdict` and `counts`, then the findings in `before` (before the first step), `steps` (each with `from`, `version`, its Ruby note and `findings`), `ahead` (keyed by the Rails version that removes them) and `cant_see`. There's no timestamp, so the same app gives the same output. Schema 1 may still change before 1.0; the number goes up when it does. A step from the same run, shortened ([full sample](docs/sample-report.json)):
+The top level holds `schema`, `tool`, `app`, `current_rails`, `target_rails`, `ruby`, `offline`, `verdict` and `counts`, then the findings in `before` (before the first step), `steps` (each with `from`, `version`, its Ruby note, `railsdiff` and `findings`), `ahead` (keyed by the Rails version that removes them) and `cant_see`. There's no timestamp, so the same app gives the same output. Schema 1 may still change before 1.0; the number goes up when it does. A step from the same run, shortened ([full sample](docs/sample-report.json)):
 
 ```json
 {
   "from": "6.1",
   "version": "7.0",
+  "railsdiff": "https://railsdiff.org/6.1.0/7.0.0",
   "findings": [
     {
       "section": "Gem Compatibility",
