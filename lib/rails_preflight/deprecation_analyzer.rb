@@ -71,7 +71,7 @@ module RailsPreflight
       # Rubocop Advisory Check
       if check_rubocop_rails
         result[:checks] << { 
-          message: "rubocop-rails is installed. Run `bundle exec rubocop -a` to auto-fix more deprecations.",
+          message: "rubocop-rails is installed. Run 'bundle exec rubocop -a' to auto-fix more deprecations.",
           status: :passed 
         }
       else

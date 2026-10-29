@@ -44,6 +44,7 @@ The audit analyzes your project for common Rails upgrade risk factors:
 - Docker runtime risks (EOL base image, locale, tzdata, OpenSSL mismatch)
 - Database schema risks (charset, integer IDs)
 - Missing or outdated `config.load_defaults`
+- Dual boot (`Gemfile.next`, `next?` in the Gemfile, bootboot) and whether CI runs it, and a Ruby version that `.ruby-version`, the Dockerfile and CI config disagree on
 
 The output is a **single HTML report** designed to be:
 
@@ -103,7 +104,7 @@ The tool will analyze:
 - `db/schema.rb` (if present; an app on `db/structure.sql` gets a note that the schema checks were skipped)
 - `config/application.rb` and `config/**/*.yml`
 - `.rb`, `.erb`, `.haml`, `.slim` and `.rake` files under `app/`, `config/`, `db/`, `lib/`, `test/` and `spec/`, at the root and in each Packwerk pack (`packs/<name>/app/`, ...)
-- Scripts and CI config (`bin/`, `script/`, Procfiles, Makefiles, CI workflows) for removed rake tasks
+- Scripts and CI config (`bin/`, `script/`, Procfiles, Makefiles, CI workflows) for removed rake tasks, and CI config for dual boot and its Ruby version
 
 And generate:
 
