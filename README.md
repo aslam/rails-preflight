@@ -44,6 +44,7 @@ The audit analyzes your project for common Rails upgrade risk factors:
 - Docker runtime risks (EOL base image, locale, tzdata, OpenSSL mismatch)
 - Database schema risks (charset, integer IDs)
 - Missing or outdated `config.load_defaults`
+- Secrets committed in config YAML, by file and key, never the value; a production `secret_key_base` in `config/secrets.yml`, which Rails 7.2 stops reading
 - Dual boot (`Gemfile.next`, `next?` in the Gemfile, bootboot) and whether CI runs it, and a Ruby version that `.ruby-version`, the Dockerfile and CI config disagree on
 
 The output is a **single HTML report** designed to be:

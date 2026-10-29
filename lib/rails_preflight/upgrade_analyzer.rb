@@ -60,7 +60,7 @@ module RailsPreflight
                                  last_releases: (@last_releases || {} unless @offline), target_released: target_rails_rules&.dig('released')).run
       results << DeprecationAnalyzer.new(@project_path, target_rails: @target_rails, current_rails: current_rails&.to_s,
                                          lockfile_path: @lockfile_path).run
-      results << ConfigAnalyzer.new(@project_path, current_rails).run
+      results << ConfigAnalyzer.new(@project_path, current_rails, target_rails: @target_rails).run
       results << DatabaseAnalyzer.new(@project_path, database_rules).run
 
       report_data = {
