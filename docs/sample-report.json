@@ -2,7 +2,7 @@
   "schema": 1,
   "tool": {
     "name": "rails-preflight",
-    "version": "0.1.0"
+    "version": "0.1.2"
   },
   "app": "mastodon",
   "current_rails": "5.2.4.4",
@@ -161,6 +161,13 @@
         }
       ],
       "fix_effort": "medium"
+    },
+    {
+      "section": "Dual Boot",
+      "kind": "tip",
+      "message": "No dual boot found (no 'Gemfile.next' or 'next?' in the Gemfile). Set it up first, e.g. with next_rails, so the app and its tests run on the current and the next Rails while each step is in progress.",
+      "fix_effort": "low",
+      "source": "https://github.com/fastruby/next_rails"
     }
   ],
   "steps": [
@@ -169,6 +176,7 @@
       "version": "6.0",
       "ruby": "Needs Ruby 2.5.0–2.7: 2.7.2 works",
       "ruby_upgrade": null,
+      "railsdiff": "https://railsdiff.org/5.2.0/6.0.0",
       "findings": [
         {
           "section": "Gem Compatibility",
@@ -197,6 +205,7 @@
       "version": "6.1",
       "ruby": "Needs Ruby 2.5.0–3.0: 2.7.2 works",
       "ruby_upgrade": null,
+      "railsdiff": "https://railsdiff.org/6.0.0/6.1.0",
       "findings": [
         {
           "section": "Gem Compatibility",
@@ -254,6 +263,7 @@
       "version": "7.0",
       "ruby": "Needs Ruby 2.7.0–3.2: 2.7.2 works",
       "ruby_upgrade": null,
+      "railsdiff": "https://railsdiff.org/6.1.0/7.0.0",
       "findings": [
         {
           "section": "Gem Compatibility",
