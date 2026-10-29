@@ -251,6 +251,7 @@ module RailsPreflight
               <article class="step" id="<%= step_id(step[:version]) %>">
                 <div class="step-head"><h3><%= h(step[:from] ? "#{step[:from]} → #{step[:version]}" : "Rails #{step[:version]}") %></h3><span class="tag"><%= h(blocker_tag(step[:checks])) %></span></div>
                 <div class="rubynote"><span class="k">Ruby</span><span><%= h(step[:ruby]) %></span></div>
+                <% if step[:railsdiff] %><div class="rubynote"><span class="k">Config</span><span>Run <code>bin/rails app:update</code> and compare with <a href="<%= h(step[:railsdiff]) %>">RailsDiff</a></span></div><% end %>
                 <% if step[:checks].any? %>
                   <ul class="rows"><% step[:checks].each do |entry| %><%= row_html(entry) %><% end %></ul>
                 <% end %>

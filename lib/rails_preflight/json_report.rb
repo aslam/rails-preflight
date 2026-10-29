@@ -26,7 +26,7 @@ module RailsPreflight
         counts: %i[broken blockers to_fix unknowns].to_h { |key| [key, @summary.fetch(key, []).size] },
         before: @summary.fetch(:before, []).map { |entry| finding(entry) },
         steps: @summary.fetch(:steps, []).map do |step|
-          step.slice(:from, :version, :ruby, :ruby_upgrade).merge(findings: step[:checks].map { |entry| finding(entry) })
+          step.slice(:from, :version, :ruby, :ruby_upgrade, :railsdiff).merge(findings: step[:checks].map { |entry| finding(entry) })
         end,
         ahead: @summary.fetch(:ahead, {}).transform_values { |entries| entries.map { |entry| finding(entry) } },
         cant_see: @summary.fetch(:cant_see, []).map { |entry| finding(entry) }

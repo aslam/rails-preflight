@@ -18,7 +18,7 @@ class MarkdownReportTest < Minitest::Test
     ])
 
     assert_includes md, "# example: Rails 5.2.8 to 6.0\n\nOne step, and Ruby 2.5.9 can stay. 1 blocker.\n"
-    assert_includes md, "## Step 1: 5.2.8 to 6.0\n\nNeeds Ruby 2.5.0–2.7: 2.5.9 works.\n\n" \
+    assert_includes md, "## Step 1: 5.2.8 to 6.0\n\nNeeds Ruby 2.5.0–2.7: 2.5.9 works. Run `bin/rails app:update` and compare with [RailsDiff](https://railsdiff.org/5.2.0/6.0.0).\n\n" \
                         "- [ ] **Blocker:** `update_attributes` was removed. Use `update`. ([source](https://guides.rubyonrails.org/6_0_release_notes.html))\n" \
                         "  - `app/models/user.rb:12` `user.update_attributes(x)`\n"
     assert_includes md, "## Ahead: removed in 6.1, not needed for 6.0\n\n- [ ] **To fix:** Gone later\n  - `lib/a.rb:1` `a`\n"
