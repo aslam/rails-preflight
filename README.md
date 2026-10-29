@@ -248,6 +248,14 @@ bundle exec rake
 
 CI runs the suite on every Ruby from 2.7 to 4.0.
 
+## Support the project ❤️
+
+RailsPreFlight is independently developed and maintained. If it helps you assess an upgrade, identify risks, or save engineering time, consider [sponsoring its development](https://github.com/sponsors/aslam).
+
+Sponsorship helps support ongoing maintenance, compatibility updates, and improvements.
+
+Contributions, bug reports, and sharing the project are equally appreciated.
+
 ## License
 
 MIT
