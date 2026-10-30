@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 (2026-10-30)
+
+- Each step links to its RailsDiff and reminds you to run `bin/rails app:update`; JSON steps carry the link as `railsdiff` (#29)
+- Dual boot: a tip to set it up when there's none, and a tip to add a CI job when CI doesn't run it (#30)
+- A warning when `.ruby-version`, the Dockerfile and CI config disagree on Ruby (#30)
+- Secrets committed in config YAML are flagged by file and key, never the value, outside the development and test sections (#31)
+- A production `secret_key_base` in `config/secrets.yml` is flagged, as a blocker when the target is Rails 7.2 or later, which stops reading that file; one read from `ENV["SECRET_KEY_BASE"]` isn't (#31)
+- The `STATS_DIRECTORIES` message shows its replacement as one code span (#33)
+
 ## 0.1.2 (2026-10-13)
 
 - Code inside Packwerk packs (`packs/<name>/app`, `lib`, `spec`, ...) is scanned like the app root, and rules scoped to `app/helpers` or `spec` apply inside packs too (#22, thanks @JuanVqz)

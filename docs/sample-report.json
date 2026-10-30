@@ -2,7 +2,7 @@
   "schema": 1,
   "tool": {
     "name": "rails-preflight",
-    "version": "0.1.2"
+    "version": "0.2.0"
   },
   "app": "mastodon",
   "current_rails": "5.2.4.4",
@@ -545,7 +545,7 @@
       {
         "section": "Deprecation Warnings",
         "kind": "to_fix",
-        "message": "'STATS_DIRECTORIES' was removed in Rails 8.1. Register extra directories with Rails::CodeStatistics.register_directory('Services', 'app/services').",
+        "message": "'STATS_DIRECTORIES' was removed in Rails 8.1. Register extra directories with 'Rails::CodeStatistics.register_directory(\"Services\", \"app/services\")'.",
         "rule": "stats_directories",
         "removed_in": "8.1",
         "fix_effort": "low",

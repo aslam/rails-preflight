@@ -115,7 +115,7 @@ Needs Ruby 2.7.0–3.2: 2.7.2 works. Run `bin/rails app:update` and compare with
 
 ## Ahead: removed in 8.1, not needed for 7.0
 
-- [ ] **To fix:** `STATS_DIRECTORIES` was removed in Rails 8.1. Register extra directories with Rails::CodeStatistics.register_directory(`Services`, `app/services`). ([source](https://guides.rubyonrails.org/8_1_release_notes.html#railties-removals))
+- [ ] **To fix:** `STATS_DIRECTORIES` was removed in Rails 8.1. Register extra directories with `Rails::CodeStatistics.register_directory("Services", "app/services")`. ([source](https://guides.rubyonrails.org/8_1_release_notes.html#railties-removals))
   - `lib/tasks/statistics.rake:16` `::STATS_DIRECTORIES << [name, Rails.root.join(dir)]`
 
 ## Couldn't check
@@ -124,4 +124,4 @@ Needs Ruby 2.7.0–3.2: 2.7.2 works. Run `bin/rails app:update` and compare with
 - Could not detect a versioned ruby base image in Dockerfile.
 - 5 gems that depend on Rails had no release since before Rails 7.0 shipped (2021-12-15). Check they work on 7.0, or find replacements.: case_transform (last release 2016-09-22), hamlit-rails (last release 2019-04-08), rails-controller-testing (last release 2020-06-23), makara (last release 2021-06-04), pluck_each (last release 2021-09-21)
 
-Made with [rails-preflight](https://github.com/aslam/rails-preflight) 0.1.2. Run it again after each step.
+Made with [rails-preflight](https://github.com/aslam/rails-preflight) 0.2.0. Run it again after each step.
