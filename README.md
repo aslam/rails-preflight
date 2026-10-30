@@ -1,5 +1,7 @@
 # RailsPreFlight 🛡️
 
+[![Gem Version](https://badge.fury.io/rb/rails_preflight.svg?icon=si%3Arubygems&icon_color=%23ff0000)](https://badge.fury.io/rb/rails_preflight)
+
 **Assess Rails upgrade risk before you touch a single line of code.**
 
 `rails-preflight` is a static analysis tool that scans legacy Rails applications and produces a **human-readable upgrade risk report**.
